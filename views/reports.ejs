@@ -11,7 +11,7 @@
       <% report.forEach(r => { %>
         <tr>
           <td><%= r.classId %></td>
-          <td><%= r.className %></td>
+          <td><a href="/<%= scope %>/reports/class/<%= r.classId %>"><%= r.className %></a></td>
           <td><%= r.teacher || '-' %></td>
           <td><%= r.students %></td>
           <td><%= r.tests %></td>
@@ -20,6 +20,9 @@
       <% }) %>
     </tbody>
   </table>
+   <% if (scope === 'admin') { %>
+    <a class="btn btn-outline-primary" href="/admin/reports/pending-students">Pending Students Report</a>
+  <% } %>
   <a href="javascript:history.back()" class="btn btn-link">Back</a>
 </div>
 </body></html>

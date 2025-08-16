@@ -8,13 +8,17 @@
 <body class="bg-light">
   <div class="container py-5 text-center">
     <h1>
-      Thanks, 
-      <%= user?.name 
-          || ((user?.firstName || '') + ' ' + (user?.lastName || '')).trim() 
+   Thanks,
+      <%= user?.name
+          || ((user?.firstName || '') + ' ' + (user?.lastName || '')).trim()
           || 'New Student' %>!
     </h1>
-    <p>Your registration is <strong>pending admin approval</strong>. You’ll get an email when it’s processed.</p>
-    <a class="btn btn-primary mt-3" href="/login">Back to Login</a>
-  </div>
-</body>
+   <p>Your registration is <strong>pending admin approval</strong>. You’ll get an email when it’s processed.</p>
+      <% const showFinancialAid = typeof financialAid !== 'undefined' ? financialAid : user?.profile?.financialAidRequested; %>
+      <% if (showFinancialAid) { %>
+        <p class="mt-3">Start your financial aid application <a href="https://studentaid.gov" target="_blank">here</a>.</p>
+      <% } %>
+      <a class="btn btn-primary mt-3" href="/login">Back to Login</a>
+    </div>
+  </body>
 </html>

@@ -2,30 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title><%= klass.name %> – School LMS</title>
+  <title><%= klass.name %><% if (klass.shortName) { %> (<%= klass.shortName %>)<% } %> – School LMS</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
   <%- include('header', { user: (typeof studentView !== 'undefined' && studentView) ? { role: 'student' } : { role: 'admin' } }) %>
   <div class="container py-4">
-    <h2><%= klass.name %></h2>
-    <p class="text-muted"><%= klass.description %></p>
+<h2><%= klass.name %> (<%= klass.shortName %>)</h2>
+    <p class="text-muted">School Year: <%= klass.schoolYear %> | Cohort: <%= klass.cohort %></p>    <p class="text-muted"><%= klass.description %></p>
+
+       <% if (typeof studentView === 'undefined' || !studentView) { %>
+      <form method="post" action="/admin/classes/<%= klass.id %>/duplicate" class="mb-3">
+        <button class="btn btn-outline-secondary">Duplicate Class</button>
+      </form>
+    <% } %>
+    <% if (klass.weeks) { %><p><strong>Duration:</strong> <%= klass.weeks %> weeks</p><% } %>
 
     <h3>Schedule</h3>
     <ul>
       <% (klass.schedule || []).forEach(s => { %>
-        <li><strong><%= s.day %></strong>: <%= s.time %></li>
+        <li><strong><%= s.day %></strong>: <%= s.time %> <% if (s.holiday) { %><span class="badge bg-warning text-dark">Holiday</span><% } %></li>
       <% }) %>
     </ul>
 
-    <h3>Lectures</h3>
+    
+
+    <h3 id="lectures">Lectures</h3>
     <ul>
       <% (klass.lectures || []).forEach(l => { %>
         <li><a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a></li>
       <% }) %>
     </ul>
 
-    <h3>Tests</h3>
+    <h3 id="tests">Tests</h3>
     <ul>
       <% (klass.tests || []).forEach(t => { %>
         <% if (typeof studentView !== 'undefined' && studentView) { %>
@@ -60,33 +69,11 @@
       </ul>
 
       <h3>Add Test</h3>
-      <form method="post" action="/admin/classes/<%= klass.id %>/add-test" class="border rounded p-3">
-        <div class="mb-2">
-          <label class="form-label">Title</label>
-          <input class="form-control" name="title" placeholder="Quiz 1">
-        </div>
-        <div class="mb-2">
-  <label class="form-label">Due Date</label>
-  <input type="date" class="form-control" name="dueDate">
-</div>
-        <% for (let i=0;i<3;i++) { %>
-          <div class="border rounded p-2 mb-2">
-            <label class="form-label">Question <%= i+1 %></label>
-            <input class="form-control mb-1" name="q<%= i %>" placeholder="Question text">
-            <div class="row g-2">
-              <div class="col-md-6"><input class="form-control" name="o<%= i %>_0" placeholder="Option 1"></div>
-              <div class="col-md-6"><input class="form-control" name="o<%= i %>_1" placeholder="Option 2"></div>
-              <div class="col-md-6"><input class="form-control" name="o<%= i %>_2" placeholder="Option 3"></div>
-              <div class="col-md-6"><input class="form-control" name="o<%= i %>_3" placeholder="Option 4"></div>
-            </div>
-            <div class="mt-1">
-              <label class="form-label">Correct answer (0-3)</label>
-              <input class="form-control" name="a<%= i %>" value="0">
-            </div>
-          </div>
-        <% } %>
-        <button class="btn btn-primary">Save Test</button>
-      </form>
+      <% if ((klass.tests || []).length > 0) { %>
+        <p>Add test functionality is coming soon. <a href="/student/classes/<%= klass.id %>/tests/<%= klass.tests[0].id %>">View sample test</a>.</p>
+      <% } else { %>
+        <p>Add test functionality is coming soon.</p>
+      <% } %>
     </section>
     <% } %>
   </div>

@@ -26,8 +26,9 @@ router.get('/classes/:id', async (req, res) => {
   if (!klass) return res.status(404).send('Not found');
   const users = await store.loadUsers();
   const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
-  res.render('teacher_view_class', { klass, students });
-});
+ const today = new Date().toISOString().slice(0,10);
+  const attendanceToday = (klass.attendance || []).find(a => a.date === today) || { present: [] };
+  res.render('teacher_view_class', { klass, students, today, attendanceToday });});
 
 // Grade submission (upsert)
 router.post('/classes/:id/grades', async (req, res) => {
@@ -99,7 +100,34 @@ classes.forEach(klass => {
 
   res.render('teacher_dashboard', { teacher: req.session.user, classes, weekly, events });
 });
+// Attendance submission
+router.post('/classes/:id/attendance', async (req, res) => {
+  const classId = Number(req.params.id);
+  const date = req.body.date || new Date().toISOString().slice(0,10);
+  const presentIds = Object.keys(req.body)
+    .filter(k => k.startsWith('present_'))
+    .map(k => Number(k.replace('present_', '')));
+  await classModel.recordAttendance(classId, date, presentIds);
+  res.redirect(`/teacher/classes/${classId}`);
+});
 
+// Attendance report for a class
+router.get('/classes/:id/attendance', async (req, res) => {
+  const klass = await classModel.findClassById(Number(req.params.id));
+  if (!klass) return res.status(404).send('Not found');
+  const users = await store.loadUsers();
+  const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
+  res.render('attendance_report', { klass, students });
+});
+
+router.get('/reports/class/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const klass = await classModel.findClassById(id);
+  if (!klass || klass.teacherId !== req.session.user.id) return res.status(404).send('Not found');
+  const users = await store.loadUsers();
+  const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
+  res.render('class_report', { klass, students, scope: 'teacher' });
+});
 
 // Reports
 router.get('/reports', async (req, res) => {

@@ -9,7 +9,7 @@
     <div class="alert alert-success">No pending registrations.</div>
   <% } else { %>
   <table class="table table-striped align-middle">
-    <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Student ID</th><th>Docs</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Student ID</th><th>Applied</th><th>Docs</th><th>Actions</th></tr></thead>
     <tbody>
       <% pending.forEach(p => { %>
         <tr>
@@ -17,6 +17,10 @@
           <td><%= p.username %></td>
           <td><%= p.email %></td>
           <td><%= p.profile?.studentId || '-' %></td>
+                    <td><%= p.appliedAt ? new Date(p.appliedAt).toLocaleDateString() : '-' %></td>
+
+           <td><%= p.profile?.course || '-' %></td>
+          <td><%= p.profile?.affiliateProgram || '-' %></td>
           <td><a class="btn btn-sm btn-outline-secondary" href="/admin/students/<%= p.id %>">View</a></td>
           <td class="d-flex gap-2">
             <form method="post" action="/admin/approve/<%= p.id %>"><button class="btn btn-sm btn-success">Approve</button></form>

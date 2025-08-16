@@ -5,6 +5,18 @@ const classModel = require('../models/classModel');
 const userModel = require('../models/userModel');
 const store = require('../models/dataStore');
 
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+  host: 'mdts-apps.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
+});
+
 router.use((req, res, next) => {
   if (!req.session || req.session.role !== 'admin') return res.status(403).send('Forbidden');
   next();
@@ -18,18 +30,33 @@ router.get('/', async (req, res) => {
   res.render('admin_dashboard', { user: req.session.user, classes, teachers, students });
 });
 
-router.get('/approvals', async (_req, res) => {
+async function renderPending(_req, res) {
   const users = await store.loadUsers();
   const pending = users.filter(u => u.role === 'student' && (u.status === 'pending' || !u.status));
   res.render('admin_pending', { pending });
-});
+}
+
+router.get('/approvals', renderPending);
+router.get('/students/pending', renderPending);
 router.post('/approve/:id', async (req, res) => {
-  await userModel.setStatus(Number(req.params.id), 'approved');
-  res.redirect('/admin/approvals');
+  const user = await userModel.setStatus(Number(req.params.id), 'approved');
+  if (user && user.email) {
+    const name = (user.profile && user.profile.firstName) || user.name || 'Student';
+    try {
+      await transporter.sendMail({
+        from: 'no-reply@mdts-apps.com',
+        to: user.email,
+        subject: 'Application approved',
+        text: `Hi ${name}, your registration has been approved. You can now log in.`
+      });
+    } catch (e) {
+      console.error('Error sending approval email', e);
+    }
+  }  res.redirect('/admin/students/pending');
 });
 router.post('/decline/:id', async (req, res) => {
   await userModel.setStatus(Number(req.params.id), 'declined');
-  res.redirect('/admin/approvals');
+  res.redirect('/admin/students/pending');
 });
 
 router.get('/students/:id', async (req, res) => {
@@ -37,6 +64,20 @@ router.get('/students/:id', async (req, res) => {
   if (!student) return res.status(404).send('Not found');
   res.render('student_profile', { student });
 });
+
+router.get('/denied', async (_req, res) => {
+  const users = await store.loadUsers();
+  const denied = users.filter(u => u.role === 'student' && u.status === 'declined');
+  res.render('admin_denied', { denied });
+});
+
+
+router.get('/students', async (_req, res) => {
+  const users = await store.loadUsers();
+  const accepted = users.filter(u => u.role === 'student' && u.status === 'approved');
+  res.render('admin_accepted', { students: accepted });
+});
+
 
 
 // New class form
@@ -69,13 +110,19 @@ router.post('/teachers', async (req, res) => {
 // Create class handler
 router.post('/classes', async (req, res) => {
   try {
+     const schoolYear = (req.body.schoolYear || '').trim();
+    const cohort = (req.body.cohort || '').trim();
     const name = (req.body.name || '').trim();
+        const shortName = (req.body.shortName || '').trim();
+
     const description = (req.body.description || '').trim();
     const teacherId = Number(req.body.teacherId || 0);
-    if (!name || !teacherId) {
+        const weeks = Number(req.body.weeks || 0);
+
+    if (!schoolYear || !cohort || !name || !shortName || !teacherId) {
       const users = await store.loadUsers();
       const teachers = users.filter(u => u.role === 'teacher');
-      return res.status(400).render('create_class', { teachers, error: 'Name and Teacher are required.' });
+      return res.status(400).render('create_class', { teachers, error: 'School Year, Cohort, Name, Short Name and Teacher are required.' });
     }
 
     // schedule arrays (day[], time[])
@@ -85,10 +132,11 @@ router.post('/classes', async (req, res) => {
     for (let i = 0; i < Math.max(days.length, times.length); i++) {
       const d = (days[i] || '').trim();
       const t = (times[i] || '').trim();
-      if (d && t) schedule.push({ day: d, time: t });
-    }
+ const h = req.body[`holiday${i}`] === 'on' || req.body[`holiday${i}`] === '1';
+      if (d && t) schedule.push({ day: d, time: t, holiday: h });    }
 
-    const klass = await classModel.createClass({ name, description, teacherId, schedule });
+        const klass = await classModel.createClass({ schoolYear, cohort, name,  weeks,shortName, description, teacherId, schedule });
+
     return res.redirect(`/admin/classes/${klass.id}`);
   } catch (e) {
     console.error(e);
@@ -111,14 +159,34 @@ router.get('/classes/:id', async (req, res) => {
   const klass = await classModel.findClassById(id);
   if (!klass) return res.status(404).send('Not found');
   const users = await store.loadUsers();
-  const students = users.filter(u => u.role === 'student');
+    const students = users.filter(u => u.role === 'student' && u.status === 'approved');
+
   const classStudents = students.filter(s => (klass.studentIds||[]).includes(s.id));
   res.render('view_class', { klass, students, classStudents, studentView: false });
+});
+
+router.get('/reports/pending-students', async (_req, res) => {
+  const users = await store.loadUsers();
+  const pending = users.filter(u => u.role === 'student' && (u.status === 'pending' || !u.status));
+  res.render('pending_students_report', { pending });
+});
+
+router.get('/reports/class/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const klass = await classModel.findClassById(id);
+  if (!klass) return res.status(404).send('Not found');
+  const users = await store.loadUsers();
+  const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
+  res.render('class_report', { klass, students, scope: 'admin' });
 });
 
 router.post('/classes/:id/add-student', async (req, res) => {
   const id = Number(req.params.id);
   const studentId = Number(req.body.studentId);
+    const student = await userModel.findById(studentId);
+  if (!student || student.status !== 'approved') {
+    return res.status(400).send('Student not approved');
+  }
   await classModel.addStudent(id, studentId);
   res.redirect(`/admin/classes/${id}`);
 });
@@ -128,6 +196,13 @@ router.get('/teachers', async (req, res) => {
   const users = await store.loadUsers();
   const teachers = users.filter(u => u.role === 'teacher');
   res.render('teacher_list', { teachers });
+});
+
+router.post('/classes/:id/duplicate', async (req, res) => {
+  const id = Number(req.params.id);
+  const copy = await classModel.duplicateClass(id);
+  if (!copy) return res.status(404).send('Not found');
+  res.redirect(`/admin/classes/${copy.id}`);
 });
 
 // Delete teacher
@@ -148,24 +223,6 @@ router.get('/teachers/:id/edit', async (req, res) => {
 });
 
 
-router.post('/classes/:id/add-test', async (req, res) => {
-  const id = Number(req.params.id);
-  const title = (req.body.title || 'Untitled Test');
-  const dueDate = req.body.dueDate || null;
-
-  const questions = [];
-  // Expect inputs like q0, o0_0..o0_3, a0
-  for (let i=0;i<10;i++) {
-    const q = req.body[`q${i}`];
-    if (!q) continue;
-    const opts = [0,1,2,3].map(ix => req.body[`o${i}_${ix}`]).filter(Boolean);
-    const ans = parseInt(req.body[`a${i}`] ?? 0, 10);
-    questions.push({ question: q, options: opts, answer: ans });
-  }
- await classModel.addTest(id, { title, questions, dueDate });
-  res.redirect(`/admin/classes/${id}`);
-});
-
 router.get('/reports', async (_req, res) => {
   const classes = await store.loadClasses();
   const users = await store.loadUsers();
@@ -182,5 +239,64 @@ router.get('/reports', async (_req, res) => {
   }));
   res.render('reports', { report, scope: 'admin' });
 });
+
+// Events dashboard for analytics
+router.get('/events', async (req, res) => {
+  const classes = await store.loadClasses();
+  const events = [];
+  const now = new Date();
+  const threeWeeksFromNow = new Date();
+  threeWeeksFromNow.setDate(now.getDate() + 21);
+  let classCount = 0;
+  let testCount = 0;
+
+  classes.forEach(klass => {
+    (klass.schedule || []).forEach(s => {
+      const dayIndex = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(s.day);
+      let date = new Date(now);
+      while (date <= threeWeeksFromNow) {
+        if (date.getDay() === dayIndex) {
+          events.push({
+            title: klass.name + ' (Class)',
+            start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), parseInt(s.time), 0),
+            type: 'Class',
+            className: klass.name
+          });
+          classCount++;
+        }
+        date.setDate(date.getDate() + 1);
+      }
+    });
+
+    (klass.tests || []).forEach(test => {
+      if (test.dueDate) {
+        const due = new Date(test.dueDate);
+        if (due >= now && due <= threeWeeksFromNow) {
+          events.push({
+            title: klass.name + ' - ' + test.title + ' (Due)',
+            start: due,
+            type: 'Test Due',
+            className: klass.name
+          });
+          testCount++;
+        }
+      }
+    });
+  });
+
+  events.sort((a, b) => a.start - b.start);
+
+  res.render('events_dashboard', {
+    user: req.session.user,
+    events: events.map(e => ({
+      ...e,
+      date: e.start.toISOString().slice(0, 10),
+      time: e.start.toTimeString().slice(0, 5)
+    })),
+    classCount,
+    testCount
+  });
+});
+
 
 module.exports = router;

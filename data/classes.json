@@ -68,6 +68,21 @@
         "score": 100,
         "gradedAt": "2025-08-13T12:00:00Z"
       }
+    ],
+    "attendance": [
+      {
+        "date": "2025-08-16",
+        "present": [
+          3,
+          8
+        ]
+      },
+      {
+        "date": "2025-08-19",
+        "present": [
+          3
+        ]
+      }
     ]
   },
   {
@@ -108,6 +123,32 @@
     ],
     "schedule": [],
     "lectures": [],
+    "tests": [],
+    "grades": []
+  },
+  {
+    "id": 4,
+    "name": "History 201 (Copy)",
+    "description": "US History: Colonial period to Civil War",
+    "teacherId": 2,
+    "studentIds": [],
+    "schedule": [
+      {
+        "day": "Tuesday",
+        "time": "11:00 AM - 12:30 PM"
+      },
+      {
+        "day": "Thursday",
+        "time": "11:00 AM - 12:30 PM"
+      }
+    ],
+    "lectures": [
+      {
+        "id": 1,
+        "title": "Colonial America Overview",
+        "url": "https://www.youtube.com/watch?v=Jc5YxF4z6bM"
+      }
+    ],
     "tests": [],
     "grades": []
   }

@@ -8,15 +8,63 @@
 <body>
   <%- include('header', { user: { role: 'teacher' } }) %>
   <div class="container py-4">
-    <h2><%= klass.name %> – Teacher View</h2>
+ <h2><%= klass.name %> (<%= klass.shortName %>) – Teacher View</h2>
+    <p>School Year: <%= klass.schoolYear %> | Cohort: <%= klass.cohort %></p>    
     <p><%= klass.description %></p>
+        <% if (klass.weeks) { %><p><strong>Duration:</strong> <%= klass.weeks %> weeks</p><% } %>
+
     <h3>Schedule</h3>
     <ul>
       <% (klass.schedule||[]).forEach(s => { %>
-        <li><strong><%= s.day %></strong>: <%= s.time %></li>
+        <li><strong><%= s.day %></strong>: <%= s.time %> <% if (s.holiday) { %><span class="badge bg-warning text-dark">Holiday</span><% } %></li>
       <% }) %>
     </ul>
+     <h3 id="lectures">Lectures</h3>
+    <ul>
+      <% (klass.lectures || []).forEach(l => { %>
+        <li><a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a></li>
+      <% }) %>
+    </ul>
+    <h3 id="tests">Tests</h3>
+    <ul>
+      <% (klass.tests || []).forEach(t => { %>
+        <li><%= t.title %></li>
+      <% }) %>
+    </ul>
+    <h3>Attendance</h3>
+    <form method="POST" action="/teacher/classes/<%= klass.id %>/attendance">
+      <div class="mb-3">
+        <label class="form-label">Date</label>
+        <input type="date" name="date" value="<%= today %>" class="form-control w-auto">
+      </div>
+      <table class="table table-bordered">
+        <thead><tr><th>Student</th><th>Present</th></tr></thead>
+        <tbody>
+          <% (students||[]).forEach(s => { %>
+            <tr>
+              <td><%= s.name %></td>
+              <td><input type="checkbox" name="present_<%= s.id %>" <%= (attendanceToday.present || []).includes(s.id) ? 'checked' : '' %>></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <button type="submit" class="btn btn-primary">Save Attendance</button>
+    </form>
+    <h4 class="mt-4">Attendance Records</h4>
+    <table class="table table-bordered">
+      <thead><tr><th>Date</th><th>Present Students</th></tr></thead>
+      <tbody>
+        <% (klass.attendance || []).sort((a,b)=>a.date.localeCompare(b.date)).forEach(a => { %>
+          <tr>
+            <td><%= a.date %></td>
+            <td><%= a.present.map(id => { const stu = (students||[]).find(s => s.id===id); return stu ? stu.name : ''; }).filter(Boolean).join(', ') %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
     <h3>Students & Grades</h3>
+        <p><a href="/teacher/classes/<%= klass.id %>/attendance" class="btn btn-sm btn-secondary">Attendance Report</a></p>
+
     <table class="table table-bordered">
       <thead><tr><th>Student</th><% (klass.tests||[]).forEach(t=>{ %><th><%= t.title %></th><% }) %></tr></thead>
       <tbody>

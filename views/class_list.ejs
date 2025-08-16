@@ -10,12 +10,16 @@
   <div class="container py-4">
     <h2>All Classes</h2>
     <table class="table table-bordered">
-      <thead><tr><th>ID</th><th>Name</th><th>Teacher</th><th>Students</th><th>Action</th></tr></thead>
+      <thead><tr><th>ID</th><th>School Year</th><th>Cohort</th><th>Short Name</th><th>Name</th><th>Teacher</th><th>Students</th><th>Action</th></tr></thead>
       <tbody>
       <% classes.forEach(k => { %>
         <tr>
           <td><%= k.id %></td>
+            <td><%= k.schoolYear %></td>
+          <td><%= k.cohort %></td>
           <td><%= k.name %></td>
+                    <td><%= k.shortName || '' %></td>
+
           <td><%= teacherMap[k.teacherId] || 'Unknown' %></td>
           <td><%= (k.studentIds||[]).length %></td>
           <td><a class="btn btn-sm btn-outline-primary" href="/admin/classes/<%= k.id %>">Open</a></td>

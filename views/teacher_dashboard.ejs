@@ -14,10 +14,16 @@
     <p>Welcome, <strong><%= teacher.name %></strong>!</p>
     <div class="list-group">
       <% classes.forEach(k => { %>
-        <a class="list-group-item list-group-item-action" href="/teacher/classes/<%= k.id %>">
-          <div class="fw-bold"><%= k.name %></div>
-          <div class="small text-muted"><%= (k.schedule||[]).map(s=> s.day + ' ' + s.time).join(' • ') %></div>
-        </a>
+        <div class="list-group-item d-flex justify-content-between align-items-start">
+          <div>
+            <div class="fw-bold"><%= k.name %></div>
+            <div class="small text-muted"><%= (k.schedule||[]).map(s=> s.day + ' ' + s.time).join(' • ') %></div>
+          </div>
+          <div class="btn-group btn-group-sm" role="group">
+            <a class="btn btn-outline-secondary" href="/teacher/classes/<%= k.id %>#lectures">Lectures</a>
+            <a class="btn btn-outline-primary" href="/teacher/classes/<%= k.id %>#tests">Tests</a>
+          </div>
+        </div>
       <% }); %>
     </div>
   </div>

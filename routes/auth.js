@@ -53,6 +53,52 @@ function ensureStr(v) {
 
 router.get('/login', (req, res) => res.render('login', { error: null }));
 
+router.get('/forgot-password', (req, res) => {
+  res.render('forgot_password', { error: null, sent: false });
+});
+
+router.post('/forgot-password', async (req, res) => {
+  const email = ensureStr(req.body.email);
+  try {
+    await transporter.sendMail({
+      from: 'no-reply@mdts-apps.com',
+      to: process.env.SMTP_USER,
+      subject: 'Password reset request',
+      text: `Password reset requested for ${email}`
+    });
+    return res.render('forgot_password', { sent: true, error: null });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).render('forgot_password', { sent: false, error: 'Unable to send reset request' });
+  }
+});
+
+router.get('/reset-password', (req, res) => {
+  res.render('reset_password', { error: null, success: false });
+});
+
+router.post('/reset-password', async (req, res) => {
+  const username = ensureStr(req.body.username);
+  const password = ensureStr(req.body.password);
+  const confirm = ensureStr(req.body.confirm);
+
+  if (!username || !password || password !== confirm) {
+    return res.status(400).render('reset_password', {
+      error: 'Invalid request',
+      success: false
+    });
+  }
+
+  const ok = await userModel.updatePassword(username, password);
+  if (!ok) {
+    return res.status(404).render('reset_password', {
+      error: 'User not found',
+      success: false
+    });
+  }
+  return res.render('reset_password', { error: null, success: true });
+});
+
 router.post('/login', async (req, res) => {
   const username = ensureStr(req.body.username);
   const password = ensureStr(req.body.password);
@@ -100,6 +146,21 @@ router.post('/register', (req, res) => {
       const studentId = ensureStr(req.body.studentId);
       const agree = ensureStr(req.body.agree);
       const signatureDataUrl = ensureStr(req.body.signatureDataUrl);
+       const suffix = ensureStr(req.body.suffix);
+      const address = ensureStr(req.body.address);
+      const city = ensureStr(req.body.city);
+      const state = ensureStr(req.body.state);
+      const zip = ensureStr(req.body.zip);
+      const course = ensureStr(req.body.course);
+      const affiliateProgram = ensureStr(req.body.affiliateProgram);
+      const grievanceAck = ensureStr(req.body.grievanceAck);
+      const codeConductSig = ensureStr(req.body.codeConductSig);
+      const cancellationSig = ensureStr(req.body.cancellationSig);
+      const noticeSig = ensureStr(req.body.noticeSig);
+      const contractSig = ensureStr(req.body.contractSig);
+      const contractSigDate = ensureStr(req.body.contractSigDate);
+            const financialAid = ensureStr(req.body.financialAid);
+
 
       if (email !== confirmEmail) {
         return res.status(400).render('register', {
@@ -123,14 +184,38 @@ router.post('/register', (req, res) => {
         username,
         firstName,
         lastName,
+          suffix,
+        address,
+        city,
+        state,
+        zip,
+        course,
+        affiliateProgram,
+        grievanceAck,
         name: `${firstName} ${lastName}`.trim(),
         email,
         password,
         studentId,
         signatureDataUrl,
-        agreedDocVersion: DOC_VERSION,
-        docs: req.files?.map(f => f.filename) || []
+                codeConductSig,
+        cancellationSig,
+        noticeSig,
+        contractSig,
+        contractSigDate,
+         financialAid: financialAid === 'yes',
+        agreedDocVersion: DOC_VERSION
+        
       });
+        if (req.files && req.files.length) {
+        const uploads = req.files.map(f => ({
+          originalName: f.originalname,
+          mimeType: f.mimetype,
+          size: f.size,
+          url: `/uploads/${f.filename}`
+        }));
+        await userModel.addUploads(user.id, uploads);
+      }
+
 
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
@@ -139,7 +224,7 @@ router.post('/register', (req, res) => {
         text: `Hi ${firstName}, your registration is pending admin approval. Username: ${username}.`
       });
 
-      return res.render('pending', { user: { firstName, lastName, name: `${firstName} ${lastName}` } });
+      return res.render('pending', { user: { firstName, lastName, name: `${firstName} ${lastName}` }, financialAid: financialAid === 'yes' });
     } catch (e) {
       console.error(e);
       return res.status(500).render('register', {

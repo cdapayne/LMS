@@ -13,13 +13,18 @@
       <div class="col-md-3"><div class="p-3 bg-light border rounded text-center"><div class="h1"><%= students.length %></div><div>Students</div></div></div>
     </div>
     <div class="mt-4 d-flex gap-2">
-      <a class="btn btn-primary" href="/admin/approvals">Pending Approvals</a>
+      <a class="btn btn-primary" href="/admin/students/pending">Pending Students</a>
+            <a class="btn btn-outline-primary" href="/admin/students">Accepted Students</a>
+      <a class="btn btn-outline-danger" href="/admin/denied">Denied Students</a>
+
       <a class="btn btn-outline-primary" href="/admin/classes">All Classes</a>
       <a class="btn btn-success" href="/admin/classes/new">Create Class</a>
-        <a class="btn btn-warning" href="/admin/teachers/new">Create Teacher</a> <!-- NEW -->
+      <a class="btn btn-warning" href="/admin/teachers/new">Create Teacher</a> <!-- NEW -->
   <a class="btn btn-warning" href="/admin/teachers">Teacher List</a> <!-- NEW -->
 
       <a class="btn btn-outline-secondary" href="/admin/reports">Reports</a>
+            <a class="btn btn-outline-secondary" href="/admin/events">Events Dashboard</a>
+
     </div>
   </div>
 </body></html>

@@ -11,9 +11,21 @@
     <h2>Create New Class</h2>
     <% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
     <form method="post" action="/admin/classes" class="bg-white p-4 border rounded">
+        <div class="mb-3">
+        <label class="form-label">School Year</label>
+        <input name="schoolYear" class="form-control" placeholder="e.g., 2024-2025" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Cohort</label>
+        <input name="cohort" class="form-control" placeholder="e.g., A" required>
+      </div>
       <div class="mb-3">
         <label class="form-label">Class Name</label>
         <input name="name" class="form-control" placeholder="e.g., Networking Fundamentals" required>
+      </div>
+  <div class="mb-3">
+        <label class="form-label">Short Name</label>
+        <input name="shortName" class="form-control" placeholder="e.g., NET101" required>
       </div>
       <div class="mb-3">
         <label class="form-label">Description</label>
@@ -29,20 +41,29 @@
         </select>
       </div>
 
+        <div class="mb-3">
+        <label class="form-label">Number of Weeks</label>
+        <input type="number" name="weeks" class="form-control" min="1" value="1">
+      </div>
+
       <h5 class="mt-4">Schedule</h5>
       <p class="text-muted">Add the meeting days/times (you can leave rows blank).</p>
       <div id="schedRows">
         <% const dayOpts = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']; %>
-        <% for (let i=0;i<4;i++) { %>
-          <div class="row g-2 mb-2">
+        <% for (let i=0;i<7;i++) { %>
+          <div class="row g-2 mb-2 align-items-center">
             <div class="col-md-4">
               <select name="day" class="form-select">
                 <option value="">Day…</option>
                 <% dayOpts.forEach(d => { %><option><%= d %></option><% }) %>
               </select>
             </div>
-            <div class="col-md-8">
+            <div class="col-md-6">
               <input name="time" class="form-control" placeholder="e.g., 09:00 AM - 10:30 AM">
+            </div>
+             <div class="col-md-2 form-check">
+              <input type="checkbox" class="form-check-input" id="holiday<%= i %>" name="holiday<%= i %>">
+              <label class="form-check-label" for="holiday<%= i %>">Holiday</label>
             </div>
           </div>
         <% } %>

@@ -42,7 +42,8 @@ async function createTeacher({ name, username, email, password }) {
 
 async function createStudent({ username, name, email, password, studentId, signatureDataUrl, agreedDocVersion,
   firstName, lastName, suffix, address, city, state, zip, course, affiliateProgram,
-  grievanceAck, codeConductSig, cancellationSig, noticeSig, contractSig, contractSigDate
+   grievanceAck, codeConductSig, cancellationSig, noticeSig, contractSig, contractSigDate,
+  financialAid
 }) {
   const users = await store.loadUsers();
   const nextId = (users.reduce((m,u)=>Math.max(m,u.id), 0) || 0) + 1;
@@ -60,12 +61,17 @@ async function createStudent({ username, name, email, password, studentId, signa
     salt,
     hash,
     status: 'pending',
+        appliedAt: docNow,
+
+
     profile: {
       studentId,
       firstName, lastName, suffix: suffix || '',
       address: { line1: address, city, state, zip },
       course,
       affiliateProgram,
+            financialAidRequested: !!financialAid,
+
       grievanceAcknowledged: !!grievanceAck,
       uploads: [],
       documents: [
@@ -83,6 +89,19 @@ async function createStudent({ username, name, email, password, studentId, signa
   return newUser;
 }
 
+async function updatePassword(username, newPassword) {
+  const users = await store.loadUsers();
+  const user = users.find(u => u.username === username);
+  if (!user) return false;
+  const { salt, hash } = hashPassword(newPassword);
+  user.salt = salt;
+  user.hash = hash;
+  if (user.password) delete user.password;
+  await store.saveUsers(users);
+  return true;
+}
+
+
 async function addUploads(id, uploads) {
   const users = await store.loadUsers();
   const u = users.find(x => x.id === id);
@@ -99,6 +118,9 @@ async function setStatus(id, status) {
   const u = users.find(x => x.id === id);
   if (!u) return null;
   u.status = status;
+    if (status === 'approved' || status === 'declined') {
+    u.finishedAt = new Date().toISOString();
+  }
   await store.saveUsers(users);
   return u;
 }
@@ -110,5 +132,7 @@ module.exports = {
   findById,
   createStudent,
   createTeacher,
-  setStatus
+  setStatus,
+  addUploads,
+  updatePassword
 };

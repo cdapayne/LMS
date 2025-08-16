@@ -14,6 +14,7 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(session({
@@ -39,5 +40,5 @@ app.use('/admin', adminRoutes);
 app.use('/student', studentRoutes);
 app.use('/teacher', teacherRoutes);
 
-const PORT = process.env.PORT || 3008;
+const PORT = process.env.PORT || 3012;
 app.listen(PORT, () => console.log(`School LMS running on http://localhost:${PORT}`));

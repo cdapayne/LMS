@@ -7,6 +7,10 @@
   <h1 class="mb-1"><%= (student.profile?.firstName || '') %> <%= (student.profile?.lastName || '') %></h1>
   <div class="text-muted mb-3">@<%= student.username %> • <%= student.email %></div>
   <div class="mb-2"><strong>Status:</strong> <span class="badge bg-<%= student.status==='approved'?'success':(student.status==='declined'?'danger':'warning') %>"><%= student.status || 'pending' %></span></div>
+   <div class="mb-2"><strong>Applied:</strong> <%= student.appliedAt ? new Date(student.appliedAt).toLocaleString() : '-' %></div>
+  <% if (student.finishedAt) { %>
+  <div class="mb-2"><strong>Application Finished:</strong> <%= new Date(student.finishedAt).toLocaleString() %></div>
+  <% } %>
   <div class="mb-2"><strong>Student ID:</strong> <%= student.profile?.studentId || '-' %></div>
 
   <div class="row g-3 mt-3">
