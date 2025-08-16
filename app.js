@@ -1,0 +1,43 @@
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+
+const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
+const studentRoutes = require('./routes/student');
+const teacherRoutes = require('./routes/teacher');
+
+const app = express();
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(session({
+  secret: 'dev-secret-change-me',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { sameSite: 'lax', httpOnly: true }
+}));
+
+app.get('/', (req, res) => res.redirect('/dashboard'));
+
+app.get('/dashboard', (req, res) => {
+  if (!req.session || !req.session.role) return res.redirect('/login');
+  const role = req.session.role;
+  if (role === 'admin')   return res.redirect('/admin');
+  if (role === 'teacher') return res.redirect('/teacher');
+  if (role === 'student') return res.redirect('/student');
+  return res.redirect('/login');
+});
+
+app.use(authRoutes);
+app.use('/admin', adminRoutes);
+app.use('/student', studentRoutes);
+app.use('/teacher', teacherRoutes);
+
+const PORT = process.env.PORT || 3008;
+app.listen(PORT, () => console.log(`School LMS running on http://localhost:${PORT}`));

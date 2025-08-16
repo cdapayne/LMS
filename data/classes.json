@@ -1,0 +1,114 @@
+[
+  {
+    "id": 1,
+    "name": "Math 101",
+    "description": "Basic algebra and introductory mathematics",
+    "teacherId": 2,
+    "studentIds": [
+      3,
+      8,
+      11,
+      14
+    ],
+    "schedule": [
+      {
+        "day": "Monday",
+        "time": "09:00 AM - 10:30 AM"
+      },
+      {
+        "day": "Wednesday",
+        "time": "09:00 AM - 10:30 AM"
+      }
+    ],
+    "lectures": [
+      {
+        "id": 1,
+        "title": "Intro to Variables",
+        "url": "https://www.youtube.com/watch?v=Z4x6s3z6oM4"
+      },
+      {
+        "id": 2,
+        "title": "Solving Linear Equations",
+        "url": "https://www.youtube.com/watch?v=8uRwJzT1W_g"
+      }
+    ],
+    "tests": [
+      {
+        "id": 1,
+        "title": "Quiz 1",
+        "questions": [
+          {
+            "question": "2 + 2 = ?",
+            "options": [
+              "3",
+              "4",
+              "5",
+              "6"
+            ],
+            "answer": 1
+          },
+          {
+            "question": "x in 3 + x = 5?",
+            "options": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "answer": 1
+          }
+        ]
+      }
+    ],
+    "grades": [
+      {
+        "classId": 1,
+        "testId": 1,
+        "studentId": 3,
+        "score": 100,
+        "gradedAt": "2025-08-13T12:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "History 201",
+    "description": "US History: Colonial period to Civil War",
+    "teacherId": 2,
+    "studentIds": [
+      3
+    ],
+    "schedule": [
+      {
+        "day": "Tuesday",
+        "time": "11:00 AM - 12:30 PM"
+      },
+      {
+        "day": "Thursday",
+        "time": "11:00 AM - 12:30 PM"
+      }
+    ],
+    "lectures": [
+      {
+        "id": 1,
+        "title": "Colonial America Overview",
+        "url": "https://www.youtube.com/watch?v=Jc5YxF4z6bM"
+      }
+    ],
+    "tests": [],
+    "grades": []
+  },
+  {
+    "id": 3,
+    "name": "kjhjk",
+    "description": "hjk",
+    "teacherId": 4,
+    "studentIds": [
+      3
+    ],
+    "schedule": [],
+    "lectures": [],
+    "tests": [],
+    "grades": []
+  }
+]
