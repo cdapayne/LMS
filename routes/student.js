@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 
 const classModel = require('../models/classModel');
-const store = require('../models/dataStore');
 
 router.use((req, res, next) => {
   if (!req.session || req.session.role !== 'student') return res.status(403).send('Forbidden');

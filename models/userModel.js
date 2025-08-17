@@ -1,21 +1,30 @@
 const crypto = require('crypto');
-const store = require('./dataStore');
+const db = require('./db');
 
 function hashPassword(plainPassword, existingSalt) {
-  const pwd = plainPassword; // login route ensures string
+  const pwd = String(plainPassword);
   const salt = existingSalt || crypto.randomBytes(16).toString('hex');
   const hash = crypto.pbkdf2Sync(pwd, salt, 1000, 64, 'sha512').toString('hex');
   return { salt, hash };
 }
 
+function mapRow(row) {
+  if (!row) return row;
+  if (row.profile && typeof row.profile === 'string') {
+    try { row.profile = JSON.parse(row.profile); } catch (_) { row.profile = null; }
+  }
+  return row;
+}
+
+
 async function findByUsername(username) {
-  const users = await store.loadUsers();
-  return users.find(u => u.username === username);
+  const [rows] = await db.query('SELECT * FROM mdtslms_users WHERE username = ?', [username]);
+  return mapRow(rows[0]);
 }
 
 async function findById(id) {
-  const users = await store.loadUsers();
-  return users.find(u => u.id === id);
+  const [rows] = await db.query('SELECT * FROM mdtslms_users WHERE id = ?', [id]);
+  return mapRow(rows[0]);
 }
 
 function verifyPassword(user, candidatePassword) {
@@ -24,105 +33,91 @@ function verifyPassword(user, candidatePassword) {
   return hash === user.hash;
 }
 async function createTeacher({ name, username, email, password }) {
-  const users = await store.loadUsers();
-  const id = users.length ? Math.max(...users.map(u => u.id)) + 1 : 1;
-  const hashed = hashPassword(password);
-  users.push({
-    id,
-    name,
-    username,
-    email,
-    password: hashed,
-    role: 'teacher',
-    status: 'approved'
-  });
-  await store.saveUsers(users);
-  return { id };
+   const { salt, hash } = hashPassword(password);
+  const [result] = await db.query(
+    'INSERT INTO mdtslms_users (name, username, email, role, status, salt, hash) VALUES (?,?,?,?,?,?,?)',
+    [name, username, email, 'teacher', 'approved', salt, hash]
+  );
+  return { id: result.insertId };
 }
 
 async function createStudent({ username, name, email, password, studentId, signatureDataUrl, agreedDocVersion,
   firstName, lastName, suffix, address, city, state, zip, course, affiliateProgram,
-   grievanceAck, codeConductSig, cancellationSig, noticeSig, contractSig, contractSigDate,
-  financialAid
-}) {
-  const users = await store.loadUsers();
-  const nextId = (users.reduce((m,u)=>Math.max(m,u.id), 0) || 0) + 1;
+  grievanceAck, codeConductSig, cancellationSig, noticeSig, contractSig, contractSigDate,
+  financialAid }) {
   const { salt, hash } = hashPassword(password);
 
-  const fullName = `${firstName} ${lastName}${suffix ? ' ' + suffix : ''}`.trim();
-
   const docNow = new Date().toISOString();
-  const newUser = {
-    id: nextId,
-    username,
-    name: fullName,
-    email,
-    role: 'student',
-    salt,
-    hash,
-    status: 'pending',
-        appliedAt: docNow,
-
-
-    profile: {
-      studentId,
-      firstName, lastName, suffix: suffix || '',
-      address: { line1: address, city, state, zip },
-      course,
-      affiliateProgram,
-            financialAidRequested: !!financialAid,
-
-      grievanceAcknowledged: !!grievanceAck,
-      uploads: [],
-      documents: [
-        { type: 'registration-agreement', version: agreedDocVersion, agreed: true, signedAt: docNow, signatureDataUrl },
-        { type: 'code-of-conduct', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: codeConductSig || '' },
-        { type: 'cancellation-policy', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: cancellationSig || '' },
-        { type: 'notice-to-buyer', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: noticeSig || '' },
-        { type: 'contract-acceptance', version: 'v1.0', agreed: true, signedAt: contractSigDate || docNow, signatureDataUrl: contractSig || '' }
-      ]
-    }
+   const profile = {
+    studentId,
+    firstName, lastName, suffix: suffix || '',
+    address: { line1: address, city, state, zip },
+    course,
+    affiliateProgram,
+    financialAidRequested: !!financialAid,
+    grievanceAcknowledged: !!grievanceAck,
+    uploads: [],
+    documents: [
+      { type: 'registration-agreement', version: agreedDocVersion, agreed: true, signedAt: docNow, signatureDataUrl },
+      { type: 'code-of-conduct', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: codeConductSig || '' },
+      { type: 'cancellation-policy', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: cancellationSig || '' },
+      { type: 'notice-to-buyer', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: noticeSig || '' },
+      { type: 'contract-acceptance', version: 'v1.0', agreed: true, signedAt: contractSigDate || docNow, signatureDataUrl: contractSig || '' }
+    ]
   };
 
-  users.push(newUser);
-  await store.saveUsers(users);
-  return newUser;
+  const [result] = await db.query(
+    `INSERT INTO mdtslms_users (username, name, email, role, salt, hash, status, appliedAt, profile)
+     VALUES (?, ?, ?, 'student', ?, ?, 'pending', ?, ?)`,
+    [username, name, email, salt, hash, docNow, JSON.stringify(profile)]
+  );
+   return mapRow({
+    id: result.insertId,
+    username,
+    name,
+    email,
+    role: 'student',
+    status: 'pending',
+    profile
+  });
 }
 
 async function updatePassword(username, newPassword) {
-  const users = await store.loadUsers();
-  const user = users.find(u => u.username === username);
-  if (!user) return false;
   const { salt, hash } = hashPassword(newPassword);
-  user.salt = salt;
-  user.hash = hash;
-  if (user.password) delete user.password;
-  await store.saveUsers(users);
-  return true;
+  const [result] = await db.query('UPDATE mdtslms_users SET salt=?, hash=? WHERE username=?', [salt, hash, username]);
+  return result.affectedRows > 0;
 }
 
 
 async function addUploads(id, uploads) {
-  const users = await store.loadUsers();
-  const u = users.find(x => x.id === id);
-  if (!u) return null;
-  if (!u.profile) u.profile = {};
-  if (!Array.isArray(u.profile.uploads)) u.profile.uploads = [];
-  u.profile.uploads.push(...uploads);
-  await store.saveUsers(users);
-  return u;
+ const user = await findById(id);
+  if (!user) return null;
+  user.profile = user.profile || {};
+  user.profile.uploads = user.profile.uploads || [];
+  user.profile.uploads.push(...uploads);
+  await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), id]);
+  return user;
 }
 
 async function setStatus(id, status) {
-  const users = await store.loadUsers();
-  const u = users.find(x => x.id === id);
-  if (!u) return null;
-  u.status = status;
-    if (status === 'approved' || status === 'declined') {
-    u.finishedAt = new Date().toISOString();
-  }
-  await store.saveUsers(users);
-  return u;
+  const finishedAt = (status === 'approved' || status === 'declined') ? new Date().toISOString() : null;
+  await db.query('UPDATE mdtslms_users SET status=?, finishedAt=? WHERE id=?', [status, finishedAt, id]);
+  return findById(id);
+}
+
+async function getAll() {
+  const [rows] = await db.query('SELECT * FROM mdtslms_users');
+  return rows.map(mapRow);
+}
+
+async function getByRole(role) {
+  const [rows] = await db.query('SELECT * FROM mdtslms_users WHERE role = ?', [role]);
+  return rows.map(mapRow);
+}
+
+async function deleteById(id) {
+  const [result] = await db.query('DELETE FROM mdtslms_users WHERE id = ?', [id]);
+  return result.affectedRows > 0;
 }
 
 module.exports = {
@@ -134,5 +129,8 @@ module.exports = {
   createTeacher,
   setStatus,
   addUploads,
-  updatePassword
+   updatePassword,
+  getAll,
+  getByRole,
+  deleteById
 };

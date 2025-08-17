@@ -1,107 +1,112 @@
-const store = require('./dataStore');
+const db = require('./db');
 
-async function getAllClasses() { return store.loadClasses(); }
+function mapClass(row) {
+  if (!row) return row;
+  ['studentIds','schedule','lectures','tests','grades','attendance'].forEach(k => {
+    if (row[k] && typeof row[k] === 'string') {
+      try { row[k] = JSON.parse(row[k]); } catch (_) { row[k] = []; }
+    } else if (!row[k]) {
+      row[k] = [];
+    }
+  });
+  return row;
+}
 
+
+
+async function getAllClasses() {
+  const [rows] = await db.query('SELECT * FROM mdtslms_classes');
+  return rows.map(mapClass);
+}
 async function findClassById(id) {
-  const classes = await store.loadClasses();
-  return classes.find(k => k.id === id);
+  const [rows] = await db.query('SELECT * FROM mdtslms_classes WHERE id = ?', [id]);
+  return mapClass(rows[0]);
 }
 
-async function createClass({ schoolYear, cohort, name, shortName, description, teacherId, schedule }) {
-  const classes = await store.loadClasses();
-  const nextId = (classes.reduce((m,k)=>Math.max(m,k.id),0) || 0) + 1;
-   const newClass = {
-    id: nextId,
-     schoolYear,
-    cohort,
-    name,
-    description,
-    teacherId,
-    weeks: weeks || 0,
-    studentIds: [],
-    schedule: schedule || [],
-    lectures: [],
-    tests: [],
-    grades: [],
-        attendance: []
-
-  };
-  classes.push(newClass);
-  await store.saveClasses(classes);
-  return newClass;
-}
-
-async function recordAttendance(classId, date, presentIds) {
-  const classes = await store.loadClasses();
-  const k = classes.find(c => c.id === classId);
-  if (!k) return null;
-  if (!k.attendance) k.attendance = [];
-  const existing = k.attendance.find(a => a.date === date);
-  if (existing) {
-    existing.present = presentIds;
-  } else {
-    k.attendance.push({ date, present: presentIds });
-  }
-  await store.saveClasses(classes);
-  return true;
+async function createClass({ schoolYear, cohort, name, shortName, description, teacherId, schedule, weeks }) {
+  const [result] = await db.query(
+    `INSERT INTO mdtslms_classes (schoolYear, cohort, name, shortName, description, teacherId, weeks, studentIds, schedule, lectures, tests, grades, attendance)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [schoolYear, cohort, name, shortName, description, teacherId, weeks || 0,
+     JSON.stringify([]), JSON.stringify(schedule || []), JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), JSON.stringify([])]
+  );
+  return findClassById(result.insertId);
 }
 
 async function addStudent(classId, studentId) {
-  const classes = await store.loadClasses();
-  const k = classes.find(c => c.id === classId);
-  if (!k) return null;
-  if (!k.studentIds) k.studentIds = [];
-  if (!k.studentIds.includes(studentId)) k.studentIds.push(studentId);
-  await store.saveClasses(classes);
-  return k;
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  klass.studentIds = klass.studentIds || [];
+  if (!klass.studentIds.includes(studentId)) klass.studentIds.push(studentId);
+  await db.query('UPDATE mdtslms_classes SET studentIds=? WHERE id=?', [JSON.stringify(klass.studentIds), classId]);
+  return klass;
 }
 
 async function duplicateClass(id) {
-  const classes = await store.loadClasses();
-  const original = classes.find(c => c.id === id);
+   const original = await findClassById(id);
+
   if (!original) return null;
-  const nextId = (classes.reduce((m, k) => Math.max(m, k.id), 0) || 0) + 1;
-  const copy = {
-    id: nextId,
-    name: `${original.name} (Copy)`,
-    description: original.description,
-    teacherId: original.teacherId,
-    studentIds: [],
-    schedule: JSON.parse(JSON.stringify(original.schedule || [])),
-    lectures: JSON.parse(JSON.stringify(original.lectures || [])),
-    tests: JSON.parse(JSON.stringify(original.tests || [])),
-    grades: []
-  };
-  classes.push(copy);
-  await store.saveClasses(classes);
-  return copy;
+   const [result] = await db.query(
+    `INSERT INTO mdtslms_classes (schoolYear, cohort, name, shortName, description, teacherId, weeks, studentIds, schedule, lectures, tests, grades, attendance)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [original.schoolYear, original.cohort, `${original.name} (Copy)`, original.shortName, original.description, original.teacherId, original.weeks,
+     JSON.stringify([]), JSON.stringify(original.schedule || []), JSON.stringify(original.lectures || []), JSON.stringify(original.tests || []), JSON.stringify([]), JSON.stringify([])]
+  );
+  return findClassById(result.insertId);
 }
 
 async function addTest(classId, test) {
-  const classes = await store.loadClasses();
-  const k = classes.find(c => c.id === classId);
-  if (!k) return null;
-  if (!k.tests) k.tests = [];
-  test.id = (k.tests.reduce((m,t)=>Math.max(m,t.id),0) || 0) + 1;
-  k.tests.push(test);
-  await store.saveClasses(classes);
+const klass = await findClassById(classId);
+  if (!klass) return null;
+  klass.tests = klass.tests || [];
+  test.id = (klass.tests.reduce((m,t)=>Math.max(m,t.id),0) || 0) + 1;
+  klass.tests.push(test);
+  await db.query('UPDATE mdtslms_classes SET tests=? WHERE id=?', [JSON.stringify(klass.tests), classId]);
   return test;
 }
 
 async function recordGrade(classId, testId, studentId, score) {
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  klass.grades = klass.grades || [];
+  klass.grades.push({ classId, testId, studentId, score, gradedAt: new Date().toISOString() });
+  await db.query('UPDATE mdtslms_classes SET grades=? WHERE id=?', [JSON.stringify(klass.grades), classId]);
+  return true;
+}
 
-  const classes = await store.loadClasses();
-  const k = classes.find(c => c.id === classId);
-  if (!k) return null;
-  if (!k.grades) k.grades = [];
-  k.grades.push({ classId, testId, studentId, score, gradedAt: new Date().toISOString() });
-  await store.saveClasses(classes);
+async function recordAttendance(classId, date, presentIds) {
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  klass.attendance = klass.attendance || [];
+  const existing = klass.attendance.find(a => a.date === date);
+  if (existing) {
+    existing.present = presentIds;
+  } else {
+    klass.attendance.push({ date, present: presentIds });
+  }
+  await db.query('UPDATE mdtslms_classes SET attendance=? WHERE id=?', [JSON.stringify(klass.attendance), classId]);
   return true;
 }
 
 async function byTeacher(teacherId) {
-  const classes = await store.loadClasses();
-  return classes.filter(k => k.teacherId === teacherId);
+ const [rows] = await db.query('SELECT * FROM mdtslms_classes WHERE teacherId = ?', [teacherId]);
+  return rows.map(mapClass);
+
+}
+async function upsertGrade(classId, testId, studentId, score) {
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  klass.grades = klass.grades || [];
+  const now = new Date().toISOString();
+  const existing = klass.grades.find(g => g.testId === testId && g.studentId === studentId);
+  if (existing) {
+    existing.score = score;
+    existing.gradedAt = now;
+  } else {
+    klass.grades.push({ classId, testId, studentId, score, gradedAt: now });
+  }
+  await db.query('UPDATE mdtslms_classes SET grades=? WHERE id=?', [JSON.stringify(klass.grades), classId]);
+  return true;
 }
 
 module.exports = {
@@ -118,19 +123,4 @@ module.exports = {
 };
 
 
-async function upsertGrade(classId, testId, studentId, score) {
-  const classes = await store.loadClasses();
-  const k = classes.find(c => c.id === classId);
-  if (!k) return null;
-  if (!k.grades) k.grades = [];
-  const existing = k.grades.find(g => g.testId === testId && g.studentId === studentId);
-  const now = new Date().toISOString();
-  if (existing) {
-    existing.score = score;
-    existing.gradedAt = now;
-  } else {
-    k.grades.push({ classId, testId, studentId, score, gradedAt: now });
-  }
-  await store.saveClasses(classes);
-  return true;
-}
+

@@ -3,7 +3,6 @@ const router = express.Router();
 
 const classModel = require('../models/classModel');
 const userModel = require('../models/userModel');
-const store = require('../models/dataStore');
 
 const nodemailer = require('nodemailer');
 
@@ -23,15 +22,15 @@ router.use((req, res, next) => {
 });
 
 router.get('/', async (req, res) => {
-  const users = await store.loadUsers();
-  const classes = await store.loadClasses();
+ const users = await userModel.getAll();
+  const classes = await classModel.getAllClasses();
   const teachers = users.filter(u => u.role === 'teacher');
   const students = users.filter(u => u.role === 'student');
   res.render('admin_dashboard', { user: req.session.user, classes, teachers, students });
 });
 
 async function renderPending(_req, res) {
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const pending = users.filter(u => u.role === 'student' && (u.status === 'pending' || !u.status));
   res.render('admin_pending', { pending });
 }
@@ -73,14 +72,14 @@ router.get('/students/:id', async (req, res) => {
 });
 
 router.get('/denied', async (_req, res) => {
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const denied = users.filter(u => u.role === 'student' && u.status === 'declined');
   res.render('admin_denied', { denied });
 });
 
 
 router.get('/students', async (_req, res) => {
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const accepted = users.filter(u => u.role === 'student' && u.status === 'approved');
   res.render('admin_accepted', { students: accepted });
 });
@@ -89,7 +88,7 @@ router.get('/students', async (_req, res) => {
 
 // New class form
 router.get('/classes/new', async (req, res) => {
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const teachers = users.filter(u => u.role === 'teacher');
   res.render('create_class', { teachers, error: null });
 });
@@ -127,8 +126,7 @@ router.post('/classes', async (req, res) => {
         const weeks = Number(req.body.weeks || 0);
 
     if (!schoolYear || !cohort || !name || !shortName || !teacherId) {
-      const users = await store.loadUsers();
-      const teachers = users.filter(u => u.role === 'teacher');
+      const teachers = await userModel.getByRole('teacher');
       return res.status(400).render('create_class', { teachers, error: 'School Year, Cohort, Name, Short Name and Teacher are required.' });
     }
 
@@ -147,8 +145,8 @@ router.post('/classes', async (req, res) => {
     return res.redirect(`/admin/classes/${klass.id}`);
   } catch (e) {
     console.error(e);
-    const users = await store.loadUsers();
-    const teachers = users.filter(u => u.role === 'teacher');
+     const teachers = await userModel.getByRole('teacher');
+
     return res.status(500).render('create_class', { teachers, error: 'Could not create class.' });
   }
 });
@@ -156,7 +154,7 @@ router.post('/classes', async (req, res) => {
 
 router.get('/classes', async (_req, res) => {
   const classes = await classModel.getAllClasses();
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const teacherMap = Object.fromEntries(users.filter(u => u.role === 'teacher').map(u => [u.id, u.name]));
   res.render('class_list', { classes, teacherMap });
 });
@@ -165,7 +163,7 @@ router.get('/classes/:id', async (req, res) => {
   const id = Number(req.params.id);
   const klass = await classModel.findClassById(id);
   if (!klass) return res.status(404).send('Not found');
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
     const students = users.filter(u => u.role === 'student' && u.status === 'approved');
 
   const classStudents = students.filter(s => (klass.studentIds||[]).includes(s.id));
@@ -173,7 +171,7 @@ router.get('/classes/:id', async (req, res) => {
 });
 
 router.get('/reports/pending-students', async (_req, res) => {
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const pending = users.filter(u => u.role === 'student' && (u.status === 'pending' || !u.status));
   res.render('pending_students_report', { pending });
 });
@@ -182,7 +180,7 @@ router.get('/reports/class/:id', async (req, res) => {
   const id = Number(req.params.id);
   const klass = await classModel.findClassById(id);
   if (!klass) return res.status(404).send('Not found');
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
   res.render('class_report', { klass, students, scope: 'admin' });
 });
@@ -200,7 +198,7 @@ router.post('/classes/:id/add-student', async (req, res) => {
 
 // Teacher list
 router.get('/teachers', async (req, res) => {
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const teachers = users.filter(u => u.role === 'teacher');
   res.render('teacher_list', { teachers });
 });
@@ -215,7 +213,7 @@ router.post('/classes/:id/duplicate', async (req, res) => {
 // Delete teacher
 router.post('/teachers/:id/delete', async (req, res) => {
   const id = Number(req.params.id);
-  let users = await store.loadUsers();
+  await userModel.deleteById(id);
   users = users.filter(u => !(u.role === 'teacher' && u.id === id));
   await store.saveUsers(users);
   res.redirect('/admin/teachers');
@@ -223,16 +221,15 @@ router.post('/teachers/:id/delete', async (req, res) => {
 
 // Edit teacher (placeholder)
 router.get('/teachers/:id/edit', async (req, res) => {
-  const teacher = (await store.loadUsers()).find(u => u.role === 'teacher' && u.id === Number(req.params.id));
-  if (!teacher) return res.status(404).send('Not found');
+ const teacher = (await userModel.getAll()).find(u => u.role === 'teacher' && u.id === Number(req.params.id));  if (!teacher) return res.status(404).send('Not found');
   // For now, just send back JSON — you can later make an edit form view
   res.json(teacher);
 });
 
 
 router.get('/reports', async (_req, res) => {
-  const classes = await store.loadClasses();
-  const users = await store.loadUsers();
+const classes = await classModel.getAllClasses();
+  const users = await userModel.getAll();
   const studentMap = Object.fromEntries(users.filter(u => u.role === 'student').map(u => [u.id, u]));
   const teacherMap = Object.fromEntries(users.filter(u => u.role === 'teacher').map(u => [u.id, u]));
 
@@ -249,7 +246,7 @@ router.get('/reports', async (_req, res) => {
 
 // Events dashboard for analytics
 router.get('/events', async (req, res) => {
-  const classes = await store.loadClasses();
+  const classes = await classModel.getAllClasses();
   const events = [];
   const now = new Date();
   const threeWeeksFromNow = new Date();

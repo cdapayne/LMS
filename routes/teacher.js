@@ -3,7 +3,6 @@ const router = express.Router();
 
 const classModel = require('../models/classModel');
 const userModel = require('../models/userModel');
-const store = require('../models/dataStore');
 
 router.use((req, res, next) => {
   if (!req.session || req.session.role !== 'teacher') return res.status(403).send('Forbidden');
@@ -24,7 +23,7 @@ router.get('/', async (req, res) => {
 router.get('/classes/:id', async (req, res) => {
   const klass = await classModel.findClassById(Number(req.params.id));
   if (!klass) return res.status(404).send('Not found');
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
  const today = new Date().toISOString().slice(0,10);
   const attendanceToday = (klass.attendance || []).find(a => a.date === today) || { present: [] };
@@ -115,7 +114,7 @@ router.post('/classes/:id/attendance', async (req, res) => {
 router.get('/classes/:id/attendance', async (req, res) => {
   const klass = await classModel.findClassById(Number(req.params.id));
   if (!klass) return res.status(404).send('Not found');
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
   res.render('attendance_report', { klass, students });
 });
@@ -124,7 +123,7 @@ router.get('/reports/class/:id', async (req, res) => {
   const id = Number(req.params.id);
   const klass = await classModel.findClassById(id);
   if (!klass || klass.teacherId !== req.session.user.id) return res.status(404).send('Not found');
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
   res.render('class_report', { klass, students, scope: 'teacher' });
 });
@@ -132,7 +131,7 @@ router.get('/reports/class/:id', async (req, res) => {
 // Reports
 router.get('/reports', async (req, res) => {
   const classes = await classModel.byTeacher(req.session.user.id);
-  const users = await store.loadUsers();
+  const users = await userModel.getAll();
   const studentMap = Object.fromEntries(users.filter(u => u.role === 'student').map(u => [u.id, u]));
   const report = classes.map(k => ({
     classId: k.id,
