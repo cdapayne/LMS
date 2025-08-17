@@ -43,12 +43,19 @@ router.post('/approve/:id', async (req, res) => {
   if (user && user.email) {
     const name = (user.profile && user.profile.firstName) || user.name || 'Student';
     try {
+            const brand = req.app.locals.branding;
+
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: user.email,
         subject: 'Application approved',
-        text: `Hi ${name}, your registration has been approved. You can now log in.`
-      });
+        text: `Hi ${name}, your registration has been approved. You can now log in.`,
+        html: `
+          <div style="font-family:Arial,sans-serif;text-align:center;">
+            <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
+            <p>Hi ${name}, your registration has been approved. You can now log in.</p>
+          </div>
+        `      });
     } catch (e) {
       console.error('Error sending approval email', e);
     }

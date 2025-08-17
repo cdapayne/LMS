@@ -60,12 +60,19 @@ router.get('/forgot-password', (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   const email = ensureStr(req.body.email);
   try {
+        const brand = req.app.locals.branding;
+
     await transporter.sendMail({
       from: 'no-reply@mdts-apps.com',
       to: process.env.SMTP_USER,
       subject: 'Password reset request',
-      text: `Password reset requested for ${email}`
-    });
+      text: `Password reset requested for ${email}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;text-align:center;">
+          <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
+          <p>Password reset requested for ${email}</p>
+        </div>
+      `    });
     return res.render('forgot_password', { sent: true, error: null });
   } catch (e) {
     console.error(e);
@@ -216,13 +223,20 @@ router.post('/register', (req, res) => {
         await userModel.addUploads(user.id, uploads);
       }
 
+      const brand = req.app.locals.branding;
 
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: email,
         subject: 'Registration submitted (pending approval)',
-        text: `Hi ${firstName}, your registration is pending admin approval. Username: ${username}.`
-      });
+    text: `Hi ${firstName}, your registration is pending admin approval. Username: ${username}.`,
+        html: `
+          <div style="font-family:Arial,sans-serif;text-align:center;">
+            <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
+            <p>Hi ${firstName}, your registration is pending admin approval.</p>
+            <p><strong>Username:</strong> ${username}</p>
+          </div>
+        `      });
 
       return res.render('pending', { user: { firstName, lastName, name: `${firstName} ${lastName}` }, financialAid: financialAid === 'yes' });
     } catch (e) {

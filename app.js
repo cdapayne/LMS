@@ -11,6 +11,14 @@ const teacherRoutes = require('./routes/teacher');
 
 const app = express();
 
+// Load branding configuration and expose to views
+const branding = require('./branding.json');
+app.locals.branding = branding;
+app.use((req, res, next) => {
+  res.locals.branding = branding;
+  next();
+});
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));

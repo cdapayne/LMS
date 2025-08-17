@@ -1,21 +1,82 @@
-<header class="bg-primary text-white p-3 mb-3">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      --primary-color: dodgerblue;
+      --secondary-color: orange;
+    }
+
+    .bg-primary { background-color: var(--primary-color) !important; }
+    .text-primary { color: var(--primary-color) !important; }
+    .btn-primary { 
+      background-color: var(--primary-color) !important; 
+      border-color: var(--primary-color) !important; 
+    }
+    .btn-primary:hover {
+      background-color: #1e6edb !important; 
+      border-color: #1e6edb !important;
+    }
+    .btn-outline-primary { 
+      color: var(--primary-color) !important; 
+      border-color: var(--primary-color) !important; 
+    }
+    .btn-outline-primary:hover { 
+      background-color: var(--primary-color) !important; 
+      color: #fff !important; 
+    }
+
+    .nav-link-custom {
+      color: #fff !important;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-link-custom:hover {
+      color: var(--secondary-color) !important;
+      text-decoration: underline;
+    }
+
+    h1.h4.m-0 {
+      font-family: "Georgia", "Times New Roman", serif;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+  </style>
+
+  <script>
+    (function(){
+      const link = document.createElement('link');
+      link.rel = 'icon';
+      link.href = '<%= branding.favicon %>';
+      document.head.appendChild(link);
+    })();
+  </script>
+</head>
+<body>
+<header class="text-white p-3 mb-3" style="background-color: var(--primary-color);">
   <div class="container d-flex justify-content-between align-items-center">
-    <h1 class="h4 m-0">School LMS</h1>
+    <div class="d-flex align-items-center gap-2">
+      <img src="<%= branding.primaryLogo %>" alt="Logo" style="height:40px;">
+      <h1 class="h4 m-0">MD Technical School</h1>
+    </div>
     <% if (typeof user !== 'undefined' && user) { %>
     <nav class="d-flex gap-3">
-      <a class="text-white text-decoration-none" href="/dashboard">Home</a>
+      <a class="nav-link-custom" href="/dashboard">Home</a>
       <% if (user.role === 'admin') { %>
-        <a class="text-white text-decoration-none" href="/admin/approvals">Approvals</a>
-        <a class="text-white text-decoration-none" href="/admin/reports">Reports</a>
+        <a class="nav-link-custom" href="/admin/approvals">Approvals</a>
+        <a class="nav-link-custom" href="/admin/reports">Reports</a>
       <% } %>
       <% if (user.role === 'teacher') { %>
-        <a class="text-white text-decoration-none" href="/teacher/reports">Reports</a>
+        <a class="nav-link-custom" href="/teacher/reports">Reports</a>
       <% } %>
       <% if (user.role === 'student') { %>
-        <a class="text-white text-decoration-none" href="/student">My Classes</a>
+        <a class="nav-link-custom" href="/student">My Classes</a>
       <% } %>
-      <a class="text-white text-decoration-none" href="/logout">Logout</a>
+      <a class="nav-link-custom" href="/logout">Logout</a>
     </nav>
     <% } %>
   </div>
 </header>
+</body>
+</html>

@@ -2,428 +2,456 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Register – School LMS</title>
+  <title>Register – MD Technical School</title>
+  <link rel="icon" href="<%= branding.favicon %>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
   <style>
-    .sig { border:1px solid #ced4da;width:100%;height:160px;touch-action:none;background:#fff; }
-    .docbox { max-height:200px; overflow:auto; }
-    .error-text { color: #dc3545; font-size: 0.9em; }
+    :root{
+      --primary-color: dodgerblue;
+      --secondary-color: orange;
+      --muted: #6c757d;
+      --surface: #ffffff;
+      --border: #e5e7eb;
+      --bg: #f4f6f9;
+    }
+
+    body{ background: var(--bg); font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+
+    .portal-wrap{
+      max-width: 1100px;
+      margin: 48px auto;
+      padding: 0 16px;
+    }
+
+    .portal-card{
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0.75rem 1.25rem rgba(0,0,0,.06);
+    }
+
+    .portal-header{
+      background: var(--primary-color);
+      color: #fff;
+      padding: 2rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .portal-header .brand{
+      display: flex; align-items: center; gap: 14px;
+    }
+    .portal-header img{
+      height: 64px; width: 64px; object-fit: contain; background: #fff; border-radius: 12px; padding: 6px;
+    }
+    .portal-header h1{
+      font-size: 1.5rem; font-weight: 700; letter-spacing:.3px; margin:0;
+    }
+    .portal-header p{ margin:0; opacity:.9; }
+
+    .portal-body{ padding: 1.5rem; }
+    .section-title{
+      display:flex; align-items:center; gap:10px; margin: 1.5rem 0 .75rem;
+      font-weight: 700; color:#111827; font-size:1.05rem;
+    }
+    .section-title::before{
+      content:""; display:inline-block; width:6px; height:20px; border-radius:3px; background: var(--secondary-color);
+    }
+
+    .docbox { max-height: 220px; overflow: auto; background:#fff; }
+    .sig { border:1px solid #ced4da; width:100%; height:160px; touch-action:none; background:#fff; border-radius:8px; }
+
+    /* Inputs / buttons */
+    .btn-primary{ background: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+    .btn-primary:hover{ background: #1e6edb !important; border-color:#1e6edb !important; }
+    .btn-link{ color: var(--primary-color) !important; }
+    .btn-link:hover{ color: var(--secondary-color) !important; }
+
+    .form-label .req{ color:#dc3545; margin-left:4px; }
+
+    .cardish{
+      background:#fff; border:1px solid var(--border); border-radius:10px; padding:1rem;
+    }
+
+    .error-text { color: #dc3545; font-size: .9em; }
     .is-invalid { border-color: #dc3545 !important; }
+
+    /* Compact help text tone */
+    .text-muted{ color: var(--muted) !important; }
   </style>
 </head>
-<body class="bg-light">
-  <div class="container py-5">
-    <h1 class="mb-4">Student Registration</h1>
-    <% if (error) { %>
-      <div class="alert alert-danger"><%= error %></div>
-    <% } %>
-    <form method="post" action="/register" enctype="multipart/form-data" onsubmit="return captureAll()" class="bg-white p-4 border rounded">
-      
-      <!-- Personal Information -->
-      <h5 class="mb-3">Personal Information</h5>
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">First Name</label>
-          <input name="firstName" class="form-control" required value="<%= formData?.firstName || '' %>">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Last Name</label>
-          <input name="lastName" class="form-control" required value="<%= formData?.lastName || '' %>">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Suffix (optional)</label>
-          <input name="suffix" class="form-control" placeholder="Jr., Sr., III" value="<%= formData?.suffix || '' %>">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Address</label>
-          <input name="address" class="form-control" required value="<%= formData?.address || '' %>">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">City</label>
-          <input name="city" class="form-control" required value="<%= formData?.city || '' %>">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">State</label>
-          <select name="state" class="form-select" required>
-            <option value="">Select…</option>
-            <% ['VA','MD','DC','NC','PA','NY','CA','TX','FL','Other'].forEach(st => { %>
-              <option value="<%= st %>" <%= formData?.state === st ? 'selected' : '' %>><%= st %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">ZIP Code</label>
-          <input name="zip" class="form-control" required value="<%= formData?.zip || '' %>">
+<body>
+  <div class="portal-wrap">
+    <div class="portal-card">
+      <div class="portal-header">
+        <div class="brand">
+          <img src="<%= branding.primaryLogo %>" alt="Logo">
+          <div>
+            <h1>Student Registration</h1>
+            <p>Welcome to <strong>MD Technical School</strong> — please complete the steps below.</p>
+          </div>
         </div>
       </div>
 
-      <hr class="my-4">
+      <div class="portal-body">
+        <% if (error) { %>
+          <div class="alert alert-danger mb-4"><%= error %></div>
+        <% } %>
 
-      <!-- Account -->
-      <h5 class="mb-3">Account</h5>
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Username</label>
-          <input name="username" class="form-control" required value="<%= formData?.username || '' %>">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Email</label>
-          <input type="email" name="email" class="form-control" required value="<%= formData?.email || '' %>">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Confirm Email</label>
-          <input type="email" name="confirmEmail" class="form-control" required value="<%= formData?.confirmEmail || '' %>">
-        </div>
+        <form method="post" action="/register" enctype="multipart/form-data" onsubmit="return captureAll()">
 
-        <!-- Password + Confirm Password -->
-        <div class="col-md-4">
-          <label class="form-label">Password</label>
-          <input type="password" name="password" id="password" class="form-control" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
-          <div class="error-text d-none" id="passwordErr">Password must be at least 8 characters.</div>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Confirm Password</label>
-          <input type="password" name="confirmPassword" id="confirmPassword" class="form-control" required minlength="8" autocomplete="new-password" placeholder="Re-enter password">
-          <div class="error-text d-none" id="confirmPasswordErr">Passwords do not match.</div>
-        </div>
+          <!-- Personal Information -->
+          <div class="section-title">Personal Information</div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">First Name<span class="req">*</span></label>
+              <input name="firstName" class="form-control" required value="<%= formData?.firstName || '' %>">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Last Name<span class="req">*</span></label>
+              <input name="lastName" class="form-control" required value="<%= formData?.lastName || '' %>">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Suffix (optional)</label>
+              <input name="suffix" class="form-control" placeholder="Jr., Sr., III" value="<%= formData?.suffix || '' %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Address<span class="req">*</span></label>
+              <input name="address" class="form-control" required value="<%= formData?.address || '' %>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">City<span class="req">*</span></label>
+              <input name="city" class="form-control" required value="<%= formData?.city || '' %>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">State<span class="req">*</span></label>
+              <select name="state" class="form-select" required>
+                <option value="">Select…</option>
+                <% ['VA','MD','DC','NC','PA','NY','CA','TX','FL','Other'].forEach(st => { %>
+                  <option value="<%= st %>" <%= formData?.state === st ? 'selected' : '' %>><%= st %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">ZIP Code<span class="req">*</span></label>
+              <input name="zip" class="form-control" required value="<%= formData?.zip || '' %>">
+            </div>
+          </div>
 
-        <div class="col-md-4">
-          <label class="form-label">Student ID</label>
-          <input name="studentId" class="form-control" required value="<%= formData?.studentId || '' %>">
-        </div>
+          <hr class="my-4">
+
+          <!-- Account -->
+          <div class="section-title">Account</div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Username<span class="req">*</span></label>
+              <input name="username" class="form-control" required value="<%= formData?.username || '' %>">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Email<span class="req">*</span></label>
+              <input type="email" name="email" class="form-control" required value="<%= formData?.email || '' %>">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Confirm Email<span class="req">*</span></label>
+              <input type="email" name="confirmEmail" class="form-control" required value="<%= formData?.confirmEmail || '' %>">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Password<span class="req">*</span></label>
+              <input type="password" name="password" id="password" class="form-control" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
+              <div class="error-text d-none" id="passwordErr">Password must be at least 8 characters.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Confirm Password<span class="req">*</span></label>
+              <input type="password" name="confirmPassword" id="confirmPassword" class="form-control" required minlength="8" autocomplete="new-password" placeholder="Re-enter password">
+              <div class="error-text d-none" id="confirmPasswordErr">Passwords do not match.</div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Student ID<span class="req">*</span></label>
+              <input name="studentId" class="form-control" required value="<%= formData?.studentId || '' %>">
+            </div>
+          </div>
+
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="financialAid" name="financialAid" value="yes" <%= formData?.financialAid ? 'checked' : '' %>>
+            <label class="form-check-label" for="financialAid">I am applying for financial aid</label>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- Program Details -->
+          <div class="section-title">Program Details</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Course<span class="req">*</span></label>
+              <select class="form-select" name="course" required>
+                <option value="">Select a course…</option>
+                <% ['ITIL 4 Foundation','CEH','CND','Security+','CASP+','CHFI','Other'].forEach(c => { %>
+                  <option value="<%= c %>" <%= formData?.course === c ? 'selected' : '' %>><%= c %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Affiliated Program<span class="req">*</span></label>
+              <select class="form-select" name="affiliateProgram" required>
+                <option value="">Select…</option>
+                <% ['Army','Airforce','MyCAA','WIOA','WIOA veteran','DARS','Corporation','Self Pay','Other'].forEach(p => { %>
+                  <option value="<%= p %>" <%= formData?.affiliateProgram === p ? 'selected' : '' %>><%= p %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- Upload Documents -->
+          <div class="section-title">Upload Documents</div>
+          <p class="text-muted mb-2">Two forms of ID or supporting docs. Accepted: PDF, JPG, PNG, DOC, DOCX — max 2 files, 15MB each.</p>
+          <input type="file" name="docs" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple>
+
+          <hr class="my-4">
+
+          <!-- Agreements -->
+          <div class="section-title">Registration Agreement <span class="text-muted">(version <%= docVersion %>)</span></div>
+          <div class="cardish mb-3 docbox"><p class="mb-0"><%= docText %></p></div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" value="yes" id="agree" name="agree" <%= formData?.agree ? 'checked' : '' %> required>
+            <label class="form-check-label" for="agree">I have read and agree to the registration agreement.</label>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Signature (Registration Agreement)<span class="req">*</span></label>
+            <canvas class="sig" id="sig_registration"></canvas>
+            <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_registration')">Clear</button></div>
+            <input type="hidden" name="signatureDataUrl" id="signatureDataUrl">
+          </div>
+
+          <hr class="my-4">
+
+          <div class="section-title">Code of Conduct</div>
+          <div class="cardish mb-3 docbox">
+            <p class="mb-0">Students agree to uphold academic integrity, maintain professionalism, respect peers and instructors, follow school policies, and safeguard account credentials.</p>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Signature (Code of Conduct)</label>
+            <canvas class="sig" id="sig_conduct"></canvas>
+            <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_conduct')">Clear</button></div>
+            <input type="hidden" name="codeConductSig" id="codeConductSig">
+          </div>
+
+          <div class="section-title">Grievance Acknowledgement</div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="grievanceAck" name="grievanceAck" <%= formData?.grievanceAck ? 'checked' : '' %>>
+            <label class="form-check-label" for="grievanceAck">I acknowledge I have received the grievance process information.</label>
+          </div>
+
+          <div class="section-title">Cancellation Policy</div>
+          <div class="cardish mb-3 docbox">
+            <p class="mb-0">Cancellations and refunds follow the published policy. Fees and deadlines apply. Contact the admin office for assistance.</p>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Signature (Cancellation Policy)</label>
+            <canvas class="sig" id="sig_cancel"></canvas>
+            <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_cancel')">Clear</button></div>
+            <input type="hidden" name="cancellationSig" id="cancellationSig">
+          </div>
+
+          <div class="section-title">Notice to Buyer</div>
+          <div class="cardish mb-3 docbox">
+            <p class="mb-0">You may have legal rights regarding refunds, disclosures, and cooling-off periods as required by law.</p>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Signature (Notice to Buyer)</label>
+            <canvas class="sig" id="sig_notice"></canvas>
+            <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_notice')">Clear</button></div>
+            <input type="hidden" name="noticeSig" id="noticeSig">
+          </div>
+
+          <div class="section-title">Contract Acceptance</div>
+          <div class="cardish mb-3 docbox">
+            <p class="mb-0">By signing, you agree to the terms and conditions of enrollment and payment obligations.</p>
+          </div>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+              <label class="form-label">Signature (Contract)</label>
+              <canvas class="sig" id="sig_contract"></canvas>
+              <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_contract')">Clear</button></div>
+              <input type="hidden" name="contractSig" id="contractSig">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Signature Date<span class="req">*</span></label>
+              <input type="date" name="contractSigDate" id="contractSigDate" class="form-control" value="<%= formData?.contractSigDate || '' %>" required>
+            </div>
+          </div>
+
+          <div class="mt-4 d-flex gap-2">
+            <button class="btn btn-primary">Submit Registration</button>
+            <a href="/login" class="btn btn-link">Back to login</a>
+          </div>
+        </form>
       </div>
-
-      <hr class="my-4">
-
-      <!-- Program Details -->
-      <h5 class="mb-3">Program Details</h5>
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Course</label>
-          <select class="form-select" name="course" required>
-            <option value="">Select a course…</option>
-            <% ['ITIL 4 Foundation','CEH','CND','Security+','CASP+','CHFI','Other'].forEach(c => { %>
-              <option value="<%= c %>" <%= formData?.course === c ? 'selected' : '' %>><%= c %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Affiliated Program</label>
-          <select class="form-select" name="affiliateProgram" required>
-            <option value="">Select…</option>
-            <% ['Army','Airforce','MyCAA','WIOA','WIOA veteran','DARS','Corporation','Self Pay','Other'].forEach(p => { %>
-              <option value="<%= p %>" <%= formData?.affiliateProgram === p ? 'selected' : '' %>><%= p %></option>
-            <% }) %>
-          </select>
-        </div>
-      </div>
-
-        <div class="form-check mt-3">
-        <input class="form-check-input" type="checkbox" id="financialAid" name="financialAid" value="yes" <%= formData?.financialAid ? 'checked' : '' %>>
-        <label class="form-check-label" for="financialAid">I am applying for financial aid</label>
-      </div>
-
-      <hr class="my-4">
-
-      <!-- Upload Documents -->
-      <h5 class="mb-2">Upload Documents (two forms of ID or supporting docs)</h5>
-      <p class="text-muted">Accepted: PDF, JPG, PNG, DOC, DOCX — max 2 files, 15MB each.</p>
-      <input type="file" name="docs" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple>
-
-      <hr class="my-4">
-
-      <!-- Agreements -->
-      <h5>Registration Agreement (version <%= docVersion %>)</h5>
-      <div class="p-3 bg-white border rounded mb-3 docbox">
-        <p class="mb-0"><%= docText %></p>
-      </div>
-      <div class="form-check mb-3">
-        <input class="form-check-input" type="checkbox" value="yes" id="agree" name="agree" <%= formData?.agree ? 'checked' : '' %> required>
-        <label class="form-check-label" for="agree">I have read and agree to the registration agreement.</label>
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Signature (Registration Agreement)</label>
-        <canvas class="sig" id="sig_registration"></canvas>
-        <div class="mt-1">
-          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_registration')">Clear</button>
-        </div>
-        <input type="hidden" name="signatureDataUrl" id="signatureDataUrl">
-      </div>
-
-      <hr class="my-4">
-
-      <!-- Code of Conduct -->
-      <h5>Code of Conduct</h5>
-      <div class="p-3 bg-white border rounded mb-3 docbox">
-        <p class="mb-0">Students agree to uphold academic integrity...</p>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Signature (Code of Conduct)</label>
-        <canvas class="sig" id="sig_conduct"></canvas>
-        <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_conduct')">Clear</button></div>
-        <input type="hidden" name="codeConductSig" id="codeConductSig">
-      </div>
-
-      <!-- Grievance -->
-      <h5>Grievance Acknowledgement</h5>
-      <div class="form-check mb-3">
-        <input class="form-check-input" type="checkbox" id="grievanceAck" name="grievanceAck" <%= formData?.grievanceAck ? 'checked' : '' %>>
-        <label class="form-check-label" for="grievanceAck">I acknowledge I have received the grievance process information.</label>
-      </div>
-
-      <!-- Cancellation Policy -->
-      <h5>Cancellation Policy</h5>
-      <div class="p-3 bg-white border rounded mb-3 docbox">
-        <p class="mb-0">Cancellations and refunds follow the published policy...</p>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Signature (Cancellation Policy)</label>
-        <canvas class="sig" id="sig_cancel"></canvas>
-        <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_cancel')">Clear</button></div>
-        <input type="hidden" name="cancellationSig" id="cancellationSig">
-      </div>
-
-      <!-- Notice to Buyer -->
-      <h5>Notice to Buyer</h5>
-      <div class="p-3 bg-white border rounded mb-3 docbox">
-        <p class="mb-0">You may have legal rights regarding refunds...</p>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Signature (Notice to Buyer)</label>
-        <canvas class="sig" id="sig_notice"></canvas>
-        <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_notice')">Clear</button></div>
-        <input type="hidden" name="noticeSig" id="noticeSig">
-      </div>
-
-      <!-- Contract -->
-      <h5>Contract Acceptance</h5>
-      <div class="p-3 bg-white border rounded mb-3 docbox">
-        <p class="mb-0">By signing, you agree to the terms and conditions...</p>
-      </div>
-      <div class="row g-3 align-items-end">
-        <div class="col-md-6">
-          <label class="form-label">Signature (Contract)</label>
-          <canvas class="sig" id="sig_contract"></canvas>
-          <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_contract')">Clear</button></div>
-          <input type="hidden" name="contractSig" id="contractSig">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Signature Date</label>
-          <input type="date" name="contractSigDate" id="contractSigDate" class="form-control" value="<%= formData?.contractSigDate || '' %>" required>
-        </div>
-      </div>
-
-      <div class="mt-4">
-        <button class="btn btn-primary">Submit Registration</button>
-        <a href="/login" class="btn btn-link">Back to login</a>
-      </div>
-    </form>
+    </div>
   </div>
 
-<script>
-  const pads = {};
+  <!-- ===== SCRIPTS (unchanged core behaviors, cleaned up) ===== -->
+  <script>
+    const pads = {};
 
-  // ========== Signature Pads ==========
-  function setupPad(id) {
-    const el = document.getElementById(id);
-    const ctx = el.getContext('2d');
-    const DPR = window.devicePixelRatio || 1;
-    function resize() {
-      const r = el.getBoundingClientRect();
-      el.width = r.width * DPR; el.height = r.height * DPR;
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle='#000';
-    }
-    function pos(e){ const b = el.getBoundingClientRect(); const t = e.touches? e.touches[0]: e; return {x: (t.clientX-b.left), y: (t.clientY-b.top)};}
-    let drawing=false, prev=null;
-    function start(e){ drawing=true; prev=pos(e); }
-    function move(e){
-      if(!drawing) return;
-      const p=pos(e);
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-      prev=p;
-      e.preventDefault();
-      saveSignature(id); 
-    }
-    function end(){ drawing=false; }
-    window.addEventListener('resize', resize);
-    el.addEventListener('mousedown', start);
-    el.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', end);
-    el.addEventListener('touchstart', start, {passive:false});
-    el.addEventListener('touchmove', move, {passive:false});
-    el.addEventListener('touchend', end);
-    resize();
-    pads[id] = { el, ctx };
-    restoreSignature(id); 
-  }
-
-  function clearPad(id){
-    const {el,ctx}=pads[id];
-    ctx.clearRect(0,0,el.width,el.height);
-    localStorage.removeItem('sig_'+id);
-  }
-
-  function isBlank(id){
-    const {el,ctx}=pads[id];
-    const data = ctx.getImageData(0,0,el.width,el.height).data;
-    for (let i=3;i<data.length;i+=4) if (data[i]!==0) return false;
-    return true;
-  }
-
-  function capture(id){
-    if (isBlank(id)) return '';
-    return pads[id].el.toDataURL('image/png');
-  }
-
-  function saveSignature(id){
-    if (!isBlank(id)) {
-      localStorage.setItem('sig_'+id, pads[id].el.toDataURL('image/png'));
-    }
-  }
-
-  function restoreSignature(id){
-    const dataUrl = localStorage.getItem('sig_'+id);
-    if (dataUrl) {
-      const img = new Image();
-      img.onload = function(){
-        pads[id].ctx.drawImage(img, 0, 0, pads[id].el.width, pads[id].el.height);
-      };
-      img.src = dataUrl;
-    }
-  }
-
-  // ========== Form Validation & Persistence ==========
-  function showError(selectorOrEl, msg){
-    const el = typeof selectorOrEl === 'string' ? document.querySelector(selectorOrEl) : selectorOrEl;
-    if (!el) return;
-    // remove existing inline error
-    const next = el.nextElementSibling;
-    if (next && next.classList && next.classList.contains('error-text')) next.remove();
-    el.classList.add('is-invalid');
-    const err = document.createElement('div');
-    err.className = 'error-text';
-    err.textContent = msg;
-    el.parentNode.appendChild(err);
-    el.scrollIntoView({behavior:'smooth', block:'center'});
-  }
-  function clearError(el){
-    el.classList.remove('is-invalid');
-    const next = el.nextElementSibling;
-    if (next && next.classList && next.classList.contains('error-text')) next.remove();
-  }
-
-  function captureAll(){
-    // clear old errors
-    document.querySelectorAll('.error-text').forEach(el => el.remove());
-    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-
-    // Email match
-    const email = document.querySelector('input[name="email"]');
-    const confirmEmail = document.querySelector('input[name="confirmEmail"]');
-    if (email.value.trim() !== confirmEmail.value.trim()) {
-      showError(confirmEmail, 'Emails do not match.');
-      return false;
+    // Signature Pads
+    function setupPad(id) {
+      const el = document.getElementById(id);
+      const ctx = el.getContext('2d');
+      const DPR = window.devicePixelRatio || 1;
+      function resize() {
+        const r = el.getBoundingClientRect();
+        el.width = r.width * DPR; el.height = r.height * DPR;
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle='#000';
+      }
+      function pos(e){ const b = el.getBoundingClientRect(); const t = e.touches? e.touches[0]: e; return {x: (t.clientX-b.left), y: (t.clientY-b.top)};}
+      let drawing=false, prev=null;
+      function start(e){ drawing=true; prev=pos(e); }
+      function move(e){
+        if(!drawing) return;
+        const p=pos(e);
+        ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+        prev=p; e.preventDefault(); saveSignature(id);
+      }
+      function end(){ drawing=false; }
+      window.addEventListener('resize', resize);
+      el.addEventListener('mousedown', start); el.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+      el.addEventListener('touchstart', start, {passive:false}); el.addEventListener('touchmove', move, {passive:false}); el.addEventListener('touchend', end);
+      resize();
+      pads[id] = { el, ctx };
+      restoreSignature(id);
     }
 
-    // Password checks
-    const pw = document.getElementById('password');
-    const pw2 = document.getElementById('confirmPassword');
-    if (pw.value.length < 8) {
-      showError(pw, 'Password must be at least 8 characters.');
-      return false;
-    }
-    if (pw.value !== pw2.value) {
-      showError(pw2, 'Passwords do not match.');
-      return false;
+    function clearPad(id){
+      const {el,ctx}=pads[id];
+      ctx.clearRect(0,0,el.width,el.height);
+      localStorage.removeItem('sig_'+id);
     }
 
-    // Default signature date if missing
-    const d = document.getElementById('contractSigDate');
-    if (!d.value) {
-      const today = new Date().toISOString().slice(0,10);
-      d.value = today;
+    function isBlank(id){
+      const {el,ctx}=pads[id];
+      const data = ctx.getImageData(0,0,el.width,el.height).data;
+      for (let i=3;i<data.length;i+=4) if (data[i]!==0) return false;
+      return true;
     }
 
-    // Signatures → hidden fields
-    document.getElementById('signatureDataUrl').value = capture('sig_registration');
-    document.getElementById('codeConductSig').value = capture('sig_conduct');
-    document.getElementById('cancellationSig').value = capture('sig_cancel');
-    document.getElementById('noticeSig').value = capture('sig_notice');
-    document.getElementById('contractSig').value = capture('sig_contract');
-
-    if (!document.getElementById('signatureDataUrl').value) {
-      showError('#sig_registration', 'Please sign the Registration Agreement.');
-      return false;
+    function capture(id){
+      if (isBlank(id)) return '';
+      return pads[id].el.toDataURL('image/png');
     }
 
-    // Do NOT persist passwords in localStorage; clear them before submit persistence runs
-    localStorage.removeItem('reg_password');
-    localStorage.removeItem('reg_confirmPassword');
+    function saveSignature(id){
+      if (!isBlank(id)) {
+        localStorage.setItem('sig_'+id, pads[id].el.toDataURL('image/png'));
+      }
+    }
 
-    return true;
-  }
+    function restoreSignature(id){
+      const dataUrl = localStorage.getItem('sig_'+id);
+      if (dataUrl) {
+        const img = new Image();
+        img.onload = function(){
+          pads[id].ctx.drawImage(img, 0, 0, pads[id].el.width, pads[id].el.height);
+        };
+        img.src = dataUrl;
+      }
+    }
 
-  // Save all non-password inputs/selects/textareas to localStorage
-  function shouldPersist(el) {
-    if (!el.name) return false;
-    if (el.type === 'file') return false;
-    if (el.type === 'password') return false; // never persist passwords
-    return true;
-  }
+    // Inline error helpers
+    function showError(selectorOrEl, msg){
+      const el = typeof selectorOrEl === 'string' ? document.querySelector(selectorOrEl) : selectorOrEl;
+      if (!el) return;
+      const next = el.nextElementSibling;
+      if (next?.classList?.contains('error-text')) next.remove();
+      el.classList.add('is-invalid');
+      const err = document.createElement('div');
+      err.className = 'error-text';
+      err.textContent = msg;
+      el.parentNode.appendChild(err);
+      el.scrollIntoView({behavior:'smooth', block:'center'});
+    }
 
-  document.querySelectorAll('input, select, textarea').forEach(el => {
-    el.addEventListener('input', () => {
+    function captureAll(){
+      // clear old errors
+      document.querySelectorAll('.error-text').forEach(el => el.remove());
+      document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+      // email match
+      const email = document.querySelector('input[name="email"]');
+      const confirmEmail = document.querySelector('input[name="confirmEmail"]');
+      if (email.value.trim() !== confirmEmail.value.trim()) {
+        showError(confirmEmail, 'Emails do not match.');
+        return false;
+      }
+
+      // password checks
+      const pw = document.getElementById('password');
+      const pw2 = document.getElementById('confirmPassword');
+      if ((pw.value || '').length < 8) { showError(pw, 'Password must be at least 8 characters.'); return false; }
+      if (pw.value !== pw2.value) { showError(pw2, 'Passwords do not match.'); return false; }
+
+      // default signature date if missing
+      const d = document.getElementById('contractSigDate');
+      if (!d.value) d.value = new Date().toISOString().slice(0,10);
+
+      // signatures → hidden fields
+      document.getElementById('signatureDataUrl').value = capture('sig_registration');
+      document.getElementById('codeConductSig').value = capture('sig_conduct');
+      document.getElementById('cancellationSig').value = capture('sig_cancel');
+      document.getElementById('noticeSig').value = capture('sig_notice');
+      document.getElementById('contractSig').value = capture('sig_contract');
+
+      if (!document.getElementById('signatureDataUrl').value) {
+        showError('#sig_registration', 'Please sign the Registration Agreement.');
+        return false;
+      }
+
+      // never persist passwords
+      localStorage.removeItem('reg_password');
+      localStorage.removeItem('reg_confirmPassword');
+
+      return true;
+    }
+
+    // field persistence (no passwords/files)
+    function shouldPersist(el){ return !!el.name && el.type!=='file' && el.type!=='password'; }
+
+    document.addEventListener('input', e => {
+      const el = e.target;
       if (!shouldPersist(el)) return;
       localStorage.setItem('reg_' + el.name, el.type === 'checkbox' ? el.checked : el.value);
     });
-  });
 
-  // Restore on page load (skip passwords)
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('input, select, textarea').forEach(el => {
-      if (!shouldPersist(el)) return;
-      const saved = localStorage.getItem('reg_' + el.name);
-      if (saved !== null) {
-        if (el.type === 'checkbox') {
-          el.checked = saved === 'true';
-        } else {
-          el.value = saved;
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('input, select, textarea').forEach(el => {
+        if (!shouldPersist(el)) return;
+        const saved = localStorage.getItem('reg_' + el.name);
+        if (saved !== null) el.type === 'checkbox' ? (el.checked = saved === 'true') : (el.value = saved);
+      });
+
+      // Live validation for password UX
+      const pw = document.getElementById('password');
+      const pw2 = document.getElementById('confirmPassword');
+      const pwErr = document.getElementById('passwordErr');
+      const pw2Err = document.getElementById('confirmPasswordErr');
+      if (pw && pw2){
+        const checkLen = () => { (pw.value && pw.value.length < 8) ? (pw.classList.add('is-invalid'), pwErr.classList.remove('d-none')) : (pw.classList.remove('is-invalid'), pwErr.classList.add('d-none')); };
+        const checkMatch = () => { (pw2.value && pw.value !== pw2.value) ? (pw2.classList.add('is-invalid'), pw2Err.classList.remove('d-none')) : (pw2.classList.remove('is-invalid'), pw2Err.classList.add('d-none')); };
+        pw.addEventListener('input', () => { checkLen(); checkMatch(); });
+        pw2.addEventListener('input', checkMatch);
       }
+
+      // Initialize signature pads
+      ['sig_registration','sig_conduct','sig_cancel','sig_notice','sig_contract'].forEach(setupPad);
     });
-  });
-
-  // Live validation for password confirmation UX
-  (function livePwValidation(){
-    const pw = document.getElementById('password');
-    const pw2 = document.getElementById('confirmPassword');
-    const pwErr = document.getElementById('passwordErr');
-    const pw2Err = document.getElementById('confirmPasswordErr');
-    if (!pw || !pw2) return;
-    function checkPwLen(){
-      if (pw.value && pw.value.length < 8) {
-        pw.classList.add('is-invalid'); pwErr.classList.remove('d-none');
-      } else {
-        pw.classList.remove('is-invalid'); pwErr.classList.add('d-none');
-      }
-    }
-    function checkMatch(){
-      if (pw2.value && pw.value !== pw2.value) {
-        pw2.classList.add('is-invalid'); pw2Err.classList.remove('d-none');
-      } else {
-        pw2.classList.remove('is-invalid'); pw2Err.classList.add('d-none');
-      }
-    }
-    pw.addEventListener('input', () => { checkPwLen(); checkMatch(); });
-    pw2.addEventListener('input', checkMatch);
-  })();
-
-  // Initialize signature pads
-  ['sig_registration','sig_conduct','sig_cancel','sig_notice','sig_contract'].forEach(setupPad);
-</script>
+  </script>
 </body>
 </html>

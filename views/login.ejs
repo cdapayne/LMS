@@ -1,29 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Login – School LMS</title>
+  <meta charset="UTF-8" />
+  <title>Login – MD Technical School</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="<%= branding.favicon %>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-  <div class="container py-5">
-    <h1 class="mb-4">Login</h1>
-    <% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
-    <form method="post" action="/login" class="bg-white p-4 border rounded">
-      <div class="mb-3">
-        <label class="form-label">Username</label>
-        <input name="username" class="form-control" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input type="password" name="password" class="form-control" required>
-      </div>
-      <button class="btn btn-primary">Log in</button>
-      <a class="btn btn-link" href="/register">Student Registration</a>
-            <a class="btn btn-link" href="/reset-password">Forgot Password</a>
-      <a class="btn btn-link" href="/forgot-password">Forgot Password?</a>
 
-    </form>
-  </div>
+  <style>
+    :root{
+      --primary-color: dodgerblue;
+      --secondary-color: orange;
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --border: #e5e7eb;
+      --muted: #6b7280;
+      --focus: rgba(30,144,255,.35);
+    }
+    * { box-sizing: border-box; }
+    body{
+      margin:0; background: var(--bg);
+      font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color:#111827;
+    }
+
+    /* Layout */
+    .login-wrap{
+      min-height:100svh;
+      display:grid;
+      place-items:center;
+      padding: 1rem;
+    }
+    .login-card{
+      width:100%;
+      max-width: 480px;
+      background: var(--surface);
+      border:1px solid var(--border);
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow: 0 .8rem 1.6rem rgba(0,0,0,.08);
+    }
+
+    /* Header */
+    .login-head{
+      padding: 1.75rem 1.25rem;
+      text-align:center;
+      color:#fff;
+      background:
+        linear-gradient(120deg, rgba(30,144,255,.95), rgba(30,144,255,.85)),
+        radial-gradient(1200px 500px at 10% -20%, rgba(255,165,0,.35), transparent);
+    }
+    .brand-img{
+      height: clamp(72px, 16vw, 120px);
+      width:auto;
+      object-fit:contain;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,.15));
+      margin-bottom:.5rem;
+    }
+    .brand-title{
+      font-weight:800; letter-spacing:.3px; margin:0;
+      font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+    }
+
+    /* Body */
+    .login-body{ padding: 1.25rem; }
+    .muted{ color: var(--muted); }
+
+    /* Inputs */
+    .form-control{
+      border-color: var(--border);
+    }
+    .form-control:focus{
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 .25rem var(--focus);
+    }
+    .input-group .btn{
+      border-color: var(--border);
+    }
+
+    /* Buttons */
+    .btn-primary{
+      background: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+    .btn-primary:hover{ background:#1e6edb !important; border-color:#1e6edb !important; }
+    .btn-link{
+      color: var(--primary-color) !important; font-weight:600; text-decoration:none;
+    }
+    .btn-link:hover{ color: var(--secondary-color) !important; text-decoration:underline; }
+
+    /* Helper */
+    .links{
+      display:flex; justify-content:space-between; gap:.75rem; flex-wrap:wrap;
+    }
+
+    /* Small screens niceties */
+    @media (max-width: 420px){
+      .login-body{ padding: 1rem; }
+    }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce){
+      *{ animation: none !important; transition:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="login-wrap">
+    <section class="login-card" role="region" aria-labelledby="loginHeading">
+      <header class="login-head">
+        <img class="brand-img" src="<%= branding.primaryLogo %>" alt="MD Technical School logo">
+        <h1 id="loginHeading" class="brand-title">MD Technical School</h1>
+      </header>
+
+      <div class="login-body">
+        <% if (error) { %>
+          <div class="alert alert-danger" role="alert" aria-live="assertive"><%= error %></div>
+        <% } %>
+
+        <form method="post" action="/login" novalidate>
+          <div class="mb-3">
+            <label class="form-label" for="username">Username</label>
+            <input id="username" name="username" class="form-control" required autocomplete="username">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-group">
+              <input id="password" type="password" name="password" class="form-control" required autocomplete="current-password" aria-describedby="pwHelp">
+              <button type="button" id="togglePw" class="btn btn-outline-secondary" aria-label="Show password">Show</button>
+            </div>
+            <div id="pwHelp" class="form-text muted">Keep your credentials confidential.</div>
+          </div>
+
+          <button class="btn btn-primary w-100">Log in</button>
+        </form>
+
+        <div class="links mt-3">
+          <a class="btn-link" href="/register">Student Registration</a>
+          <a class="btn-link" href="/forgot-password">Forgot Password?</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Simple show/hide password toggle
+    (function(){
+      const pw = document.getElementById('password');
+      const btn = document.getElementById('togglePw');
+      if (!pw || !btn) return;
+      btn.addEventListener('click', () => {
+        const isPw = pw.type === 'password';
+        pw.type = isPw ? 'text' : 'password';
+        btn.textContent = isPw ? 'Hide' : 'Show';
+        btn.setAttribute('aria-label', isPw ? 'Hide password' : 'Show password');
+      });
+    })();
+  </script>
 </body>
 </html>

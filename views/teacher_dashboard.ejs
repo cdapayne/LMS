@@ -2,59 +2,289 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Teacher Dashboard – School LMS</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js'></script>
+  <title>Teacher Dashboard – MD Technical School</title>
+  <link rel="icon" href="<%= branding?.favicon %>">
 
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root{
+      --primary: #1e90ff;
+      --primary-600: #1e6edb;
+      --secondary: #ff9f1a;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --border: #e5e7eb;
+      --muted: #6b7280;
+      --text: #0f172a;
+      --shadow: 0 .5rem 1rem rgba(0,0,0,.06);
+      --radius: 14px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root{
+        --bg: #0b1220;
+        --surface: #101828;
+        --border: #253045;
+        --muted: #9aa3b2;
+        --text: #e6edf6;
+        --shadow: 0 .5rem 1rem rgba(0,0,0,.35);
+      }
+      .fc-theme-standard .fc-scrollgrid, .fc-theme-standard td, .fc-theme-standard th{
+        border-color: var(--border);
+      }
+    }
+
+    body{
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    }
+
+    /* Header band */
+    .page-head{
+      background:
+        radial-gradient(1200px 120px at 10% -20%, rgba(30,144,255,.08), rgba(30,144,255,0) 60%),
+        radial-gradient(1200px 120px at 90% -30%, rgba(255,159,26,.10), rgba(255,159,26,0) 60%);
+      border-bottom: 1px solid var(--border);
+      padding: 1.1rem 0;
+      margin-bottom: 1rem;
+    }
+    .page-head h1{
+      font-weight: 800; letter-spacing:.2px; font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      margin: 0 0 .15rem 0;
+    }
+    .page-sub{ color: var(--muted); font-size: .95rem; }
+
+    /* Card */
+    .cardish{
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+    }
+    .section-title{
+      display:flex; align-items:center; gap:.6rem; font-weight:800; margin-bottom:.85rem;
+      font-size: 1.05rem;
+    }
+    .section-title .dot{
+      width:10px; height:10px; border-radius:50%; background: var(--secondary);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--secondary) 20%, transparent);
+    }
+
+    /* Classes list */
+    .class-item{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: .85rem 1rem;
+      background: var(--surface);
+      display:flex; justify-content:space-between; align-items:start; gap:.75rem;
+      transition: transform .06s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .class-item:hover{
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+      border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
+    }
+    .class-meta{ font-size:.85rem; color: var(--muted); }
+    .btn-wrap{
+      display:flex; gap:.5rem; flex-wrap: wrap; justify-content:flex-end;
+    }
+    .chip{
+      font-size:.75rem; border:1px solid var(--border); border-radius: 999px; padding:.25rem .5rem; color:var(--muted);
+    }
+
+    /* Buttons */
+    .btn-primary{ background: var(--primary) !important; border-color: var(--primary) !important; }
+    .btn-primary:hover{ background: var(--primary-600) !important; border-color: var(--primary-600) !important; }
+    .btn-outline-primary{ color: var(--primary) !important; border-color: var(--primary) !important; }
+    .btn-outline-primary:hover{ background: var(--primary) !important; color:#fff !important; }
+
+    /* Calendar */
+    #calendar{ min-height: 420px; }
+    @media (max-width: 576px){
+      #calendar{ min-height: 360px; }
+    }
+    .fc .fc-toolbar-title{ font-size: 1rem; font-weight: 700; }
+    .fc .fc-button{ padding: .35rem .5rem; font-size:.85rem; border-radius: 10px; }
+    .fc .fc-daygrid-event, .fc .fc-timegrid-event{
+      border-radius:10px;
+      border: 0;
+      padding:.15rem .35rem;
+      font-weight: 600;
+    }
+    .fc-theme-standard .fc-scrollgrid, .fc-theme-standard td, .fc-theme-standard th{
+      border-color: var(--border);
+    }
+
+    /* Empty state */
+    .empty{
+      border:1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    /* Focus visibility */
+    :focus-visible{ outline: 3px solid color-mix(in srgb, var(--primary) 50%, transparent); outline-offset: 2px; border-radius: 8px; }
+  </style>
 </head>
 <body>
   <%- include('header', { user: { role: 'teacher' } }) %>
-  <div class="container py-4">
-    <h2>Teacher Dashboard</h2>
-    <p>Welcome, <strong><%= teacher.name %></strong>!</p>
-    <div class="list-group">
-      <% classes.forEach(k => { %>
-        <div class="list-group-item d-flex justify-content-between align-items-start">
-          <div>
-            <div class="fw-bold"><%= k.name %></div>
-            <div class="small text-muted"><%= (k.schedule||[]).map(s=> s.day + ' ' + s.time).join(' • ') %></div>
-          </div>
-          <div class="btn-group btn-group-sm" role="group">
-            <a class="btn btn-outline-secondary" href="/teacher/classes/<%= k.id %>#lectures">Lectures</a>
-            <a class="btn btn-outline-primary" href="/teacher/classes/<%= k.id %>#tests">Tests</a>
-          </div>
-        </div>
-      <% }); %>
-    </div>
-  </div>
-    <div id="calendar" class="bg-white p-3 border rounded"></div>
-  <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const calendarEl = document.getElementById('calendar');
-const calendar = new FullCalendar.Calendar(calendarEl, {
-  initialView: 'dayGridMonth',
-  height: 'auto',
-  validRange: function(nowDate) {
-    return {
-      start: nowDate,
-      end: new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate() + 21)
-    };
-  },
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridMonth,timeGridWeek,listWeek'
-  },
-  eventClick: function(info) {
-    info.jsEvent.preventDefault();
-    if (info.event.url) {
-      window.location.href = info.event.url; // go to class or test
-    }
-  }
-});
 
-  calendar.render();
-});
-</script>
+  <header class="page-head" role="banner" aria-label="Dashboard header">
+    <div class="container d-flex flex-wrap justify-content-between align-items-end gap-2">
+      <div>
+        <h1>Teacher Dashboard</h1>
+        <p class="page-sub mb-0">
+          Welcome, <strong><%= teacher?.name || 'Instructor' %></strong>.
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/teacher/reports" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-graph-up"></i> Reports
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container pb-4" role="main">
+    <div class="row g-3">
+      <!-- Left: My Classes -->
+      <section class="col-12 col-lg-6" aria-labelledby="my-classes-title">
+        <div class="cardish h-100">
+          <div class="section-title"><span class="dot"></span><span id="my-classes-title">My Classes</span></div>
+
+          <% if (!classes || classes.length === 0) { %>
+            <div class="empty">
+              <div class="fs-4 mb-1">📚</div>
+              <div class="fw-semibold">No classes assigned yet</div>
+              <div class="small">Once your admin assigns classes, they’ll appear here.</div>
+            </div>
+          <% } else { %>
+            <div class="d-flex flex-column gap-2">
+              <% classes.forEach(k => { %>
+                <article class="class-item" aria-label="Class item">
+                  <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                      <div class="fw-bold"><%= k.name %></div>
+                      <% if (k?.section) { %><span class="chip"><%= k.section %></span><% } %>
+                    </div>
+                    <div class="class-meta">
+                      <% const sched = (k.schedule||[]).map(s => (s.day||'') + ' ' + (s.time||'')); %>
+                      <%= sched.length ? sched.join(' • ') : 'No schedule provided' %>
+                    </div>
+                  </div>
+                  <div class="btn-wrap">
+                    <a class="btn btn-outline-secondary btn-sm" href="/teacher/classes/<%= k.id %>#lectures" aria-label="Go to lectures for <%= k.name %>">
+                      <i class="bi bi-easel"></i> Lectures
+                    </a>
+                    <a class="btn btn-outline-primary btn-sm" href="/teacher/classes/<%= k.id %>#tests" aria-label="Go to tests for <%= k.name %>">
+                      <i class="bi bi-ui-checks-grid"></i> Tests
+                    </a>
+                  </div>
+                </article>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </section>
+
+      <!-- Right: Weekly Calendar -->
+      <section class="col-12 col-lg-6" aria-labelledby="weekly-schedule-title">
+        <div class="cardish h-100">
+          <div class="section-title"><span class="dot"></span><span id="weekly-schedule-title">Weekly Schedule</span></div>
+          <div id="calendar" aria-label="Weekly calendar"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // Calendar build from schedules like: { day: "Monday", time: "09:00 AM - 10:30 AM" }
+    (function initCalendar(){
+      const dayToIndex = { Sunday:0, Monday:1, Tuesday:2, Wednesday:3, Thursday:4, Friday:5, Saturday:6 };
+
+      function parseTime12h(str){
+        if(!str) return null;
+        const m = str.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if(!m) return null;
+        let h = parseInt(m[1],10), min = parseInt(m[2],10), ampm = m[3].toUpperCase();
+        if (ampm === 'PM' && h !== 12) h += 12;
+        if (ampm === 'AM' && h === 12) h = 0;
+        return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+      }
+
+      function dateForWeekday(weekdayIndex){
+        const now = new Date();
+        const d = new Date(now);
+        const diff = weekdayIndex - now.getDay();
+        d.setDate(now.getDate() + diff);
+        d.setHours(0,0,0,0);
+        return d;
+      }
+
+      const classes = <%- JSON.stringify(classes || []) %>;
+      const events = [];
+
+      classes.forEach(k => {
+        (k.schedule || []).forEach(s => {
+          const [startStr, endStr] = String(s.time || '').split('-').map(x => x?.trim());
+          const startTime = parseTime12h(startStr);
+          const endTime   = parseTime12h(endStr);
+          const idx = dayToIndex[s.day];
+          if (!startTime || !endTime || typeof idx !== 'number') return;
+
+          const base = dateForWeekday(idx);
+          const [sh, sm] = startTime.split(':').map(Number);
+          const [eh, em] = endTime.split(':').map(Number);
+          const start = new Date(base); start.setHours(sh, sm, 0, 0);
+          const end   = new Date(base); end.setHours(eh, em, 0, 0);
+
+          events.push({ title: k.name, start, end, url: `/teacher/classes/${k.id}` });
+        });
+      });
+
+      const calendarEl = document.getElementById('calendar');
+      if (!calendarEl) return;
+
+      const smallScreen = window.matchMedia('(max-width: 576px)').matches;
+
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: smallScreen ? 'dayGridMonth' : 'timeGridWeek',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: smallScreen ? 'dayGridMonth,timeGridDay' : 'timeGridWeek,dayGridMonth'
+        },
+        height: 'auto',
+        nowIndicator: true,
+        slotMinTime: "07:00:00",
+        slotMaxTime: "21:00:00",
+        expandRows: true,
+        events,
+        eventClick: function(info){
+          if (info.event.url) {
+            info.jsEvent.preventDefault();
+            window.location.href = info.event.url;
+          }
+        }
+      });
+      calendar.render();
+
+      // Re-render on orientation change for better sizing
+      window.addEventListener('orientationchange', () => setTimeout(() => calendar.updateSize(), 200));
+    })();
+  </script>
 </body>
 </html>
