@@ -45,7 +45,7 @@ async function createTeacher({ name, username, email, password }) {
 async function createStudent({ username, name, email, password, studentId, signatureDataUrl, agreedDocVersion,
   firstName, lastName, suffix, address, city, state, zip, course, affiliateProgram,
   grievanceAck, codeConductSig, cancellationSig, noticeSig, contractSig, contractSigDate,
-  financialAid }) {
+  financialAid, referralName, referralEmail }) {
   const { salt, hash } = hashPassword(password);
 
   const docNow = new Date().toISOString();
@@ -66,6 +66,9 @@ async function createStudent({ username, name, email, password, studentId, signa
       { type: 'contract-acceptance', version: 'v1.0', agreed: true, signedAt: contractSigDate || docNow, signatureDataUrl: contractSig || '' }
     ]
   };
+   if (referralName || referralEmail) {
+    profile.referral = { name: referralName, email: referralEmail };
+  }
 
   const [result] = await db.query(
     `INSERT INTO mdtslms_users (username, name, email, role, salt, hash, status, appliedAt, profile, active)

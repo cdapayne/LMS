@@ -21,6 +21,17 @@ const transporter = nodemailer.createTransport({
 const multer = require('multer');
 const upload = multer();
 
+// Storage for test media uploads
+const mediaStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '../uploads'));
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const mediaUpload = multer({ storage: mediaStorage });
+
 router.use((req, res, next) => {
   if (!req.session || req.session.role !== 'teacher') return res.status(403).send('Forbidden');
   next();
@@ -57,15 +68,13 @@ router.get('/classes/:id/tests/new', async (req, res) => {
 // generate and save a test
 router.post('/classes/:id/tests', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, lecture, questionCount, optionCount } = req.body;
-  const questions = generateQuestions(
+  const { title, lecture, questionCount, optionCount, timeLimit } = req.body;  const questions = generateQuestions(
     lecture || '',
     Number(questionCount) || 0,
     Number(optionCount) || 4,
     title || ''
   );
-  await classModel.addTest(classId, { title, questions });
-  const lines = questions.map(q => {
+  await classModel.addTest(classId, { title, questions, timeLimit: Number(timeLimit) || 90 });  const lines = questions.map(q => {
     const optionCells = [];
     for (let i = 0; i < 7; i++) optionCells.push(q.options[i] || '');
     return [
@@ -108,6 +117,8 @@ router.post('/classes/:id/simulations', async (req, res) => {
 router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) => {
   const classId = Number(req.params.id);
   const title = (req.body.title || 'Uploaded Test').trim();
+    const timeLimit = Number(req.body.timeLimit) || 90;
+
   const csv = req.file && req.file.buffer.toString('utf-8');
   if (csv) {
     const lines = csv.split(/\r?\n/).filter(l => l.trim());
@@ -127,14 +138,22 @@ router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) 
         path: cols[15]
       };
     });
-    await classModel.addTest(classId, { title, questions });
+    await classModel.addTest(classId, { title, questions, timeLimit });
   }
   res.redirect(`/teacher/classes/${classId}#tests`);
 });
 
+// Upload media assets for tests
+router.post('/classes/:id/tests/media', mediaUpload.single('media'), (req, res) => {
+  const classId = Number(req.params.id);
+  if (!req.file) return res.status(400).send('No file uploaded');
+  res.redirect(`/teacher/classes/${classId}#tests`);
+});
+
+
 router.post('/classes/:id/tests/generate', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, prompt } = req.body;
+  const { title, prompt, timeLimit } = req.body;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return res.status(500).send('Missing OpenAI API key');
   try {
@@ -164,8 +183,7 @@ router.post('/classes/:id/tests/generate', async (req, res) => {
       itemType: q['Item Type'],
       path: q.Path
     }));
-    await classModel.addTest(classId, { title: title || 'AI Generated Test', questions });
-  } catch (e) {
+ await classModel.addTest(classId, { title: title || 'AI Generated Test', questions, timeLimit: Number(timeLimit) || 90 });  } catch (e) {
     console.error('OpenAI error', e);
   }
   res.redirect(`/teacher/classes/${classId}#tests`);

@@ -206,6 +206,21 @@
           </div>
 
           <hr class="my-4">
+                    <!-- Referral (optional) -->
+          <div class="section-title">Referral <span class="text-muted">(optional)</span></div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Referrer's Full Name</label>
+              <input name="referralName" class="form-control" value="<%= formData?.referralName || '' %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Referrer's Email</label>
+              <input type="email" name="referralEmail" class="form-control" value="<%= formData?.referralEmail || '' %>">
+            </div>
+          </div>
+
+          <hr class="my-4">
+
 
           <!-- Upload Documents -->
           <div class="section-title">Upload Documents</div>

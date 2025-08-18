@@ -240,12 +240,18 @@
          <form method="POST" action="/teacher/classes/<%= klass.id %>/tests/generate" class="mt-3">
           <input class="form-control mb-2" type="text" name="title" placeholder="Test title">
           <textarea class="form-control mb-2" name="prompt" placeholder="Topic or prompt"></textarea>
+             <input class="form-control mb-2" type="number" name="timeLimit" value="90" min="1" placeholder="Seconds per question">
           <button class="btn btn-sm btn-primary" type="submit">Generate via AI</button>
         </form>
         <form method="POST" action="/teacher/classes/<%= klass.id %>/tests/upload" enctype="multipart/form-data" class="mt-3">
           <input class="form-control mb-2" type="text" name="title" placeholder="Test title">
           <input class="form-control mb-2" type="file" name="csv" accept=".csv">
+               <input class="form-control mb-2" type="number" name="timeLimit" value="90" min="1" placeholder="Seconds per question">
           <button class="btn btn-sm btn-secondary" type="submit">Upload CSV</button>
+        </form>
+            <form method="POST" action="/teacher/classes/<%= klass.id %>/tests/media" enctype="multipart/form-data" class="mt-3">
+          <input class="form-control mb-2" type="file" name="media" accept="image/*,audio/*,video/*">
+          <button class="btn btn-sm btn-secondary" type="submit">Upload Test Media</button>
         </form>
       </section>
     </div>

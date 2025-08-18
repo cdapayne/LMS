@@ -114,6 +114,13 @@
         </div>
       <% } %>
 
+        <% if (selfPay) { %>
+        <div class="mt-3">
+          <a class="btn btn-outline-primary" href="/pay">Make a Payment</a>
+        </div>
+      <% } %>
+
+
       <div class="mt-3">
         <a class="btn btn-primary" href="/login">Back to Login</a>
         <a class="btn btn-link" href="javascript:history.back()">Go Back</a>

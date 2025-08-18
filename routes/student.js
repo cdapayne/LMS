@@ -9,11 +9,7 @@ router.use((req, res, next) => {
   next();
 });
 
-router.get('/', async (req, res) => {
-  const classes = await classModel.getAllClasses();
-  const my = classes.filter(k => (k.studentIds || []).includes(req.session.user.id));
-  res.render('student_dashboard', { user: req.session.user, classes: my });
-});
+
 
 router.get('/classes/:id', async (req, res) => {
   const id = Number(req.params.id);
@@ -59,37 +55,72 @@ router.get('/', async (req, res) => {
   const threeWeeksFromNow = new Date();
   threeWeeksFromNow.setDate(now.getDate() + 21);
 
-my.forEach(klass => {
-  (klass.schedule || []).forEach(s => {
-    const dayIndex = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(s.day);
-    let date = new Date(now);
-    while (date <= threeWeeksFromNow) {
-      if (date.getDay() === dayIndex) {
-        events.push({
-          title: klass.name + ' (Class)',
-          start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), parseInt(s.time), 0),
-          url: `/student/classes/${klass.id}` // NEW: link to class page
-        });
-      }
-      date.setDate(date.getDate() + 1);
+ // Latest grades and pending tasks/homework
+  const latestGrades = [];
+  const tasks = [];
+
+  my.forEach(klass => {
+    const studentGrades = (klass.grades || []).filter(g => g.studentId === req.session.user.id);
+
+    if (studentGrades.length) {
+      studentGrades.sort((a, b) => new Date(b.gradedAt) - new Date(a.gradedAt));
+      const latest = studentGrades[0];
+      const testInfo = (klass.tests || []).find(t => t.id === latest.testId);
+      latestGrades.push({
+        className: klass.name,
+        testTitle: testInfo ? testInfo.title : `Test ${latest.testId}`,
+        score: latest.score,
+        gradedAt: latest.gradedAt
+      });
     }
+
+    (klass.schedule || []).forEach(s => {
+      const dayIndex = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(s.day);
+      let date = new Date(now);
+      while (date <= threeWeeksFromNow) {
+        if (date.getDay() === dayIndex) {
+          events.push({
+            title: klass.name + ' (Class)',
+            start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), parseInt(s.time), 0),
+            url: `/student/classes/${klass.id}` // NEW: link to class page
+          });
+        }
+        date.setDate(date.getDate() + 1);
+      }
+    });
+
+    (klass.tests || []).forEach(test => {
+      if (test.dueDate) {
+        const due = new Date(test.dueDate);
+        if (due >= now && due <= threeWeeksFromNow) {
+          events.push({
+            title: klass.name + ' - ' + test.title + ' (Due)',
+            start: due,
+            url: `/student/classes/${klass.id}/tests/${test.id}` // NEW: link to take/view test
+          });
+        }
+
+        const graded = studentGrades.some(g => g.testId === test.id);
+        if (due >= now && !graded) {
+          tasks.push({
+            className: klass.name,
+            title: test.title,
+            dueDate: test.dueDate,
+            classId: klass.id,
+            testId: test.id
+          });
+        }
+      }
+    });
   });
 
-  (klass.tests || []).forEach(test => {
-    if (test.dueDate) {
-      const due = new Date(test.dueDate);
-      if (due >= now && due <= threeWeeksFromNow) {
-        events.push({
-          title: klass.name + ' - ' + test.title + ' (Due)',
-          start: due,
-          url: `/student/classes/${klass.id}/tests/${test.id}` // NEW: link to take/view test
-        });
-      }
-    }
+  res.render('student_dashboard', {
+    user: req.session.user,
+    classes: my,
+    events,
+    latestGrades,
+    tasks
   });
-});
-
-  res.render('student_dashboard', { user: req.session.user, classes: my, events });
 });
 
 router.post('/classes/:id/tests/:testId', async (req, res) => {

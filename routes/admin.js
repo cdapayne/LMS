@@ -5,7 +5,20 @@ const classModel = require('../models/classModel');
 const userModel = require('../models/userModel');
 const multer = require('multer');
 const crypto = require('crypto');
+const path = require('path');
+
 const upload = multer();
+
+// Storage for test media uploads
+const mediaStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '../uploads'));
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const mediaUpload = multer({ storage: mediaStorage });
 
 const nodemailer = require('nodemailer');
 
@@ -45,24 +58,38 @@ router.post('/approve/:id', async (req, res) => {
   if (user && user.email) {
     const name = (user.profile && user.profile.firstName) || user.name || 'Student';
     try {
-            const brand = req.app.locals.branding;
-
+           const brand = req.app.locals.branding;
+      const confettiGif = 'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif';
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: user.email,
         subject: 'Application approved',
-        text: `Hi ${name}, your registration has been approved. You can now log in.`,
+        text: `Congratulations ${name}! You have been approved for MD Technical School. Visit https://mdts-apps.com/login to start accessing your course materials.`,
         html: `
           <div style="font-family:Arial,sans-serif;text-align:center;">
+            <img src="${confettiGif}" alt="Celebration" style="width:100%;max-width:400px;height:auto;margin-bottom:10px;">
             <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
-            <p>Hi ${name}, your registration has been approved. You can now log in.</p>
+            <h2>Congratulations ${name}!</h2>
+            <p>You have been approved for MD Technical School.</p>
+            <p><a href="https://mdts-apps.com/login">Log in to the student portal</a></p>
+            <p><a href="https://mdts-apps.com/classes">Access your classes</a></p>
           </div>
-        `      });
+        `
+      });
     } catch (e) {
       console.error('Error sending approval email', e);
     }
-  }  res.redirect('/admin/students/pending');
+  }
+  res.redirect('/admin/students/pending');
 });
+
+router.post('/classes/:id/tests/media', mediaUpload.single('media'), (req, res) => {
+  const classId = Number(req.params.id);
+  if (!req.file) return res.status(400).send('No file uploaded');
+  res.redirect(`/admin/classes/${classId}#tests`);
+});
+
+
 router.post('/decline/:id', async (req, res) => {
   await userModel.setStatus(Number(req.params.id), 'declined');
   res.redirect('/admin/students/pending');
@@ -222,6 +249,8 @@ router.post('/classes/:id/simulations', async (req, res) => {
 router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) => {
   const classId = Number(req.params.id);
   const title = (req.body.title || 'Uploaded Test').trim();
+    const timeLimit = Number(req.body.timeLimit) || 90;
+
   const csv = req.file && req.file.buffer.toString('utf-8');
   if (csv) {
     const lines = csv.split(/\r?\n/).filter(l => l.trim());
@@ -241,14 +270,14 @@ router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) 
         path: cols[15]
       };
     });
-    await classModel.addTest(classId, { title, questions });
+    await classModel.addTest(classId, { title, questions, timeLimit });
   }
   res.redirect(`/admin/classes/${classId}#tests`);
 });
 
 router.post('/classes/:id/tests/generate', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, prompt } = req.body;
+  const { title, prompt, timeLimit } = req.body;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return res.status(500).send('Missing OpenAI API key');
   try {
@@ -278,8 +307,7 @@ router.post('/classes/:id/tests/generate', async (req, res) => {
       itemType: q['Item Type'],
       path: q.Path
     }));
-    await classModel.addTest(classId, { title: title || 'AI Generated Test', questions });
-  } catch (e) {
+ await classModel.addTest(classId, { title: title || 'AI Generated Test', questions, timeLimit: Number(timeLimit) || 90 });  } catch (e) {
     console.error('OpenAI error', e);
   }
   res.redirect(`/admin/classes/${classId}#tests`);

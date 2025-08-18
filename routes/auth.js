@@ -163,14 +163,17 @@ router.post('/register', (req, res) => {
       const zip = ensureStr(req.body.zip);
       const course = ensureStr(req.body.course);
       const affiliateProgram = ensureStr(req.body.affiliateProgram);
+            const selfPay = affiliateProgram === 'Self Pay';
+
       const grievanceAck = ensureStr(req.body.grievanceAck);
       const codeConductSig = ensureStr(req.body.codeConductSig);
       const cancellationSig = ensureStr(req.body.cancellationSig);
       const noticeSig = ensureStr(req.body.noticeSig);
       const contractSig = ensureStr(req.body.contractSig);
       const contractSigDate = ensureStr(req.body.contractSigDate);
-            const financialAid = ensureStr(req.body.financialAid);
-
+      const financialAid = ensureStr(req.body.financialAid);
+      const referralName = ensureStr(req.body.referralName);
+      const referralEmail = ensureStr(req.body.referralEmail);
 
       if (email !== confirmEmail) {
         return res.status(400).render('register', {
@@ -212,9 +215,10 @@ router.post('/register', (req, res) => {
         noticeSig,
         contractSig,
         contractSigDate,
-         financialAid: financialAid === 'yes',
-        agreedDocVersion: DOC_VERSION
-        
+        financialAid: financialAid === 'yes',
+        agreedDocVersion: DOC_VERSION,
+        referralName,
+        referralEmail
       });
         if (req.files && req.files.length) {
         const uploads = req.files.map(f => ({
@@ -241,8 +245,7 @@ router.post('/register', (req, res) => {
           </div>
         `      });
 
-      return res.render('pending', { user: { firstName, lastName, name: `${firstName} ${lastName}` }, financialAid: financialAid === 'yes' });
-    } catch (e) {
+      return res.render('pending', { user: { firstName, lastName, name: `${firstName} ${lastName}` }, financialAid: financialAid === 'yes', selfPay });    } catch (e) {
       console.error(e);
       return res.status(500).render('register', {
         error: 'Registration failed. Please try again.',

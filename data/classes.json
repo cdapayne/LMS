@@ -46,8 +46,8 @@
               "5",
               "6"
             ],
-            "answer": 1
-          },
+ "answer": 1,
+            "explanation": "Adding two and two gives four."          },
           {
             "question": "x in 3 + x = 5?",
             "options": [
@@ -56,8 +56,8 @@
               "3",
               "4"
             ],
-            "answer": 1
-          }
+ "answer": 1,
+            "explanation": "Subtract 3 from both sides to find x = 2."          }
         ]
       }
     ],

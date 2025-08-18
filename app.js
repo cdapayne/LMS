@@ -8,6 +8,8 @@ const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const studentRoutes = require('./routes/student');
 const teacherRoutes = require('./routes/teacher');
+const paymentRoutes = require('./routes/payment');
+
 
 const app = express();
 
@@ -45,6 +47,8 @@ app.get('/dashboard', (req, res) => {
 
 app.use(authRoutes);
 app.use('/admin', adminRoutes);
+app.use(paymentRoutes);
+
 app.use('/student', studentRoutes);
 app.use('/teacher', teacherRoutes);
 

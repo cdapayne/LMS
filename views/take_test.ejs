@@ -10,6 +10,7 @@
   <div class="container py-4">
     <h2><%= test.title %></h2>
     <p>Class: <%= klass.name %></p>
+        <div id="timer" class="mb-3">Time Left: <span id="time-left"></span></div>
     <form method="post" action="/student/classes/<%= klass.id %>/tests/<%= test.id %>">
       <% test.questions.forEach((q, i) => { %>
         <div class="mb-3">
@@ -27,5 +28,22 @@
       <button class="btn btn-primary">Submit</button>
     </form>
   </div>
+    <script>
+    const totalSeconds = (<%= test.timeLimit || 90 %>) * <%= test.questions.length %>;
+    let remaining = totalSeconds;
+    const display = document.getElementById('time-left');
+    function updateTimer() {
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      display.textContent = `${minutes}:${seconds.toString().padStart(2,'0')}`;
+      if (remaining <= 0) {
+        document.querySelector('form').submit();
+      } else {
+        remaining--;
+        setTimeout(updateTimer, 1000);
+      }
+    }
+    updateTimer();
+  </script>
 </body>
 </html>

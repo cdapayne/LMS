@@ -94,7 +94,44 @@
       <% } %>
          <a href="/student/study" class="btn btn-outline-primary ms-auto">Study Test</a>
     </div>
-
+        <div class="row mb-4">
+      <div class="col-md-6 mb-3 mb-md-0">
+        <h5>Latest Grades</h5>
+        <% if ((latestGrades || []).length) { %>
+          <ul class="list-group">
+            <% latestGrades.forEach(g => { %>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div><strong><%= g.className %></strong> - <%= g.testTitle %></div>
+                  <div class="small text-muted">Graded <%= new Date(g.gradedAt).toLocaleDateString() %></div>
+                </div>
+                <span class="badge bg-primary rounded-pill"><%= g.score %>%</span>
+              </li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <div class="text-muted">No grades yet.</div>
+        <% } %>
+      </div>
+      <div class="col-md-6">
+        <h5>Homework</h5>
+        <% if ((tasks || []).length) { %>
+          <ul class="list-group">
+            <% tasks.forEach(t => { %>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div><strong><%= t.className %></strong> - <%= t.title %></div>
+                  <div class="small text-muted">Due <%= new Date(t.dueDate).toLocaleDateString() %></div>
+                </div>
+                <a href="/student/classes/<%= t.classId %>/tests/<%= t.testId %>" class="btn btn-sm btn-outline-primary">Open</a>
+              </li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <div class="text-muted">No homework assigned.</div>
+        <% } %>
+      </div>
+    </div>
     <% if (classes.length === 0) { %>
       <div class="class-card">
         <div class="alert alert-info m-0">You are not enrolled in any classes yet.</div>
