@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const classModel = require('../models/classModel');
+const { generateQuestions } = require('../utils/questionGenerator');
 
 router.use((req, res, next) => {
   if (!req.session || req.session.role !== 'student') return res.status(403).send('Forbidden');
@@ -30,6 +31,23 @@ router.get('/classes/:id/tests/:testId', async (req, res) => {
   if (!test) return res.status(404).send('Test not found');
   res.render('take_test', { klass, test });
 });
+
+// study helper for custom material
+router.get('/study', (req, res) => {
+  res.render('study_test');
+});
+
+router.post('/study', (req, res) => {
+  const { lecture, questionCount, optionCount } = req.body;
+  const questions = generateQuestions(
+    lecture || '',
+    Number(questionCount) || 0,
+    Number(optionCount) || 4,
+    'Study'
+  );
+  res.render('study_test', { questions });
+});
+
 
 router.get('/', async (req, res) => {
   const classes = await classModel.getAllClasses();

@@ -3,6 +3,9 @@ const router = express.Router();
 
 const classModel = require('../models/classModel');
 const userModel = require('../models/userModel');
+const multer = require('multer');
+const crypto = require('crypto');
+const upload = multer();
 
 const nodemailer = require('nodemailer');
 
@@ -68,8 +71,36 @@ router.post('/decline/:id', async (req, res) => {
 router.get('/students/:id', async (req, res) => {
   const student = await userModel.findById(Number(req.params.id));
   if (!student) return res.status(404).send('Not found');
-  res.render('student_profile', { student });
+res.render('student_profile', { student, role: 'admin', reset: req.query.reset });
 });
+
+router.post('/students/:id/reset-password', async (req, res) => {
+  const id = Number(req.params.id);
+  const user = await userModel.findById(id);
+  if (!user) return res.status(404).send('Not found');
+  const newPassword = crypto.randomBytes(4).toString('hex');
+  await userModel.updatePassword(user.username, newPassword);
+  if (user.email) {
+    try {
+      const brand = req.app.locals.branding;
+      await transporter.sendMail({
+        from: 'no-reply@mdts-apps.com',
+        to: user.email,
+        subject: 'Password reset',
+        text: `Hi ${user.name || 'User'}, your password has been reset. Your new password is: ${newPassword}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;text-align:center;">
+            <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
+            <p>Hi ${user.name || 'User'}, your password has been reset.</p>
+            <p>Your new password is: <strong>${newPassword}</strong></p>
+          </div>
+        `
+      });
+    } catch (e) {
+      console.error('Error sending reset email', e);
+    }
+  }
+  res.redirect(`/admin/students/${id}?reset=1`);});
 
 router.get('/denied', async (_req, res) => {
   const users = await userModel.getAll();
@@ -170,6 +201,91 @@ router.get('/classes/:id', async (req, res) => {
   res.render('view_class', { klass, students, classStudents, studentView: false });
 });
 
+router.post('/classes/:id/lectures', async (req, res) => {
+  const classId = Number(req.params.id);
+  const { title, url } = req.body;
+  if (title && url) {
+    await classModel.addLecture(classId, { title: title.trim(), url: url.trim() });
+  }
+  res.redirect(`/admin/classes/${classId}#lectures`);
+});
+
+router.post('/classes/:id/simulations', async (req, res) => {
+  const classId = Number(req.params.id);
+  const { title, url } = req.body;
+  if (title && url) {
+    await classModel.addSimulation(classId, { title: title.trim(), url: url.trim() });
+  }
+  res.redirect(`/admin/classes/${classId}#simulations`);
+});
+
+router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) => {
+  const classId = Number(req.params.id);
+  const title = (req.body.title || 'Uploaded Test').trim();
+  const csv = req.file && req.file.buffer.toString('utf-8');
+  if (csv) {
+    const lines = csv.split(/\r?\n/).filter(l => l.trim());
+    const [, ...rows] = lines;
+    const questions = rows.map(line => {
+      const cols = line.split(',');
+      return {
+        question: cols[0],
+        answer: cols[1],
+        explanation: cols[2],
+        picture: cols[3],
+        options: cols.slice(4, 11).filter(Boolean),
+        test: cols[11],
+        contentType: cols[12],
+        title: cols[13],
+        itemType: cols[14],
+        path: cols[15]
+      };
+    });
+    await classModel.addTest(classId, { title, questions });
+  }
+  res.redirect(`/admin/classes/${classId}#tests`);
+});
+
+router.post('/classes/:id/tests/generate', async (req, res) => {
+  const classId = Number(req.params.id);
+  const { title, prompt } = req.body;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return res.status(500).send('Missing OpenAI API key');
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: `Create a JSON array of questions for ${prompt}. Each item should contain fields: Question, Answer, Explanation, Picture, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG, Test, Content Type, Title, Item Type, Path.` }]
+      })
+    });
+    const data = await response.json();
+    let items = [];
+    try { items = JSON.parse(data.choices[0].message.content); } catch (_) { items = []; }
+    const questions = items.map(q => ({
+      question: q.Question,
+      answer: q.Answer,
+      explanation: q.Explanation,
+      picture: q.Picture,
+      options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD, q.OptionE, q.OptionF, q.OptionG].filter(Boolean),
+      test: q.Test,
+      contentType: q['Content Type'],
+      title: q.Title,
+      itemType: q['Item Type'],
+      path: q.Path
+    }));
+    await classModel.addTest(classId, { title: title || 'AI Generated Test', questions });
+  } catch (e) {
+    console.error('OpenAI error', e);
+  }
+  res.redirect(`/admin/classes/${classId}#tests`);
+});
+
+
 router.get('/reports/pending-students', async (_req, res) => {
   const users = await userModel.getAll();
   const pending = users.filter(u => u.role === 'student' && (u.status === 'pending' || !u.status));
@@ -208,6 +324,16 @@ router.post('/classes/:id/duplicate', async (req, res) => {
   const copy = await classModel.duplicateClass(id);
   if (!copy) return res.status(404).send('Not found');
   res.redirect(`/admin/classes/${copy.id}`);
+});
+
+router.post('/users/:id/deactivate', async (req, res) => {
+  await userModel.setActive(Number(req.params.id), false);
+  res.redirect('back');
+});
+
+router.post('/users/:id/activate', async (req, res) => {
+  await userModel.setActive(Number(req.params.id), true);
+  res.redirect('back');
 });
 
 // Delete teacher

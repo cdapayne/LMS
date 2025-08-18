@@ -13,6 +13,7 @@ function mapRow(row) {
   if (row.profile && typeof row.profile === 'string') {
     try { row.profile = JSON.parse(row.profile); } catch (_) { row.profile = null; }
   }
+    row.active = row.active === undefined || row.active === null ? true : !!row.active;
   return row;
 }
 
@@ -35,8 +36,8 @@ function verifyPassword(user, candidatePassword) {
 async function createTeacher({ name, username, email, password }) {
    const { salt, hash } = hashPassword(password);
   const [result] = await db.query(
-    'INSERT INTO mdtslms_users (name, username, email, role, status, salt, hash) VALUES (?,?,?,?,?,?,?)',
-    [name, username, email, 'teacher', 'approved', salt, hash]
+     'INSERT INTO mdtslms_users (name, username, email, role, status, salt, hash, active) VALUES (?,?,?,?,?,?,?,?)',
+    [name, username, email, 'teacher', 'approved', salt, hash, 1]
   );
   return { id: result.insertId };
 }
@@ -67,9 +68,9 @@ async function createStudent({ username, name, email, password, studentId, signa
   };
 
   const [result] = await db.query(
-    `INSERT INTO mdtslms_users (username, name, email, role, salt, hash, status, appliedAt, profile)
-     VALUES (?, ?, ?, 'student', ?, ?, 'pending', ?, ?)`,
-    [username, name, email, salt, hash, docNow, JSON.stringify(profile)]
+    `INSERT INTO mdtslms_users (username, name, email, role, salt, hash, status, appliedAt, profile, active)
+     VALUES (?, ?, ?, 'student', ?, ?, 'pending', ?, ?, ?)`,
+    [username, name, email, salt, hash, docNow, JSON.stringify(profile), 1]
   );
    return mapRow({
     id: result.insertId,
@@ -81,6 +82,12 @@ async function createStudent({ username, name, email, password, studentId, signa
     profile
   });
 }
+
+async function setActive(id, active) {
+  await db.query('UPDATE mdtslms_users SET active=? WHERE id=?', [active ? 1 : 0, id]);
+  return findById(id);
+}
+
 
 async function updatePassword(username, newPassword) {
   const { salt, hash } = hashPassword(newPassword);
@@ -128,6 +135,7 @@ module.exports = {
   createStudent,
   createTeacher,
   setStatus,
+    setActive,
   addUploads,
    updatePassword,
   getAll,

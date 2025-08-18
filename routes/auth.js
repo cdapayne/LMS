@@ -114,6 +114,9 @@ router.post('/login', async (req, res) => {
   if (!user || !userModel.verifyPassword(user, password)) {
     return res.status(401).render('login', { error: 'Invalid credentials' });
   }
+   if (user.active === false) {
+    return res.status(403).render('login', { error: 'Account deactivated' });
+  }
   req.session.user = { id: user.id, name: user.name, username: user.username, firstName: user.firstName, lastName: user.lastName };
   req.session.role = user.role;
 

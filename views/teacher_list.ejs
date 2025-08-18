@@ -105,10 +105,17 @@
                   <td><%= t.name %></td>
                   <td>@<%= t.username %></td>
                   <td><%= t.email %></td>
-                  <td><span class="badge bg-<%= t.status === 'approved' ? 'success' : 'secondary' %>"><%= t.status %></span></td>
+                                  <td>
+                    <span class="badge bg-<%= t.active ? (t.status === 'approved' ? 'success' : 'secondary') : 'danger' %>">
+                      <%= t.active ? t.status : 'inactive' %>
+                    </span>
+                  </td>
                   <td>
-                    <div class="d-flex flex-wrap gap-2">
+                  <div class="d-flex flex-wrap gap-2">
                       <a class="btn btn-sm btn-outline-primary" href="/admin/teachers/<%= t.id %>/edit">Edit</a>
+                      <form method="post" action="/admin/users/<%= t.id %>/<%= t.active ? 'deactivate' : 'activate' %>" onsubmit="return confirm('<%= t.active ? 'Deactivate' : 'Activate' %> this teacher?');">
+                        <button class="btn btn-sm btn-outline-<%= t.active ? 'warning' : 'success' %>"><%= t.active ? 'Deactivate' : 'Activate' %></button>
+                      </form>
                       <form method="post" action="/admin/teachers/<%= t.id %>/delete" onsubmit="return confirm('Delete this teacher?');">
                         <button class="btn btn-sm btn-outline-danger">Delete</button>
                       </form>
