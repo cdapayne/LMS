@@ -1,0 +1,66 @@
+:root{
+  --primary-color: dodgerblue;
+  --secondary-color: orange;
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --text: #111827;
+  --muted: #6b7280;
+  --focus: rgba(30,144,255,.35);
+}
+
+[data-theme="dark"]{
+  --bg: #111827;
+  --surface: #1f2937;
+  --border: #374151;
+  --text: #f3f4f6;
+  --muted: #9ca3af;
+  --focus: rgba(30,144,255,.65);
+}
+
+body{
+  background: var(--bg);
+  color: var(--text);
+  font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.bg-primary{ background-color: var(--primary-color) !important; }
+.text-primary{ color: var(--primary-color) !important; }
+.btn-primary{
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+.btn-primary:hover{
+  background-color:#1e6edb !important;
+  border-color:#1e6edb !important;
+}
+.btn-outline-primary{
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+.btn-outline-primary:hover{
+  background-color: var(--primary-color) !important;
+  color:#fff !important;
+}
+.form-control:focus{
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 .25rem var(--focus);
+}
+.btn-link{
+  color: var(--primary-color) !important;
+  font-weight:600;
+  text-decoration:none;
+}
+.btn-link:hover{
+  color: var(--secondary-color) !important;
+  text-decoration:underline;
+}
+.muted{ color: var(--muted); }
+
+/* reusable form card layout */
+.form-wrap{ min-height:100svh; display:grid; place-items:center; padding:1rem; }
+.form-card{ width:100%; max-width:600px; background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 .8rem 1.6rem rgba(0,0,0,.08); }
+.form-head{ padding:1.75rem 1.25rem; text-align:center; color:#fff; background:linear-gradient(120deg, rgba(30,144,255,.95), rgba(30,144,255,.85)), radial-gradient(1200px 500px at 10% -20%, rgba(255,165,0,.35), transparent); }
+.form-head img{ height:64px; width:auto; margin-bottom:.5rem; object-fit:contain; }
+.form-title{ font-weight:800; margin:0; font-size:1.5rem; }
+.form-body{ padding:1.25rem; }
