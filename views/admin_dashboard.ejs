@@ -196,105 +196,281 @@
     </section>
     
  <!-- Charts -->
-    <div class="row g-3 mt-4">
-      <div class="col-12 col-md-6">
-        <div class="chart-card">
-          <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
-          <div id="chart-student-status" class="chart-container"></div>
-        </div>
+
+  <div class="row g-3 mt-4">
+    <div class="col-12 col-md-6">
+      <div class="chart-card">
+        <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
+        <div id="chart-student-status" class="chart-container"></div>
       </div>
-      <div class="col-12 col-md-6">
-        <div class="chart-card">
-          <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
-          <div id="chart-class-size" class="chart-container"></div>
-        </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="chart-card">
+        <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
+        <div id="chart-class-size" class="chart-container"></div>
       </div>
-      <div class="col-12 col-md-6">
-        <div class="chart-card">
-          <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
-          <div id="chart-pending" class="chart-container"></div>
-        </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="chart-card">
+        <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
+        <div id="chart-pending" class="chart-container"></div>
       </div>
-      <div class="col-12 col-md-6">
-        <div class="chart-card">
-          <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
-          <div id="chart-approved" class="chart-container"></div>
-        </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="chart-card">
+        <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
+        <div id="chart-approved" class="chart-container"></div>
       </div>
     </div>
   </div>
+  </div>
 
-  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-  <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
-  <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
-  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-  <script>
-    const chartData = {
-      "chart-student-status": [
-        { category: "Approved", value: <%= approvedCount %> },
-        { category: "Pending", value: <%= pendingCount %> }
-      ],
-      "chart-class-size": <%- JSON.stringify(classSizes.map(c => ({ category: c.name, value: c.size }))) %>,
-      "chart-pending": [{ category: "Pending", value: <%= pendingCount %> }],
-      "chart-approved": [{ category: "Approved", value: <%= approvedCount %> }]
-    };
+<!-- Chart edit modal -->
+<div class="modal fade" id="chartModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <form id="chartForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Configure Chart</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="chartId">
+          <div class="mb-3">
+            <label class="form-label">Chart Type</label>
+            <select id="chartType" class="form-select">
+              <option value="line">Line</option>
+              <option value="pie">Pie</option>
+              <option value="bar">Bar</option>
+              <option value="realtime">Real-time Sorting</option>
+              <option value="cylinder3d">3D Cylinder</option>
+              <option value="pie3d">3D Pie</option>
+              <option value="map">Map</option>
+              <option value="pictorial">Pictorial</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Table</label>
+            <select id="dataTable" class="form-select"></select>
+          </div>
+          <div id="fieldSelectors">
+            <div class="mb-3">
+              <label class="form-label">Category Field</label>
+              <select id="categoryField" class="form-select"></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Value Field</label>
+              <select id="valueField" class="form-select"></select>
+            </div>
+          </div>
+          <div id="mapSelectors" class="d-none">
+            <div class="mb-3">
+              <label class="form-label">Latitude Field</label>
+              <select id="latField" class="form-select"></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Longitude Field</label>
+              <select id="lonField" class="form-select"></select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
-    const chartDefaults = {
-      "chart-student-status": "pie",
-      "chart-class-size": "bar",
-      "chart-pending": "bar",
-      "chart-approved": "bar"
-    };
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/map.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script>
+  const chartData = {
+    "chart-student-status": [
+      { category: "Approved", value: <%= approvedCount %> },
+      { category: "Pending", value: <%= pendingCount %> }
+    ],
+    "chart-class-size": <%- JSON.stringify(classSizes.map(c => ({ category: c.name, value: c.size }))) %>,
+    "chart-pending": [{ category: "Pending", value: <%= pendingCount %> }],
+    "chart-approved": [{ category: "Approved", value: <%= approvedCount %> }]
+  };
 
-    const roots = {};
+  const chartDefaults = {
+    "chart-student-status": "pie",
+    "chart-class-size": "bar",
+    "chart-pending": "bar",
+    "chart-approved": "bar"
+  };
 
-    function renderChart(id, type) {
-      if (roots[id]) { roots[id].dispose(); }
-      const root = am5.Root.new(id);
-      roots[id] = root;
-      root.setThemes([am5themes_Animated.new(root)]);
-      const data = chartData[id];
-      if (type === "pie") {
-        const chart = root.container.children.push(am5percent.PieChart.new(root, {}));
-        const series = chart.series.push(am5percent.PieSeries.new(root, { valueField: "value", categoryField: "category" }));
-        series.data.setAll(data);
-      } else if (type === "line") {
-        const chart = root.container.children.push(am5xy.XYChart.new(root, {}));
-        const xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField: "category" }));
-        const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
-        const series = chart.series.push(am5xy.LineSeries.new(root, { xAxis, yAxis, valueYField: "value", categoryXField: "category" }));
-        xAxis.data.setAll(data);
-        series.data.setAll(data);
-      } else if (type === "bar") {
-        const chart = root.container.children.push(am5xy.XYChart.new(root, { paddingLeft:0, paddingRight:0 }));
-        const xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField: "category", renderer: am5xy.AxisRendererX.new(root, {}) }));
-        const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
-        const series = chart.series.push(am5xy.ColumnSeries.new(root, { xAxis, yAxis, valueYField: "value", categoryXField: "category" }));
-        xAxis.data.setAll(data);
-        series.data.setAll(data);
-      } else {
-        alert("Selected chart type not implemented yet.");
-        renderChart(id, chartDefaults[id]);
-      }
-    }
+  const roots = {};
+  let metaTables = {};
+  const modal = new bootstrap.Modal(document.getElementById('chartModal'));
+  const form = document.getElementById('chartForm');
+  const tableSelect = document.getElementById('dataTable');
+  const categorySelect = document.getElementById('categoryField');
+  const valueSelect = document.getElementById('valueField');
+  const latSelect = document.getElementById('latField');
+  const lonSelect = document.getElementById('lonField');
+  const typeSelect = document.getElementById('chartType');
+  const fieldSelectors = document.getElementById('fieldSelectors');
+  const mapSelectors = document.getElementById('mapSelectors');
 
-    document.querySelectorAll('.chart-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const card = btn.closest('.chart-card');
-        const id = card.querySelector('.chart-container').id;
-        const current = localStorage.getItem('chartType:' + id) || chartDefaults[id];
-        const type = prompt('Choose chart type: line, pie, bar, realTime, cylinder3d, pie3d, map, pictorial', current);
-        if (type) {
-          localStorage.setItem('chartType:' + id, type);
-          renderChart(id, type);
-        }
+  async function loadMeta() {
+    if (Object.keys(metaTables).length) return;
+    const res = await fetch('/admin/chart/meta');
+    const data = await res.json();
+    metaTables = data.tables || {};
+  }
+
+  function populateTables() {
+    tableSelect.innerHTML = '<option value="">Select table</option>';
+    Object.keys(metaTables).forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t; tableSelect.appendChild(opt);
+    });
+  }
+
+  tableSelect.addEventListener('change', () => {
+    const cols = metaTables[tableSelect.value] || [];
+    [categorySelect, valueSelect, latSelect, lonSelect].forEach(sel => {
+      sel.innerHTML = '';
+      cols.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c; sel.appendChild(opt);
       });
     });
+  });
 
-    Object.keys(chartData).forEach(id => {
-      const type = localStorage.getItem('chartType:' + id) || chartDefaults[id];
-      renderChart(id, type);
+  typeSelect.addEventListener('change', () => {
+    const isMap = typeSelect.value === 'map';
+    fieldSelectors.classList.toggle('d-none', isMap);
+    mapSelectors.classList.toggle('d-none', !isMap);
+  });
+
+  document.querySelectorAll('.chart-edit').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await loadMeta();
+      populateTables();
+      const card = btn.closest('.chart-card');
+      const id = card.querySelector('.chart-container').id;
+      document.getElementById('chartId').value = id;
+      const config = JSON.parse(localStorage.getItem('chartConfig:' + id) || '{}');
+      typeSelect.value = config.type || chartDefaults[id];
+      tableSelect.value = config.table || '';
+      tableSelect.dispatchEvent(new Event('change'));
+      categorySelect.value = config.category || '';
+      valueSelect.value = config.value || '';
+      latSelect.value = config.lat || '';
+      lonSelect.value = config.lon || '';
+      typeSelect.dispatchEvent(new Event('change'));
+      modal.show();
     });
-  </script>
-  </body>
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('chartId').value;
+    const config = {
+      type: typeSelect.value,
+      table: tableSelect.value,
+      category: categorySelect.value,
+      value: valueSelect.value,
+      lat: latSelect.value,
+      lon: lonSelect.value
+    };
+    localStorage.setItem('chartConfig:' + id, JSON.stringify(config));
+    modal.hide();
+    renderChart(id, config);
+  });
+
+  async function fetchData(config, id) {
+    if (config.table) {
+      const params = new URLSearchParams(config);
+      const res = await fetch('/admin/chart/data?' + params.toString());
+      return res.json();
+    }
+    return chartData[id];
+  }
+
+  async function renderChart(id, config) {
+    const data = await fetchData(config, id);
+    if (roots[id]) roots[id].dispose();
+    const root = am5.Root.new(id);
+    roots[id] = root;
+    root.setThemes([am5themes_Animated.new(root)]);
+    let chart, series;
+    switch(config.type) {
+      case 'pie':
+        chart = root.container.children.push(am5percent.PieChart.new(root, {}));
+        series = chart.series.push(am5percent.PieSeries.new(root, { valueField:'value', categoryField:'category' }));
+        series.data.setAll(data);
+        break;
+      case 'line':
+        chart = root.container.children.push(am5xy.XYChart.new(root, {}));
+        const lx = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField:'category' }));
+        const ly = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
+        series = chart.series.push(am5xy.LineSeries.new(root, { xAxis: lx, yAxis: ly, valueYField:'value', categoryXField:'category' }));
+        lx.data.setAll(data); series.data.setAll(data);
+        break;
+      case 'bar':
+        chart = root.container.children.push(am5xy.XYChart.new(root, { paddingLeft:0, paddingRight:0 }));
+        const bx = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField:'category', renderer: am5xy.AxisRendererX.new(root, {}) }));
+        const by = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
+        series = chart.series.push(am5xy.ColumnSeries.new(root, { xAxis: bx, yAxis: by, valueYField:'value', categoryXField:'category' }));
+        bx.data.setAll(data); series.data.setAll(data);
+        break;
+      case 'realtime':
+        chart = root.container.children.push(am5xy.XYChart.new(root, {}));
+        const rx = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField:'category' }));
+        const ry = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
+        series = chart.series.push(am5xy.ColumnSeries.new(root, { xAxis: rx, yAxis: ry, valueYField:'value', categoryXField:'category', sequencedInterpolation:true }));
+        rx.data.setAll(data); series.data.setAll(data);
+        series.events.on('datavalidated', () => {
+          series.dataItems.sort((a,b) => b.get('valueY') - a.get('valueY'));
+          series.dataItems.forEach((di,i) => di.set('index', i));
+        });
+        break;
+      case 'cylinder3d':
+        chart = root.container.children.push(am5xy.XYChart.new(root, {}));
+        const cx = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField:'category' }));
+        const cy = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
+        series = chart.series.push(am5xy.CylinderColumnSeries.new(root, { xAxis: cx, yAxis: cy, valueYField:'value', categoryXField:'category' }));
+        cx.data.setAll(data); series.data.setAll(data);
+        break;
+      case 'pie3d':
+        chart = root.container.children.push(am5percent.PieChart.new(root, { innerRadius: am5.percent(40) }));
+        series = chart.series.push(am5percent.PieSeries.new(root, { valueField:'value', categoryField:'category' }));
+        series.slices.template.setAll({ depth: 10, cornerRadius:5 });
+        series.data.setAll(data);
+        break;
+      case 'map':
+        chart = root.container.children.push(am5map.MapChart.new(root, { projection: am5map.geoMercator() }));
+        chart.series.push(am5map.MapPolygonSeries.new(root, { geoJSON: am5geodata_worldLow }));
+        const pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
+        pointSeries.bullets.push(() => am5.Bullet.new(root, { sprite: am5.Circle.new(root, { radius:4, fill: root.interfaceColors.get('alternativeBackground') }) }));
+        pointSeries.data.setAll(data.map(d => ({ latitude: d.latitude, longitude: d.longitude, title: d.category })));
+        break;
+      case 'pictorial':
+        chart = root.container.children.push(am5xy.SlicedChart.new(root, {}));
+        series = chart.series.push(am5xy.PictorialStackedSeries.new(root, { valueField:'value', categoryField:'category', orientation:'vertical', svgPath:"M0,0L100,0 100,100 0,100Z" }));
+        series.data.setAll(data);
+        break;
+      default:
+        alert('Selected chart type not implemented.');
+    }
+  }
+
+  Object.keys(chartData).forEach(id => {
+    const config = JSON.parse(localStorage.getItem('chartConfig:' + id) || '{}');
+    config.type = config.type || chartDefaults[id];
+    renderChart(id, config);
+  });
+</script>
+</body>
 </html>

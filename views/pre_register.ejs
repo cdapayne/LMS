@@ -38,6 +38,27 @@
     .btn-outline-secondary .spinner-border{ width:1rem; height:1rem; }
     .consent-box{ max-height:8rem; overflow:auto; border:1px dashed var(--bs-border-color);
                   padding:.75rem; border-radius:.5rem; background:var(--bs-tertiary-bg); }
+
+    /* Celebration view */
+    .celebrate{
+      position: relative;
+      min-height: 60vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 2rem;
+    }
+    .celebrate-card{
+      background: var(--bs-body-bg);
+      border: 1px solid var(--bs-border-color);
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      padding: 2rem 1.5rem;
+      max-width: 560px;
+      width: 100%;
+    }
+    .celebrate h2{ font-size: clamp(1.25rem, 2.8vw, 1.75rem); }
+    .celebrate .lead{ color: var(--bs-secondary-color); }
   </style>
 </head>
 <body>
@@ -47,14 +68,63 @@
     <section class="form-card">
       <header class="form-head">
         <img src="<%= branding.primaryLogo %>" alt="MD Technical School logo" />
-        <h1 class="form-title">Pre‑Registration</h1>
+        <h1 class="form-title">Pre-Registration</h1>
       </header>
 
       <div class="form-body">
         <% if (success) { %>
-          <div class="alert alert-success" role="status">
-            Thanks for your interest! We will contact you soon.
+          <!-- Celebration view -->
+          <div class="celebrate">
+            <div class="celebrate-card">
+              <div class="display-6 mb-2">🎉 You're on the list!</div>
+              <p class="lead mb-3">We’re opening your course curriculum…</p>
+              <div class="small mb-3">Redirecting in <span id="countdown">5</span> seconds.</div>
+              <a id="openNow" class="btn btn-primary w-100" href="/docs/sept13.pdf">
+                Open Curriculum PDF
+              </a>
+            </div>
           </div>
+
+          <!-- Confetti only on success -->
+          <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+          <script>
+            (function(){
+              const pdfUrl = '/docs/sept13.pdf';
+              const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+              // Fire a few bursts
+              function fire(particleRatio, opts) {
+                confetti(Object.assign({
+                  origin: { y: 0.2 },
+                  spread: 70,
+                  startVelocity: 45,
+                  ticks: 200
+                }, opts, { particleCount: Math.floor(400 * particleRatio) }));
+              }
+
+              if (!prefersReduced && window.confetti) {
+                // Staggered bursts for ~1.5s
+                fire(0.25, { spread: 26, startVelocity: 55 });
+                fire(0.20, { spread: 60 });
+                fire(0.35, { spread: 100, decay: 0.92, scalar: 0.9 });
+                fire(0.10, { spread: 120, startVelocity: 25, decay: 0.92 });
+                setTimeout(()=>fire(0.25, { spread: 90, scalar: 1.2 }), 350);
+              }
+
+              // Countdown + redirect
+              let secs = 5;
+              const cd = document.getElementById('countdown');
+              const iv = setInterval(() => {
+                secs -= 1; if (cd) cd.textContent = String(secs);
+                if (secs <= 0) { clearInterval(iv); window.location.assign(pdfUrl); }
+              }, 1000);
+
+              // Also navigate if the user clicks the button
+              document.getElementById('openNow')?.addEventListener('click', () => {
+                // no-op; normal link behavior
+              });
+            })();
+          </script>
         <% } else { %>
           <% if (error) { %>
             <div class="alert alert-danger" role="alert"><%= error %></div>
@@ -80,7 +150,7 @@
                 <label class="form-label req" for="phone">Phone Number</label>
                 <input id="phone" name="phone" class="form-control" required
                   autocomplete="tel" inputmode="tel"
-                  pattern="^[0-9\-\+\(\)\s\.]{7,}$"
+                  pattern="^[0-9\\-\\+\\(\\)\\s\\.]{7,}$"
                   value="<%= formData.phone || '' %>"/>
                 <div class="help small">Formats like 555-555-5555 are accepted.</div>
                 <div class="invalid-feedback">Enter a valid phone number.</div>
@@ -101,8 +171,7 @@
               <div class="col-6 col-md-4">
                 <label class="form-label req" for="zip">Zip Code</label>
                 <input id="zip" name="zip" class="form-control" required
-                  inputmode="numeric" autocomplete="postal-code"
-                  pattern="^\d{5}(-\d{4})?$" value="<%= formData.zip || '' %>"/>
+                  inputmode="numeric" autocomplete="postal-code" value="<%= formData.zip || '' %>"/>
                 <div class="invalid-feedback">Enter a valid ZIP code.</div>
               </div>
 
@@ -206,7 +275,7 @@
               </button>
             </div>
 
-            <!-- Honeypot (basic spam deterrent) -->
+            <!-- Honeypot -->
             <div class="visually-hidden" aria-hidden="true">
               <label for="website">Website</label>
               <input id="website" name="website" tabindex="-1" autocomplete="off" />
@@ -223,6 +292,7 @@
     // Theme toggle
     setupThemeToggle('themeToggle');
 
+    <% if (!success) { %>
     // Show/hide branch field based on serving choice
     function toggleBranch(){
       const yes = document.getElementById('servingYes')?.checked;
@@ -235,7 +305,7 @@
     document.querySelectorAll('input[name="serving"]').forEach(r=>r.addEventListener('change',toggleBranch));
     toggleBranch();
 
-    // Bootstrap validation + submit UX (prevents double‑submit, shows spinner)
+    // Bootstrap validation + submit UX
     (() => {
       const form = document.querySelector('.needs-validation');
       const btnQuick = document.getElementById('btnQuick');
@@ -246,9 +316,7 @@
         btn.toggleAttribute('disabled', busy);
         (busy ? (btn === btnQuick ? btnEnroll : btnQuick) : null)?.removeAttribute('disabled');
       };
-
       form?.addEventListener('submit', (e) => {
-        // Honeypot
         const trap = document.getElementById('website');
         if (trap && trap.value) { e.preventDefault(); return; }
 
@@ -258,11 +326,11 @@
           form.classList.add('was-validated');
           return;
         }
-        // Identify which button was clicked
         const submitter = e.submitter;
         setBusy(submitter, true);
       });
     })();
+    <% } %>
   </script>
 </body>
 </html>

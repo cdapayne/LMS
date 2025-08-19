@@ -1,54 +1,289 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Pre-Registered Users – MD Technical School</title>
-  <link rel="icon" href="<%= branding.favicon %>">
+  <link rel="icon" href="<%= branding.favicon %>" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root{ --card-radius: 1rem; }
+    body{ background: var(--bs-body-bg); }
+    .page-head{
+      position: sticky; top: 0; z-index: 1030;
+      background: var(--bs-body-bg); border-bottom: 1px solid var(--bs-border-color);
+    }
+    .chip{ display:inline-block; padding:.15rem .55rem; border-radius:999px; background:var(--bs-tertiary-bg); }
+    .table-wrap{
+      max-height: 70vh; overflow:auto; border:1px solid var(--bs-border-color);
+      border-radius:.75rem; background: var(--bs-body-bg);
+    }
+    .table thead th{ position: sticky; top: 0; background: var(--bs-body-bg); z-index: 1; }
+    .controls .form-select, .controls .form-control{ min-width: 160px; }
+    @media (max-width: 575.98px){
+      .controls .form-select, .controls .form-control{ min-width: 0; }
+    }
+  </style>
 </head>
 <body>
   <%- include('header', { user: user }) %>
-  <div class="container mt-4">
-    <h2>Pre-Registered Users</h2>
-    <table class="table table-striped mt-3">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Phone</th>
-          <th>Email</th>
-          <th>Serving</th>
-          <th>Branch</th>
-          <th>State</th>
-          <th>Zip</th>
-          <th>Course</th>
-          <th>Applicant Type</th>
-          <th>Referral</th>
-          <th>Referral Email</th>
-          <th>Created</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% preregs.forEach(p => { %>
-          <tr>
-            <td><%= p.name %></td>
-            <td><%= p.phone %></td>
-            <td><%= p.email || '' %></td>
-            <td><%= p.serving ? 'Yes' : 'No' %></td>
-            <td><%= p.branch || '' %></td>
-            <td><%= p.state %></td>
-            <td><%= p.zip %></td>
-            <td><%= p.course %></td>
-            <td><%= p.applicantType %></td>
-            <td><%= p.referral || '' %></td>
-            <td><%= p.referralEmail || '' %></td>
-            <td><%= new Date(p.createdAt).toLocaleString() %></td>
-          </tr>
-        <% }) %>
-        <% if (preregs.length === 0) { %>
-          <tr><td colspan="12" class="text-center">No pre-registrations yet.</td></tr>
-        <% } %>
-      </tbody>
-    </table>
+
+  <div class="page-head">
+    <div class="container py-3">
+      <div class="d-flex align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <h2 class="h4 mb-0">Pre-Registered Users</h2>
+          <span class="chip"><span id="countFiltered"><%= preregs.length %></span> / <%= preregs.length %></span>
+        </div>
+        <div class="d-flex gap-2">
+          <button id="btnExport" class="btn btn-sm btn-primary">Export CSV</button>
+          <button id="btnEmail" class="btn btn-sm btn-outline-secondary">Email filtered</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="row g-2 controls">
+        <div class="col-12 col-md-4">
+          <input id="q" class="form-control" placeholder="Search name, email, phone, referral…" autocomplete="off" />
+        </div>
+        <div class="col-6 col-md-2">
+          <select id="stateFilter" class="form-select">
+            <option value="">All States</option>
+            <% Array.from(new Set(preregs.map(p=>p.state).filter(Boolean))).sort().forEach(s=>{ %>
+              <option value="<%= s %>"><%= s %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <select id="courseFilter" class="form-select">
+            <option value="">All Courses</option>
+            <% Array.from(new Set(preregs.map(p=>p.course).filter(Boolean))).sort().forEach(c=>{ %>
+              <option value="<%= c %>"><%= c %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <select id="typeFilter" class="form-select">
+            <option value="">All Applicant Types</option>
+            <% Array.from(new Set(preregs.map(p=>p.applicantType).filter(Boolean))).sort().forEach(t=>{ %>
+              <option value="<%= t %>"><%= t %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <select id="servingFilter" class="form-select">
+            <option value="">Serving?</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <input id="fromDate" type="date" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+          <input id="toDate" type="date" class="form-control" />
+        </div>
+        <div class="col-12 col-md-2">
+          <button id="btnReset" class="btn btn-outline-secondary w-100">Reset</button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <div class="container py-3">
+    <div class="table-wrap">
+      <table id="preTable" class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="min-width:180px">Name</th>
+            <th style="min-width:140px">Phone</th>
+            <th style="min-width:220px">Email</th>
+            <th>Serving</th>
+            <th>Branch</th>
+            <th>State</th>
+            <th>Zip</th>
+            <th style="min-width:160px">Course</th>
+            <th style="min-width:160px">Applicant Type</th>
+            <th style="min-width:160px">Referral</th>
+            <th style="min-width:220px">Referral Email</th>
+            <th style="min-width:200px">Created</th>
+          </tr>
+        </thead>
+        <tbody id="preBody">
+          <% if (preregs.length === 0) { %>
+            <tr><td colspan="12" class="text-center text-body-secondary py-5">No pre-registrations yet.</td></tr>
+          <% } else { %>
+            <% preregs.forEach(p => { 
+                 const createdISO = new Date(p.createdAt).toISOString();
+            %>
+              <tr
+                data-state="<%= p.state || '' %>"
+                data-course="<%= p.course || '' %>"
+                data-type="<%= p.applicantType || '' %>"
+                data-serving="<%= p.serving ? 'yes' : 'no' %>"
+                data-created="<%= createdISO %>">
+                <td class="fw-semibold text-truncate"><%= p.name %></td>
+                <td><a href="tel:<%= (p.phone||'').replace(/[^0-9+]/g,'') %>"><%= p.phone %></a></td>
+                <td>
+                  <% if (p.email) { %>
+                    <a href="mailto:<%= p.email %>"><%= p.email %></a>
+                  <% } %>
+                </td>
+                <td><%= p.serving ? 'Yes' : 'No' %></td>
+                <td><%= p.branch || '' %></td>
+                <td><%= p.state || '' %></td>
+                <td><%= p.zip || '' %></td>
+                <td><%= p.course || '' %></td>
+                <td><%= p.applicantType || '' %></td>
+                <td><%= p.referral || '' %></td>
+                <td>
+                  <% if (p.referralEmail) { %>
+                    <a href="mailto:<%= p.referralEmail %>"><%= p.referralEmail %></a>
+                  <% } %>
+                </td>
+                <td data-ts="<%= createdISO %>"><%= new Date(p.createdAt).toLocaleString() %></td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const q = document.getElementById('q');
+      const stateSel = document.getElementById('stateFilter');
+      const courseSel = document.getElementById('courseFilter');
+      const typeSel = document.getElementById('typeFilter');
+      const servingSel = document.getElementById('servingFilter');
+      const fromDate = document.getElementById('fromDate');
+      const toDate = document.getElementById('toDate');
+      const tbody = document.getElementById('preBody');
+      const countFiltered = document.getElementById('countFiltered');
+
+      function matchesRow(tr){
+        const text = tr.innerText.toLowerCase();
+        const query = (q.value || '').toLowerCase().trim();
+
+        const st = (stateSel.value || '').toLowerCase();
+        const co = (courseSel.value || '').toLowerCase();
+        const ty = (typeSel.value || '').toLowerCase();
+        const sv = (servingSel.value || '').toLowerCase();
+
+        const rState = (tr.dataset.state || '').toLowerCase();
+        const rCourse= (tr.dataset.course || '').toLowerCase();
+        const rType  = (tr.dataset.type || '').toLowerCase();
+        const rServ  = (tr.dataset.serving || '').toLowerCase();
+
+        // date filter
+        const created = tr.getAttribute('data-created');
+        const createdTime = created ? new Date(created).getTime() : NaN;
+        let inRange = true;
+        if (fromDate.value) {
+          const fromT = new Date(fromDate.value + 'T00:00:00').getTime();
+          inRange = inRange && createdTime >= fromT;
+        }
+        if (toDate.value) {
+          const toT = new Date(toDate.value + 'T23:59:59').getTime();
+          inRange = inRange && createdTime <= toT;
+        }
+
+        const qOk = !query || text.includes(query);
+        const stOk = !st || rState === st;
+        const coOk = !co || rCourse === co;
+        const tyOk = !ty || rType === ty;
+        const svOk = !sv || rServ === sv;
+
+        return qOk && stOk && coOk && tyOk && svOk && inRange;
+      }
+
+      function applyFilters(){
+        if (!tbody) return;
+        let shown = 0;
+        [...tbody.rows].forEach(tr=>{
+          const show = matchesRow(tr);
+          tr.style.display = show ? '' : 'none';
+          if (show) shown++;
+        });
+        if (countFiltered) countFiltered.textContent = shown;
+      }
+
+      ['input','change'].forEach(evt=>{
+        q?.addEventListener(evt, applyFilters);
+        stateSel?.addEventListener(evt, applyFilters);
+        courseSel?.addEventListener(evt, applyFilters);
+        typeSel?.addEventListener(evt, applyFilters);
+        servingSel?.addEventListener(evt, applyFilters);
+        fromDate?.addEventListener(evt, applyFilters);
+        toDate?.addEventListener(evt, applyFilters);
+      });
+
+      document.getElementById('btnReset')?.addEventListener('click', (e)=>{
+        e.preventDefault();
+        [q,stateSel,courseSel,typeSel,servingSel,fromDate,toDate].forEach(el=> el && (el.value=''));
+        applyFilters();
+      });
+
+      // CSV export (respects filters)
+      document.getElementById('btnExport')?.addEventListener('click', ()=>{
+        const headers = [...document.querySelectorAll('#preTable thead th')].map(th => th.textContent.trim());
+        const rows = [];
+        const visible = [...(tbody?.rows || [])].filter(r => r.style.display !== 'none');
+
+        visible.forEach(tr=>{
+          const tds = [...tr.cells].map(td => (td.innerText || '').trim());
+          rows.push(tds.map(v => `"${v.replace(/"/g,'""')}"`).join(','));
+        });
+
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `pre_registered_<%= new Date().toISOString().slice(0,10) %>.csv`;
+        document.body.appendChild(a); a.click();
+        URL.revokeObjectURL(url); a.remove();
+      });
+
+      // Email filtered (opens mail app with BCC list; falls back to copy if too long)
+      document.getElementById('btnEmail')?.addEventListener('click', async ()=>{
+        const visible = [...(tbody?.rows || [])].filter(r => r.style.display !== 'none');
+        const emails = new Set();
+        visible.forEach(tr=>{
+          const mailCell = tr.cells[2]; // Email column
+          const a = mailCell?.querySelector('a[href^="mailto:"]');
+          const addr = a ? a.getAttribute('href').replace(/^mailto:/,'') : (mailCell?.innerText || '').trim();
+          if (addr) emails.add(addr);
+        });
+
+        const list = [...emails];
+        if (list.length === 0) { alert('No emails in the filtered results.'); return; }
+
+        const subject = encodeURIComponent('MD Technical School — Information');
+        const body = encodeURIComponent('Hello,\n\nThanks for your interest in MD Technical School.\n\n— Team MDTS');
+        // Build BCC up to ~1800 chars for safety
+        let bcc = ''; let i = 0;
+        while(i < list.length && (`mailto:?bcc=${encodeURIComponent(bcc + (bcc?',':'') + list[i])}&subject=${subject}&body=${body}`).length < 1800){
+          bcc += (bcc?',':'') + list[i]; i++;
+        }
+        const mailto = `mailto:?bcc=${encodeURIComponent(bcc)}&subject=${subject}&body=${body}`;
+        if (i === list.length) {
+          window.location.href = mailto;
+        } else {
+          // Too many emails—copy all to clipboard as fallback
+          try {
+            await navigator.clipboard.writeText(list.join(','));
+            alert(`Opened email with ${i} addresses in BCC.\nAll ${list.length} emails were copied to your clipboard.`);
+            window.location.href = mailto;
+          } catch {
+            alert(`Too many addresses for a single email. Could not copy to clipboard.\nTry narrowing your filters or exporting CSV.`);
+          }
+        }
+      });
+
+      // Initial count (in case table is empty or filters present via query params someday)
+      applyFilters();
+    })();
+  </script>
 </body>
 </html>

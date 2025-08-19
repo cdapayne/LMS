@@ -46,6 +46,37 @@ router.use((req, res, next) => {
   next();
 });
 
+router.get('/chart/meta', async (_req, res) => {
+  const [tables] = await db.query('SHOW TABLES');
+  const tableNames = tables.map(t => Object.values(t)[0]);
+  const out = {};
+  for (const name of tableNames) {
+    const [cols] = await db.query('SHOW COLUMNS FROM ??', [name]);
+    out[name] = cols.map(c => c.Field);
+  }
+  res.json({ tables: out });
+});
+
+router.get('/chart/data', async (req, res) => {
+  const { table, category, value, lat, lon } = req.query;
+  if (!table) return res.status(400).json([]);
+  try {
+    let sql, params;
+    if (lat && lon) {
+      sql = 'SELECT ?? AS latitude, ?? AS longitude, ?? AS category, ?? AS value FROM ?? LIMIT 500';
+      params = [lat, lon, category || lat, value || lon, table];
+    } else {
+      sql = 'SELECT ?? AS category, ?? AS value FROM ?? LIMIT 500';
+      params = [category, value, table];
+    }
+    const [rows] = await db.query(sql, params);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: 'query failed' });
+  }
+});
+
+
 router.get('/', async (req, res) => {
   const users = await userModel.getAll();
   const classes = await classModel.getAllClasses();
@@ -322,10 +353,9 @@ router.get('/classes/:id', async (req, res) => {
   const users = await userModel.getAll();
     const students = users.filter(u => u.role === 'student' && u.status === 'approved');
  const discussions = await discussionModel.getByClass(id);
-  res.render('view_class', { klass, students, classStudents, studentView: false, discussions });
+
   const classStudents = students.filter(s => (klass.studentIds||[]).includes(s.id));
-  res.render('view_class', { klass, students, classStudents, studentView: false });
-});
+  res.render('view_class', { klass, students, classStudents, studentView: false, discussions });});
 
 router.post('/classes/:id/lectures', async (req, res) => {
   const classId = Number(req.params.id);
