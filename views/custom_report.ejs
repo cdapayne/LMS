@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Custom Report Builder – MD Technical School</title>
+  <link rel="icon" href="<%= branding?.favicon %>">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root{
+      --primary-color: dodgerblue;
+      --secondary-color: orange;
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --border: #e5e7eb;
+      --muted: #6b7280;
+    }
+    body{ background: var(--bg); font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .cardish{ background: var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem; box-shadow:0 .6rem 1.2rem rgba(0,0,0,.05); }
+    .section-title{ display:flex; align-items:center; gap:10px; font-weight:700; margin-bottom:.75rem; }
+    .section-title::before{ content:""; width:6px; height:18px; border-radius:3px; background: var(--secondary-color); }
+    .table-wrap{ overflow:auto; }
+    .table thead th{ background:#f8fafc; font-weight:600; }
+  </style>
+</head>
+<body>
+  <% if (typeof user !== 'undefined' && user) { %>
+    <%- include('header', { user: user }) %>
+  <% } %>
+
+  <div class="container py-4">
+    <div class="cardish">
+      <div class="section-title">Custom Report Builder</div>
+      <form method="POST" id="reportForm" class="mb-4">
+        <div class="mb-3">
+          <label class="form-label">Table</label>
+          <select name="table" id="tableSelect" class="form-select" required>
+            <option value="">Select table</option>
+            <% tables.forEach(t => { %>
+              <option value="<%= t %>" <%= (selected.table === t) ? 'selected' : '' %>><%= t %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="mb-3" id="columnsSection">
+          <% if (columns.length) { %>
+            <label class="form-label">Columns</label>
+            <div>
+              <% columns.forEach(c => { %>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" name="columns" value="<%= c %>" id="col_<%= c %>" <%= (selected.columns||[]).includes(c) ? 'checked' : '' %>>
+                  <label class="form-check-label" for="col_<%= c %>"><%= c %></label>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Filter (optional)</label>
+          <div class="d-flex gap-2">
+            <select name="filterCol" id="filterCol" class="form-select">
+              <option value=""></option>
+              <% columns.forEach(c => { %>
+                <option value="<%= c %>" <%= selected.filterCol === c ? 'selected' : '' %>><%= c %></option>
+              <% }) %>
+            </select>
+            <select name="operator" class="form-select">
+              <option value="=" <%= selected.operator==='='?'selected':'' %>>=</option>
+              <option value="!=" <%= selected.operator==='!='?'selected':'' %>>!=</option>
+              <option value=">" <%= selected.operator==='>'?'selected':'' %>>&gt;</option>
+              <option value="<" <%= selected.operator==='<'?'selected':'' %>>&lt;</option>
+              <option value="LIKE" <%= selected.operator==='LIKE'?'selected':'' %>>Contains</option>
+            </select>
+            <input name="value" class="form-control" value="<%= selected.value || '' %>" placeholder="Value" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Run Report</button>
+        <a href="/admin/reports" class="btn btn-link">Back</a>
+      </form>
+
+      <% if (results) { %>
+        <% if (results.length) { %>
+          <div class="table-wrap">
+            <table class="table table-bordered table-hover align-middle">
+              <thead>
+                <tr>
+                  <% Object.keys(results[0]).forEach(col => { %>
+                    <th><%= col %></th>
+                  <% }) %>
+                </tr>
+              </thead>
+              <tbody>
+                <% results.forEach(row => { %>
+                  <tr>
+                    <% Object.keys(row).forEach(col => { %>
+                      <td><%= row[col] %></td>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <p>No results found.</p>
+        <% } %>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    async function loadColumns(table) {
+      const section = document.getElementById('columnsSection');
+      const filterCol = document.getElementById('filterCol');
+      if (!table) { section.innerHTML = ''; filterCol.innerHTML = '<option value=""></option>'; return; }
+      const res = await fetch(`/admin/reports/custom/columns?table=${encodeURIComponent(table)}`);
+      const cols = await res.json();
+      let html = '<label class="form-label">Columns</label><div>';
+      cols.forEach(c => {
+        html += `<div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="columns" value="${c}" id="col_${c}"><label class="form-check-label" for="col_${c}">${c}</label></div>`;
+      });
+      html += '</div>';
+      section.innerHTML = html;
+      filterCol.innerHTML = '<option value=""></option>' + cols.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    document.getElementById('tableSelect').addEventListener('change', e => loadColumns(e.target.value));
+  </script>
+</body>
+</html>

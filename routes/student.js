@@ -1,13 +1,53 @@
 const express = require('express');
 const router = express.Router();
+const announcementModel = require('../models/announcementModel');
 
 const classModel = require('../models/classModel');
 const { generateQuestions } = require('../utils/questionGenerator');
+
+const discussionModel = require('../models/discussionModel');
+const userModel = require('../models/userModel');
+const nodemailer = require('nodemailer');
+const messageModel = require('../models/messageModel');
+
+const transporter = nodemailer.createTransport({
+  host: 'mdts-apps.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
+});
 
 router.use((req, res, next) => {
   if (!req.session || req.session.role !== 'student') return res.status(403).send('Forbidden');
   next();
 });
+
+router.get('/mailbox', async (req, res) => {
+  const messages = await messageModel.getMailbox(req.session.user.id);
+  const allUsers = await userModel.getAll();
+  const userMap = new Map(allUsers.map(u => [u.id, u]));
+  const formatted = messages.map(m => ({
+    ...m,
+    fromName: userMap.get(m.senderId)?.name || `User ${m.senderId}`,
+    toName: userMap.get(m.recipientId)?.name || `User ${m.recipientId}`
+  }));
+  const teachers = allUsers.filter(u => u.role === 'teacher');
+  res.render('mailbox', { messages: formatted, users: teachers, user: req.session.user });
+});
+
+router.post('/mailbox', async (req, res) => {
+  const recipientId = Number(req.body.to);
+  const { subject, body } = req.body;
+  if (recipientId && body) {
+    await messageModel.sendMessage(req.session.user.id, recipientId, subject || '', body);
+  }
+  res.redirect('/student/mailbox');
+});
+
+
 
 
 
@@ -15,7 +55,30 @@ router.get('/classes/:id', async (req, res) => {
   const id = Number(req.params.id);
   const klass = await classModel.findClassById(id);
   if (!klass) return res.status(404).send('Not found');
-  res.render('view_class', { klass, studentView: true });
+ const discussions = await discussionModel.getByClass(id);
+  res.render('view_class', { klass, studentView: true, discussions });});
+
+  router.post('/classes/:id/discussion', async (req, res) => {
+  const classId = Number(req.params.id);
+  const { message } = req.body;
+  if (message && message.trim()) {
+    await discussionModel.addMessage(classId, req.session.user.id, message.trim());
+    const klass = await classModel.findClassById(classId);
+    const teacher = await userModel.findById(klass.teacherId);
+    if (teacher && teacher.email) {
+      try {
+        await transporter.sendMail({
+          to: teacher.email,
+          from: process.env.SMTP_USER,
+          subject: `New discussion message for ${klass.name}`,
+          text: message.trim()
+        });
+      } catch (e) {
+        console.error('Email send failed', e);
+      }
+    }
+  }
+  res.redirect(`/student/classes/${classId}#discussion`);
 });
 
 router.get('/classes/:id/tests/:testId', async (req, res) => {
@@ -55,14 +118,21 @@ router.get('/', async (req, res) => {
   const threeWeeksFromNow = new Date();
   threeWeeksFromNow.setDate(now.getDate() + 21);
 
- // Latest grades and pending tasks/homework
+  // Latest grades, current grade per class, and pending tasks/homework
   const latestGrades = [];
+    const currentGrades = {};
+
   const tasks = [];
 
   my.forEach(klass => {
     const studentGrades = (klass.grades || []).filter(g => g.studentId === req.session.user.id);
 
     if (studentGrades.length) {
+          // current average grade for this class
+      const avg = Math.round(studentGrades.reduce((sum, g) => sum + g.score, 0) / studentGrades.length);
+      currentGrades[klass.id] = avg;
+
+      // latest graded test info
       studentGrades.sort((a, b) => new Date(b.gradedAt) - new Date(a.gradedAt));
       const latest = studentGrades[0];
       const testInfo = (klass.tests || []).find(t => t.id === latest.testId);
@@ -113,13 +183,16 @@ router.get('/', async (req, res) => {
       }
     });
   });
+   const announcements = await announcementModel.forStudent(req.session.user.id);
 
   res.render('student_dashboard', {
     user: req.session.user,
     classes: my,
     events,
     latestGrades,
-    tasks
+   tasks,
+    currentGrades,
+        announcements
   });
 });
 

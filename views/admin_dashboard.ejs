@@ -94,6 +94,14 @@
     @media (prefers-reduced-motion: reduce){
       *{ animation:none !important; transition:none !important; }
     }
+     .chart-card{
+      background: var(--surface);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:.5rem;
+      box-shadow: 0 .6rem 1.2rem rgba(0,0,0,.06);
+      height:250px;
+    }
   </style>
 </head>
 <body>
@@ -140,6 +148,7 @@
         <a class="btn btn-primary" href="/admin/students/pending">Pending Students</a>
         <a class="btn btn-outline-primary" href="/admin/students">Accepted Students</a>
         <a class="btn btn-outline-danger" href="/admin/denied">Denied Students</a>
+          <a class="btn btn-outline-secondary" href="/admin/pre-registrations">Pre-Registered Users</a>
 
         <!-- Classes -->
         <a class="btn btn-outline-primary" href="/admin/classes">All Classes</a>
@@ -152,8 +161,108 @@
         <!-- Reports / Events -->
         <a class="btn btn-outline-secondary" href="/admin/reports">Reports</a>
         <a class="btn btn-outline-secondary" href="/admin/events">Events Dashboard</a>
+                <a class="btn btn-info" href="/admin/marketing">Marketing</a>
+    <a class="btn btn-outline-secondary" href="/admin/create-event">Create Event</a>
+        <a class="btn btn-outline-secondary" href="/admin/event-rsvps">Event RSVPs</a>
       </div>
     </section>
+      <!-- Announcements -->
+    <section class="qa mt-4">
+      <div class="qa-title">Announcements</div>
+      <form action="/admin/announcements" method="post" class="row g-2 mb-3">
+        <div class="col-md-8">
+          <input name="message" class="form-control" placeholder="New announcement" required>
+        </div>
+        <div class="col-md-3">
+          <select name="audience" class="form-select">
+            <option value="all">Everyone</option>
+            <option value="teachers">Teachers</option>
+            <option value="students">Students</option>
+          </select>
+        </div>
+        <div class="col-md-1">
+          <button class="btn btn-primary w-100" type="submit">Post</button>
+        </div>
+      </form>
+      <ul class="list-group">
+        <% if ((announcements || []).length) { %>
+          <% announcements.forEach(a => { %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span><%= a.message %></span>
+              <small class="text-muted"><%= a.createdAt %></small>
+            </li>
+          <% }) %>
+        <% } else { %>
+          <li class="list-group-item text-muted">No announcements yet.</li>
+        <% } %>
+      </ul>
+    </section>
+    
+ <!-- Charts -->
+    <div class="row g-3 mt-4">
+      <div class="col-12 col-md-6">
+        <div id="chart-student-status" class="chart-card"></div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div id="chart-class-size" class="chart-card"></div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div id="chart-pending" class="chart-card"></div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div id="chart-approved" class="chart-card"></div>
+      </div>
+    </div>
   </div>
-</body>
+
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script>
+    am5.ready(function() {
+      var root = am5.Root.new("chart-student-status");
+      root.setThemes([am5themes_Animated.new(root)]);
+      var chart = root.container.children.push(am5percent.PieChart.new(root, {}));
+      var series = chart.series.push(am5percent.PieSeries.new(root, {
+        valueField: "value",
+        categoryField: "category"
+      }));
+      series.data.setAll([
+        { category: "Approved", value: <%= approvedCount %> },
+        { category: "Pending", value: <%= pendingCount %> }
+      ]);
+
+      var root2 = am5.Root.new("chart-class-size");
+      root2.setThemes([am5themes_Animated.new(root2)]);
+      var chart2 = root2.container.children.push(am5xy.XYChart.new(root2, { paddingLeft:0, paddingRight:0 }));
+      var xAxis = chart2.xAxes.push(am5xy.CategoryAxis.new(root2, { categoryField: "class", renderer: am5xy.AxisRendererX.new(root2, {}) }));
+      var yAxis = chart2.yAxes.push(am5xy.ValueAxis.new(root2, { min:0 }));
+      var series2 = chart2.series.push(am5xy.ColumnSeries.new(root2, { xAxis: xAxis, yAxis: yAxis, valueYField: "size", categoryXField: "class" }));
+      var classData = <%- JSON.stringify(classSizes.map(c => ({ class: c.name, size: c.size }))) %>;
+      xAxis.data.setAll(classData);
+      series2.data.setAll(classData);
+
+      var root3 = am5.Root.new("chart-pending");
+      root3.setThemes([am5themes_Animated.new(root3)]);
+      var chart3 = root3.container.children.push(am5xy.XYChart.new(root3, {}));
+      var xAxis3 = chart3.xAxes.push(am5xy.CategoryAxis.new(root3, { categoryField: "category" }));
+      var yAxis3 = chart3.yAxes.push(am5xy.ValueAxis.new(root3, { min:0 }));
+      var series3 = chart3.series.push(am5xy.ColumnSeries.new(root3, { xAxis: xAxis3, yAxis: yAxis3, valueYField: "value", categoryXField: "category" }));
+      var pendingData = [{ category: "Pending", value: <%= pendingCount %> }];
+      xAxis3.data.setAll(pendingData);
+      series3.data.setAll(pendingData);
+
+      var root4 = am5.Root.new("chart-approved");
+      root4.setThemes([am5themes_Animated.new(root4)]);
+      var chart4 = root4.container.children.push(am5xy.XYChart.new(root4, {}));
+      var xAxis4 = chart4.xAxes.push(am5xy.CategoryAxis.new(root4, { categoryField: "category" }));
+      var yAxis4 = chart4.yAxes.push(am5xy.ValueAxis.new(root4, { min:0 }));
+      var series4 = chart4.series.push(am5xy.ColumnSeries.new(root4, { xAxis: xAxis4, yAxis: yAxis4, valueYField: "value", categoryXField: "category" }));
+      var approvedData = [{ category: "Approved", value: <%= approvedCount %> }];
+      xAxis4.data.setAll(approvedData);
+      series4.data.setAll(approvedData);
+    });
+  </script>
+  </body>
 </html>

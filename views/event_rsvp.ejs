@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Event RSVPs</title>
+  <link rel="icon" href="<%= branding?.favicon %>">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+  <h1>Event RSVPs</h1>
+  <table class="table table-bordered table-striped mt-3">
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Address</th>
+        <th>City</th>
+        <th>State</th>
+        <th>Zip</th>
+        <th>Branch</th>
+        <th>Program</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (rsvps.length === 0) { %>
+        <tr><td colspan="10" class="text-center">No RSVPs</td></tr>
+      <% } %>
+      <% rsvps.forEach(r => { %>
+        <tr>
+          <td><%= r.eventName %></td>
+          <td><%= r.fullName %></td>
+          <td><%= r.email %></td>
+          <td><%= r.phone %></td>
+          <td><%= r.address %></td>
+          <td><%= r.city %></td>
+          <td><%= r.state %></td>
+          <td><%= r.zip %></td>
+          <td><%= r.branch %></td>
+          <td><%= r.program %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  <a href="/admin" class="btn btn-secondary">Back</a>
+</body>
+</html>

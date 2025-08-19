@@ -3,6 +3,15 @@ const router = express.Router();
 
 const classModel = require('../models/classModel');
 const userModel = require('../models/userModel');
+const db = require('../models/db');
+const discussionModel = require('../models/discussionModel');
+const preRegModel = require('../models/preRegModel');
+
+const eventModel = require('../models/eventModel');
+const rsvpModel = require('../models/rsvpModel');
+
+const announcementModel = require('../models/announcementModel');
+
 const multer = require('multer');
 const crypto = require('crypto');
 const path = require('path');
@@ -38,11 +47,25 @@ router.use((req, res, next) => {
 });
 
 router.get('/', async (req, res) => {
- const users = await userModel.getAll();
+  const users = await userModel.getAll();
   const classes = await classModel.getAllClasses();
   const teachers = users.filter(u => u.role === 'teacher');
   const students = users.filter(u => u.role === 'student');
-  res.render('admin_dashboard', { user: req.session.user, classes, teachers, students });
+  const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
+  const approvedStudents = students.filter(u => u.status === 'approved');
+    const announcements = await announcementModel.forAdmin();
+
+  const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
+  res.render('admin_dashboard', {
+    user: req.session.user,
+    classes,
+    teachers,
+    students,
+    announcements,
+    pendingCount: pendingStudents.length,
+    approvedCount: approvedStudents.length,
+    classSizes
+  });
 });
 
 async function renderPending(_req, res) {
@@ -81,6 +104,39 @@ router.post('/approve/:id', async (req, res) => {
     }
   }
   res.redirect('/admin/students/pending');
+});
+
+// Render form to create a new event
+router.get('/create-event', (req, res) => {
+  res.render('create_event', { user: req.session.user });
+});
+
+// Handle event creation
+router.post('/create-event', async (req, res) => {
+  const { name, date, description } = req.body;
+  await eventModel.createEvent({ name, eventDate: date, description });
+  res.redirect('/admin');
+});
+
+// View RSVPs for events
+router.get('/event-rsvps', async (req, res) => {
+  const rsvps = await rsvpModel.getAllRSVPs();
+  res.render('event_rsvps', { user: req.session.user, rsvps });
+});
+
+
+router.get('/pre-registrations', async (req, res) => {
+  const preregs = await preRegModel.getAll();
+  res.render('admin_pre_registered', { preregs, user: req.session.user });
+});
+
+
+router.post('/announcements', async (req, res) => {
+  const { message, audience } = req.body;
+  if (message && audience) {
+    await announcementModel.create({ authorId: req.session.user.id, audience, message });
+  }
+  res.redirect('/admin');
 });
 
 router.post('/classes/:id/tests/media', mediaUpload.single('media'), (req, res) => {
@@ -141,6 +197,48 @@ router.get('/students', async (_req, res) => {
   const accepted = users.filter(u => u.role === 'student' && u.status === 'approved');
   res.render('admin_accepted', { students: accepted });
 });
+
+// Marketing email form
+router.get('/marketing', async (req, res) => {
+  const students = await userModel.getByRole('student');
+  res.render('admin_marketing', { students, user: req.session.user, sent: req.query.sent, error: null });
+});
+
+// Send marketing email
+router.post('/marketing', async (req, res) => {
+  const students = await userModel.getByRole('student');
+  const { studentId, type, subject, imageUrl, message } = req.body;
+  const allowed = ['recruitment', 'retention', 'approval', 'events', 'information'];
+  try {
+    const student = await userModel.findById(Number(studentId));
+    if (!student || !student.email || !allowed.includes(type)) {
+      return res.status(400).render('admin_marketing', { students, user: req.session.user, sent: null, error: 'Invalid form submission.' });
+    }
+
+    const subj = (subject && subject.trim()) || `MDTS ${type.charAt(0).toUpperCase() + type.slice(1)} Update`;
+    const html = `
+      <div style="font-family:Arial,sans-serif;text-align:center;background:#f0f8ff;padding:20px;">
+        ${imageUrl ? `<img src="${imageUrl}" alt="" style="max-width:100%;height:auto;margin-bottom:15px;border-radius:8px;">` : ''}
+        <h2 style="color:#ff4081;">${subj}</h2>
+        <p style="font-size:1.1rem;">${message || ''}</p>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: 'no-reply@mdts-apps.com',
+      to: student.email,
+      subject: subj,
+      html,
+      text: message || ''
+    });
+
+    res.redirect('/admin/marketing?sent=1');
+  } catch (e) {
+    console.error('Error sending marketing email', e);
+    res.status(500).render('admin_marketing', { students, user: req.session.user, sent: null, error: 'Failed to send email.' });
+  }
+});
+
 
 
 
@@ -223,7 +321,8 @@ router.get('/classes/:id', async (req, res) => {
   if (!klass) return res.status(404).send('Not found');
   const users = await userModel.getAll();
     const students = users.filter(u => u.role === 'student' && u.status === 'approved');
-
+ const discussions = await discussionModel.getByClass(id);
+  res.render('view_class', { klass, students, classStudents, studentView: false, discussions });
   const classStudents = students.filter(s => (klass.studentIds||[]).includes(s.id));
   res.render('view_class', { klass, students, classStudents, studentView: false });
 });
@@ -454,6 +553,42 @@ router.get('/events', async (req, res) => {
     classCount,
     testCount
   });
+});
+
+// Custom report builder routes
+router.get('/reports/custom', async (_req, res) => {
+  const [tables] = await db.query('SHOW TABLES');
+  const tableNames = tables.map(t => Object.values(t)[0]);
+  res.render('custom_report', { tables: tableNames, columns: [], results: null, selected: {} });
+});
+
+router.get('/reports/custom/columns', async (req, res) => {
+  const table = req.query.table;
+  if (!table) return res.json([]);
+  const [cols] = await db.query('SHOW COLUMNS FROM ??', [table]);
+  res.json(cols.map(c => c.Field));
+});
+
+router.post('/reports/custom', async (req, res) => {
+  const { table, columns = [], filterCol, operator, value } = req.body;
+  const [tables] = await db.query('SHOW TABLES');
+  const tableNames = tables.map(t => Object.values(t)[0]);
+  if (!table || !tableNames.includes(table)) {
+    return res.render('custom_report', { tables: tableNames, columns: [], results: [], selected: {}, error: 'Invalid table selected.' });
+  }
+  const [cols] = await db.query('SHOW COLUMNS FROM ??', [table]);
+  const colNames = cols.map(c => c.Field);
+  let selectedCols = Array.isArray(columns) ? columns : [columns];
+  selectedCols = selectedCols.filter(c => colNames.includes(c));
+  const allowedOps = ['=', '!=', '>', '<', 'LIKE'];
+  let sql = 'SELECT ?? FROM ??';
+  const params = [selectedCols.length ? selectedCols : colNames, table];
+  if (filterCol && value && allowedOps.includes(operator) && colNames.includes(filterCol)) {
+    sql += ` WHERE ?? ${operator} ?`;
+    params.push(filterCol, operator === 'LIKE' ? `%${value}%` : value);
+  }
+  const [rows] = await db.query(sql, params);
+  res.render('custom_report', { tables: tableNames, columns: colNames, results: rows, selected: { table, columns: selectedCols, filterCol, operator, value } });
 });
 
 

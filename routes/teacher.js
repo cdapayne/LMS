@@ -4,6 +4,12 @@ const router = express.Router();
 const classModel = require('../models/classModel');
 const userModel = require('../models/userModel');
 const { generateQuestions } = require('../utils/questionGenerator');
+const announcementModel = require('../models/announcementModel');
+const discussionModel = require('../models/discussionModel');
+const messageModel = require('../models/messageModel');
+
+
+
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
@@ -37,14 +43,58 @@ router.use((req, res, next) => {
   next();
 });
 
-// Dashboard with weekly schedule
+// Dashboard with weekly schedule and announcements
 router.get('/', async (req, res) => {
   const classes = await classModel.byTeacher(req.session.user.id);
+  const users = await userModel.getAll();
+  const students = users.filter(u => u.role === 'student');
+  const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
+  const approvedStudents = students.filter(u => u.status === 'approved');
+  const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
   const weekly = { Monday:[], Tuesday:[], Wednesday:[], Thursday:[], Friday:[], Saturday:[], Sunday:[] };
   classes.forEach(k => (k.schedule||[]).forEach(s => {
     if (weekly[s.day]) weekly[s.day].push({ className: k.name, time: s.time });
   }));
-  res.render('teacher_dashboard', { teacher: req.session.user, classes, weekly });
+  const announcements = await announcementModel.forTeacher(req.session.user.id);
+    res.render('teacher_dashboard', {
+    teacher: req.session.user,
+    classes,
+    weekly,
+    pendingCount: pendingStudents.length,
+    approvedCount: approvedStudents.length,
+    classSizes,
+    announcements
+  });
+});
+
+router.get('/mailbox', async (req, res) => {
+  const messages = await messageModel.getMailbox(req.session.user.id);
+  const allUsers = await userModel.getAll();
+  const userMap = new Map(allUsers.map(u => [u.id, u]));
+  const formatted = messages.map(m => ({
+    ...m,
+    fromName: userMap.get(m.senderId)?.name || `User ${m.senderId}`,
+    toName: userMap.get(m.recipientId)?.name || `User ${m.recipientId}`
+  }));
+  const students = allUsers.filter(u => u.role === 'student');
+  res.render('mailbox', { messages: formatted, users: students, user: req.session.user });
+});
+
+router.post('/mailbox', async (req, res) => {
+  const recipientId = Number(req.body.to);
+  const { subject, body } = req.body;
+  if (recipientId && body) {
+    await messageModel.sendMessage(req.session.user.id, recipientId, subject || '', body);
+  }
+  res.redirect('/teacher/mailbox');
+});
+
+router.post('/announcements', async (req, res) => {
+  const { message, classId } = req.body;
+  if (message && classId) {
+    await announcementModel.create({ authorId: req.session.user.id, audience: 'class', classId: Number(classId), message });
+  }
+  res.redirect('/teacher');
 });
 
 // Class view + roster + tests
@@ -55,7 +105,32 @@ router.get('/classes/:id', async (req, res) => {
   const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
  const today = new Date().toISOString().slice(0,10);
   const attendanceToday = (klass.attendance || []).find(a => a.date === today) || { present: [] };
-  res.render('teacher_view_class', { klass, students, today, attendanceToday });
+  const discussions = await discussionModel.getByClass(klass.id);
+  res.render('teacher_view_class', { klass, students, today, attendanceToday, discussions });
+});
+
+// add discussion message
+router.post('/classes/:id/discussion', async (req, res) => {
+  const classId = Number(req.params.id);
+  const { message } = req.body;
+  if (message && message.trim()) {
+    await discussionModel.addMessage(classId, req.session.user.id, message.trim());
+    const klass = await classModel.findClassById(classId);
+    const teacher = await userModel.findById(klass.teacherId);
+    if (teacher && teacher.email) {
+      try {
+        await transporter.sendMail({
+          to: teacher.email,
+          from: process.env.SMTP_USER,
+          subject: `New discussion message for ${klass.name}`,
+          text: message.trim()
+        });
+      } catch (e) {
+        console.error('Email send failed', e);
+      }
+    }
+  }
+  res.redirect(`/teacher/classes/${classId}#discussion`);
 });
 
 // new test creation form

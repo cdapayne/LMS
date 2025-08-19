@@ -9,6 +9,10 @@ const adminRoutes = require('./routes/admin');
 const studentRoutes = require('./routes/student');
 const teacherRoutes = require('./routes/teacher');
 const paymentRoutes = require('./routes/payment');
+const preRegRoutes = require('./routes/preReg');
+const eventRoutes = require('./routes/events');
+
+
 
 
 const app = express();
@@ -46,8 +50,12 @@ app.get('/dashboard', (req, res) => {
 });
 
 app.use(authRoutes);
+app.use(preRegRoutes);
+
 app.use('/admin', adminRoutes);
 app.use(paymentRoutes);
+app.use(eventRoutes);
+
 
 app.use('/student', studentRoutes);
 app.use('/teacher', teacherRoutes);

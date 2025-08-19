@@ -272,6 +272,26 @@
         <% } %>
       </section>
     </div>
+        <!-- Discussion Board -->
+    <section class="cardish" id="discussion" aria-labelledby="discussion-title">
+      <div class="section-title"><span class="dot"></span><span id="discussion-title">Discussion Board</span></div>
+      <% if (!(discussions||[]).length) { %>
+        <div class="empty">No messages yet.</div>
+      <% } else { %>
+        <ul class="list-plain">
+          <% discussions.forEach(d => { %>
+            <li class="mb-1"><strong><%= d.name %>:</strong> <%= d.message %> <span class="muted small"><%= new Date(d.createdAt).toLocaleString() %></span></li>
+          <% }) %>
+        </ul>
+      <% } %>
+      <% if (typeof studentView !== 'undefined' && studentView) { %>
+        <form method="POST" action="/student/classes/<%= klass.id %>/discussion" class="mt-3 d-flex gap-2">
+          <input type="text" name="message" class="form-control" placeholder="Enter message">
+          <button type="submit" class="btn btn-primary btn-sm">Post</button>
+        </form>
+      <% } %>
+    </section>
+
 
     <!-- Admin-only: Students -->
     <% if (typeof studentView === 'undefined' || !studentView) { %>

@@ -87,6 +87,24 @@
   </div>
 
   <div class="container pb-4">
+        <% if ((announcements || []).length) { %>
+      <section class="mb-4">
+        <h5>Announcements</h5>
+        <ul class="list-group">
+          <% announcements.forEach(a => { %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                <% if (a.classId) { %>
+                  <strong><%= (classes.find(c => c.id === a.classId) || {}).name %>:</strong>
+                <% } %>
+                <%= a.message %>
+              </span>
+              <small class="text-muted"><%= new Date(a.createdAt).toLocaleString() %></small>
+            </li>
+          <% }) %>
+        </ul>
+      </section>
+    <% } %>
     <div class="d-flex flex-wrap tools-bar mb-3">
       <% if (classes.length) { %>
         <input id="searchInput" class="form-control" placeholder="Search by class name or schedule…" aria-label="Search classes">
@@ -165,6 +183,13 @@
                     <span class="text-muted">at</span>
                     <strong><%= firstSlot.time %></strong>
                     <% if (firstSlot.holiday) { %><span class="badge badge-holiday ms-2">Holiday</span><% } %>
+                  </div>
+                <% } %>
+                    <% const grade = (currentGrades || {})[k.id]; %>
+                <% if (grade !== undefined) { %>
+                  <div class="mt-1 small">
+                    <span class="text-muted">Current Grade:</span>
+                    <strong><%= grade %>%</strong>
                   </div>
                 <% } %>
               </div>
