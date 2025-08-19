@@ -188,13 +188,23 @@
         <% } else { %>
           <ul class="list-plain">
             <% (klass.lectures || []).forEach(l => { %>
-              <li class="mb-1"><a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a></li>
+              <li class="mb-1">
+                <% if (l.isPowerPoint) { %>
+                  <a href="/student/powerpoint?url=<%= encodeURIComponent(l.url) %>&title=<%= encodeURIComponent(l.title) %>" target="_blank" rel="noopener"><%= l.title %> (PowerPoint)</a>
+                <% } else { %>
+                  <a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a>
+                <% } %>
+              </li>
             <% }) %>
           </ul>
         <% } %>
            <form method="POST" action="/teacher/classes/<%= klass.id %>/lectures" class="mt-3 d-flex gap-2 flex-wrap">
           <input type="text" name="title" class="form-control" placeholder="Title" style="max-width:200px">
           <input type="url" name="url" class="form-control" placeholder="URL">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="isPowerPoint" id="ppt-<%= klass.id %>">
+            <label class="form-check-label" for="ppt-<%= klass.id %>">PowerPoint</label>
+          </div>
           <button class="btn btn-sm btn-primary" type="submit">Add</button>
         </form>
       </section>

@@ -127,11 +127,13 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/register', (req, res) => {
+    const formData = req.session.preRegData || {};
+  delete req.session.preRegData;
   res.render('register', {
     error: null,
     docVersion: DOC_VERSION,
     docText: DOC_TEXT,
-    formData: {}
+    formData
   });
 });
 

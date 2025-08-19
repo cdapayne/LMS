@@ -1,55 +1,253 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Event RSVPs</title>
-  <link rel="icon" href="<%= branding?.favicon %>">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/theme.css">
+  <link rel="icon" href="<%= branding?.favicon %>" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    /* Page chrome */
+    body{ background: var(--bs-body-bg); }
+    .page-header{
+      position: sticky; top: 0; z-index: 1030;
+      background: var(--bs-body-bg);
+      border-bottom: 1px solid var(--bs-border-color);
+    }
 
+    /* Mobile card list (shown < md) */
+    .rsvp-card{ border: 1px solid var(--bs-border-color); border-radius: 1rem; }
+    .rsvp-card .label{ color: var(--bs-secondary-color); min-width: 6.5rem; }
+
+    /* Desktop table tweaks (>= md) */
+    .table thead th{ position: sticky; top: 56px; background: var(--bs-body-bg); }
+    .table td, .table th{ vertical-align: middle; }
+    .table-wrap{ max-height: 70vh; overflow:auto; border-radius: .75rem; border: 1px solid var(--bs-border-color); }
+
+    /* Utility */
+    .chip{ display:inline-block; padding:.2rem .6rem; border-radius:999px; background:var(--bs-tertiary-bg); }
+  </style>
 </head>
-<body class="p-4">
-      <div class="text-end mb-2">
-    <button id="themeToggle" class="btn btn-sm btn-outline-secondary"></button>
+<body class="pb-5">
+  <!-- Header / actions -->
+  <div class="page-header">
+    <div class="container py-3">
+      <div class="d-flex align-items-center gap-2 justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <h1 class="h4 mb-0">Event RSVPs</h1>
+          <span class="chip"><%= rsvps?.length || 0 %> total</span>
+        </div>
+        <div class="d-flex gap-2">
+          <button id="themeToggle" class="btn btn-sm btn-outline-secondary" type="button"></button>
+          <a href="/admin" class="btn btn-sm btn-outline-secondary">Back</a>
+          <button id="btnExport" class="btn btn-sm btn-primary" type="button">Export CSV</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="row g-2 mt-2">
+        <div class="col-12 col-md-6">
+          <input id="searchInput" class="form-control" placeholder="Search name, email, phone, city, program…" autocomplete="off" />
+        </div>
+        <div class="col-6 col-md-3">
+          <select id="branchFilter" class="form-select">
+            <option value="">All Branches</option>
+            <% Array.from(new Set(rsvps.map(r=>r.branch).filter(Boolean))).sort().forEach(b=>{ %>
+              <option value="<%= b %>"><%= b %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <select id="programFilter" class="form-select">
+            <option value="">All Programs</option>
+            <% Array.from(new Set(rsvps.map(r=>r.program).filter(Boolean))).sort().forEach(p=>{ %>
+              <option value="<%= p %>"><%= p %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+    </div>
   </div>
-  <h1>Event RSVPs</h1>
-  <table class="table table-bordered table-striped mt-3">
-    <thead>
-      <tr>
-        <th>Event</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Phone</th>
-        <th>Address</th>
-        <th>City</th>
-        <th>State</th>
-        <th>Zip</th>
-        <th>Branch</th>
-        <th>Program</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% if (rsvps.length === 0) { %>
-        <tr><td colspan="10" class="text-center">No RSVPs</td></tr>
+
+  <main class="container pt-3">
+    <!-- Mobile: card list -->
+    <div id="cardsView" class="d-md-none">
+      <% if (!rsvps || rsvps.length === 0) { %>
+        <div class="text-center text-body-secondary py-5">No RSVPs</div>
+      <% } else { %>
+        <div class="vstack gap-3" id="cardsContainer">
+          <% rsvps.forEach((r, idx) => { %>
+            <article class="rsvp-card p-3" data-index="<%= idx %>">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                  <div class="fw-semibold"><%= r.fullName %></div>
+                  <div class="text-body-secondary small"><%= r.eventName %></div>
+                </div>
+                <div class="text-end">
+                  <% if (r.branch) { %><div class="chip small"><%= r.branch %></div><% } %>
+                </div>
+              </div>
+              <hr class="my-2" />
+              <dl class="row mb-0 small">
+                <dt class="col-4 label">Email</dt>
+                <dd class="col-8"><a href="mailto:<%= r.email %>"><%= r.email %></a></dd>
+
+                <dt class="col-4 label">Phone</dt>
+                <dd class="col-8"><a href="tel:<%= r.phone %>"><%= r.phone %></a></dd>
+
+                <dt class="col-4 label">Address</dt>
+                <dd class="col-8"><%= [r.address, r.city, r.state, r.zip].filter(Boolean).join(', ') %></dd>
+
+                <dt class="col-4 label">Program</dt>
+                <dd class="col-8"><%= r.program %></dd>
+              </dl>
+            </article>
+          <% }) %>
+        </div>
       <% } %>
-      <% rsvps.forEach(r => { %>
-        <tr>
-          <td><%= r.eventName %></td>
-          <td><%= r.fullName %></td>
-          <td><%= r.email %></td>
-          <td><%= r.phone %></td>
-          <td><%= r.address %></td>
-          <td><%= r.city %></td>
-          <td><%= r.state %></td>
-          <td><%= r.zip %></td>
-          <td><%= r.branch %></td>
-          <td><%= r.program %></td>
-        </tr>
-      <% }); %>
-    </tbody>
-  </table>
-  <a href="/admin" class="btn btn-secondary">Back</a>
-   <script src="/js/theme.js"></script>
-  <script>setupThemeToggle('themeToggle');</script>
+    </div>
+
+    <!-- Desktop: table -->
+    <div class="table-wrap d-none d-md-block">
+      <table id="rsvpTable" class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="min-width:160px">Event</th>
+            <th style="min-width:180px">Name</th>
+            <th style="min-width:220px">Email</th>
+            <th style="min-width:140px">Phone</th>
+            <th style="min-width:240px">Address</th>
+            <th>City</th>
+            <th>State</th>
+            <th>Zip</th>
+            <th>Branch</th>
+            <th>Program</th>
+          </tr>
+        </thead>
+        <tbody id="rsvpBody">
+          <% if (!rsvps || rsvps.length === 0) { %>
+            <tr><td colspan="10" class="text-center text-body-secondary py-5">No RSVPs</td></tr>
+          <% } else { %>
+            <% rsvps.forEach(r => { %>
+              <tr>
+                <td class="text-truncate"><%= r.eventName %></td>
+                <td class="fw-semibold"><%= r.fullName %></td>
+                <td><a href="mailto:<%= r.email %>"><%= r.email %></a></td>
+                <td><a href="tel:<%= r.phone %>"><%= r.phone %></a></td>
+                <td class="text-truncate"><%= r.address %></td>
+                <td><%= r.city %></td>
+                <td><%= r.state %></td>
+                <td><%= r.zip %></td>
+                <td><%= r.branch %></td>
+                <td><%= r.program %></td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    // Initialize theme toggle text/icon from your existing theme.js
+    setupThemeToggle('themeToggle');
+
+    // Simple client-side filter across both views
+    (function(){
+      const q = document.getElementById('searchInput');
+      const branchSel = document.getElementById('branchFilter');
+      const programSel = document.getElementById('programFilter');
+      const tableBody = document.getElementById('rsvpBody');
+      const cardsContainer = document.getElementById('cardsContainer');
+
+      function rowMatches(text, branch, program) {
+        const t = text.toLowerCase();
+        const qb = (q.value || '').toLowerCase().trim();
+        const bf = (branchSel.value || '').toLowerCase();
+        const pf = (programSel.value || '').toLowerCase();
+        const matchesQ = !qb || t.includes(qb);
+        const matchesB = !bf || (branch||'').toLowerCase() === bf;
+        const matchesP = !pf || (program||'').toLowerCase() === pf;
+        return matchesQ && matchesB && matchesP;
+      }
+
+      function filterTable(){
+        if (!tableBody) return;
+        [...tableBody.rows].forEach(tr=>{
+          const cells = [...tr.cells].map(td=>td.textContent).join(' ');
+          const branch = tr.cells[8]?.textContent || '';
+          const program = tr.cells[9]?.textContent || '';
+          tr.style.display = rowMatches(cells, branch, program) ? '' : 'none';
+        });
+      }
+
+      function filterCards(){
+        if (!cardsContainer) return;
+        [...cardsContainer.children].forEach(card=>{
+          const txt = card.innerText || card.textContent || '';
+          const idx = card.getAttribute('data-index');
+          // branch/program appear in the card text; good enough for lightweight filtering
+          const match = rowMatches(txt, '', '');
+          card.style.display = match ? '' : 'none';
+        });
+      }
+
+      function runFilters(){ filterTable(); filterCards(); }
+      ['input','change'].forEach(evt=>{
+        q?.addEventListener(evt, runFilters);
+        branchSel?.addEventListener(evt, runFilters);
+        programSel?.addEventListener(evt, runFilters);
+      });
+
+      // CSV Export (respects current filters on the table if visible)
+      const exportBtn = document.getElementById('btnExport');
+      exportBtn?.addEventListener('click', ()=>{
+        const headers = ["Event","Name","Email","Phone","Address","City","State","Zip","Branch","Program"];
+        const rows = [];
+        const collect = (cells)=> cells.map(td => `"${(td.textContent||'').replace(/"/g,'""')}"`).join(',');
+
+        if (window.getComputedStyle(document.querySelector('.d-md-block')).display !== 'none') {
+          // Desktop table path
+          const visibleRows = [...(document.getElementById('rsvpBody')?.rows || [])].filter(r=>r.style.display !== 'none');
+          visibleRows.forEach(tr => rows.push(collect([...tr.cells].slice(0,10))));
+        } else {
+          // Mobile cards path: rebuild from EJS data present on page via data attributes OR text
+          // Simpler approach: rebuild from the server JSON injected as a script tag if you add it.
+          // For now we serialize visible card text into columns (best-effort).
+          const cards = [...document.querySelectorAll('.rsvp-card')].filter(c=>c.style.display !== 'none');
+          cards.forEach(c=>{
+            const t = c.innerText;
+            const pick = (label) => {
+              const m = t.match(new RegExp(label + "\\s*([\\s\\S]*?)\\n(?:\\w+:|$)","i"));
+              return m ? m[1].trim() : "";
+            };
+            rows.push([
+              pick("Event") || (t.split('\n')[1]||''),
+              (t.split('\n')[0]||''),
+              pick("Email"),
+              pick("Phone"),
+              pick("Address"),
+              pick("City"),
+              pick("State"),
+              pick("Zip"),
+              pick("Branch"),
+              pick("Program")
+            ].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
+          });
+        }
+
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `event_rsvps_<%= new Date().toISOString().slice(0,10) %>.csv`;
+        document.body.appendChild(a); a.click();
+        URL.revokeObjectURL(url); a.remove();
+      });
+    })();
+  </script>
 </body>
 </html>

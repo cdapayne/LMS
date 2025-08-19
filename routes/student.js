@@ -47,7 +47,11 @@ router.post('/mailbox', async (req, res) => {
   res.redirect('/student/mailbox');
 });
 
-
+router.get('/powerpoint', (req, res) => {
+  const { url, title } = req.query;
+  if (!url) return res.status(400).send('Missing URL');
+  res.render('powerpoint', { url, title: title || 'PowerPoint' });
+});
 
 
 

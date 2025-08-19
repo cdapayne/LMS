@@ -1,9 +1,39 @@
 const db = require('./db');
 
-async function create({ name, phone, email, branch, region, course, referral, consent }) {
+async function create({
+  name,
+  email,
+  phone,
+  phoneCarrier,
+  address,
+  zip,
+  state,
+  serving,
+  branch,
+  course,
+  applicantType,
+  referral,
+  referralEmail,
+  consent
+}) {
   const [result] = await db.query(
-    'INSERT INTO mdtslms_pre_registrations (name, phone, email, branch, region, course, referral, consent, createdAt) VALUES (?,?,?,?,?,?,?, ?, NOW())',
-    [name, phone, email || null, branch, region, course, referral, consent ? 1 : 0]
+    'INSERT INTO mdtslms_pre_registrations (name, email, phone, phoneCarrier, address, zip, state, serving, branch, course, applicantType, referral, referralEmail, consent, createdAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, ?, NOW())',
+    [
+      name,
+      email || null,
+      phone,
+      phoneCarrier || null,
+      address || null,
+      zip,
+      state,
+      serving ? 1 : 0,
+      branch || null,
+      course,
+      applicantType,
+      referral || null,
+      referralEmail || null,
+      consent ? 1 : 0
+    ]
   );
   return { id: result.insertId };
 }

@@ -16,10 +16,14 @@
           <th>Name</th>
           <th>Phone</th>
           <th>Email</th>
+          <th>Serving</th>
           <th>Branch</th>
-          <th>Region</th>
+          <th>State</th>
+          <th>Zip</th>
           <th>Course</th>
+          <th>Applicant Type</th>
           <th>Referral</th>
+          <th>Referral Email</th>
           <th>Created</th>
         </tr>
       </thead>
@@ -29,15 +33,19 @@
             <td><%= p.name %></td>
             <td><%= p.phone %></td>
             <td><%= p.email || '' %></td>
-            <td><%= p.branch %></td>
-            <td><%= p.region %></td>
+            <td><%= p.serving ? 'Yes' : 'No' %></td>
+            <td><%= p.branch || '' %></td>
+            <td><%= p.state %></td>
+            <td><%= p.zip %></td>
             <td><%= p.course %></td>
-            <td><%= p.referral %></td>
+            <td><%= p.applicantType %></td>
+            <td><%= p.referral || '' %></td>
+            <td><%= p.referralEmail || '' %></td>
             <td><%= new Date(p.createdAt).toLocaleString() %></td>
           </tr>
         <% }) %>
         <% if (preregs.length === 0) { %>
-          <tr><td colspan="8" class="text-center">No pre-registrations yet.</td></tr>
+          <tr><td colspan="12" class="text-center">No pre-registrations yet.</td></tr>
         <% } %>
       </tbody>
     </table>

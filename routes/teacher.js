@@ -173,9 +173,13 @@ router.post('/classes/:id/tests', async (req, res) => {
 
 router.post('/classes/:id/lectures', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, url } = req.body;
+  const { title, url, isPowerPoint } = req.body;
   if (title && url) {
-    await classModel.addLecture(classId, { title: title.trim(), url: url.trim() });
+    await classModel.addLecture(classId, {
+      title: title.trim(),
+      url: url.trim(),
+      isPowerPoint: !!isPowerPoint
+    });
   }
   res.redirect(`/teacher/classes/${classId}#lectures`);
 });
