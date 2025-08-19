@@ -184,6 +184,15 @@ router.post('/classes/:id/lectures', async (req, res) => {
   res.redirect(`/teacher/classes/${classId}#lectures`);
 });
 
+router.post('/classes/:id/assignments', async (req, res) => {
+  const classId = Number(req.params.id);
+  const { title, url } = req.body;
+  if (title && url) {
+    await classModel.addAssignment(classId, { title: title.trim(), url: url.trim() });
+  }
+  res.redirect(`/teacher/classes/${classId}#assignments`);
+});
+
 router.post('/classes/:id/simulations', async (req, res) => {
   const classId = Number(req.params.id);
   const { title, url } = req.body;

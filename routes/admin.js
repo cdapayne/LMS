@@ -240,6 +240,13 @@ router.post('/marketing', async (req, res) => {
   const students = await userModel.getByRole('student');
   const { studentId, type, subject, imageUrl, message } = req.body;
   const allowed = ['recruitment', 'retention', 'approval', 'events', 'information'];
+    const prefaces = {
+    recruitment: 'Join the MD Technical School family!',
+    retention: 'We value your continued learning with MDTS.',
+    approval: 'Congratulations on your approval!',
+    events: 'Upcoming opportunities await you at MDTS.',
+    information: 'Here is an important update from MDTS.'
+  };
   try {
     const student = await userModel.findById(Number(studentId));
     if (!student || !student.email || !allowed.includes(type)) {
@@ -247,20 +254,26 @@ router.post('/marketing', async (req, res) => {
     }
 
     const subj = (subject && subject.trim()) || `MDTS ${type.charAt(0).toUpperCase() + type.slice(1)} Update`;
+        const preface = prefaces[type] || '';
+
     const html = `
       <div style="font-family:Arial,sans-serif;text-align:center;background:#f0f8ff;padding:20px;">
         ${imageUrl ? `<img src="${imageUrl}" alt="" style="max-width:100%;height:auto;margin-bottom:15px;border-radius:8px;">` : ''}
         <h2 style="color:#ff4081;">${subj}</h2>
+                ${preface ? `<p style="font-size:1.1rem;">${preface}</p>` : ''}
+
         <p style="font-size:1.1rem;">${message || ''}</p>
       </div>
     `;
+        const text = [preface, message || ''].filter(Boolean).join('\n\n');
+
 
     await transporter.sendMail({
       from: 'no-reply@mdts-apps.com',
       to: student.email,
       subject: subj,
       html,
-      text: message || ''
+      text
     });
 
     res.redirect('/admin/marketing?sent=1');
@@ -377,6 +390,15 @@ router.post('/classes/:id/simulations', async (req, res) => {
     await classModel.addSimulation(classId, { title: title.trim(), url: url.trim() });
   }
   res.redirect(`/admin/classes/${classId}#simulations`);
+});
+
+router.post('/classes/:id/assignments', async (req, res) => {
+  const classId = Number(req.params.id);
+  const { title, url } = req.body;
+  if (title && url) {
+    await classModel.addAssignment(classId, { title: title.trim(), url: url.trim() });
+  }
+  res.redirect(`/admin/classes/${classId}#assignments`);
 });
 
 router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) => {

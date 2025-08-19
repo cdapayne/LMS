@@ -72,5 +72,25 @@
       </form>
     </div>
   </div>
+  <script>
+    const prefaces = {
+      recruitment: 'Join the MD Technical School family!',
+      retention: 'We value your continued learning with MDTS.',
+      approval: 'Congratulations on your approval!',
+      events: 'Upcoming opportunities await you at MDTS.',
+      information: 'Here is an important update from MDTS.'
+    };
+    const typeSelect = document.querySelector('select[name="type"]');
+    const messageBox = document.querySelector('textarea[name="message"]');
+    let touched = false;
+    messageBox.addEventListener('input', () => { touched = true; });
+    function updatePreface() {
+      if (touched && messageBox.value.trim()) return;
+      const pre = prefaces[typeSelect.value] || '';
+      messageBox.value = pre;
+    }
+    typeSelect.addEventListener('change', updatePreface);
+    document.addEventListener('DOMContentLoaded', updatePreface);
+  </script>
 </body>
 </html>
