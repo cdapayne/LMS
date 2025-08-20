@@ -57,26 +57,6 @@ router.get('/chart/meta', async (_req, res) => {
   res.json({ tables: out });
 });
 
-router.get('/chart/data', async (req, res) => {
-  const { table, category, value, lat, lon } = req.query;
-  if (!table) return res.status(400).json([]);
-  try {
-    let sql, params;
-    if (lat && lon) {
-      sql = 'SELECT ?? AS latitude, ?? AS longitude, ?? AS category, ?? AS value FROM ?? LIMIT 500';
-      params = [lat, lon, category || lat, value || lon, table];
-    } else {
-      sql = 'SELECT ?? AS category, ?? AS value FROM ?? LIMIT 500';
-      params = [category, value, table];
-    }
-    const [rows] = await db.query(sql, params);
-    res.json(rows);
-  } catch (e) {
-    res.status(500).json({ error: 'query failed' });
-  }
-});
-
-
 router.get('/', async (req, res) => {
   const users = await userModel.getAll();
   const classes = await classModel.getAllClasses();
@@ -84,9 +64,55 @@ router.get('/', async (req, res) => {
   const students = users.filter(u => u.role === 'student');
   const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
   const approvedStudents = students.filter(u => u.status === 'approved');
-    const announcements = await announcementModel.forAdmin();
+  const announcements = await announcementModel.forAdmin();
+
+  // ----- course counts -----
+  const courseCountsMap = students.reduce((acc, s) => {
+    const course = (s.profile && s.profile.course) || 'Unknown';
+    acc[course] = (acc[course] || 0) + 1;
+    return acc;
+  }, {});
+  const courseCounts = Object.entries(courseCountsMap).map(([course, count]) => ({ course, count }));
+
+  // ----- state counts -----
+  const stateCounts = {};
+  students.forEach(s => {
+    const state = s.profile && s.profile.address && s.profile.address.state;
+    if (state) stateCounts[state] = (stateCounts[state] || 0) + 1;
+  });
+  const studentsByState = Object.entries(stateCounts).map(([state, count]) => ({ state, count }));
+
+  // ----- affiliate counts -----
+  const affiliateCounts = students.reduce((acc, s) => {
+    const program = (s.profile && s.profile.affiliateProgram) || 'Unspecified';
+    acc[program] = (acc[program] || 0) + 1;
+    return acc;
+  }, {});
+
+
+const signupsLast7Days  = buildDailySeries(students, 7);    // day-by-day for past 7 days
+const signupsLast30Days = buildDailySeries(students, 30);   // optional
+const signupsLast365    = buildDailySeries(students, 365);  // optional
+
+  // const sum = a => a.reduce((n, x) => n + x.count, 0);
+  // const signupsTotals = {
+  //   week:  sum(signupsDailyWeek),
+  //   month: sum(signupsDailyMonth),
+  //   year:  sum(signupsDailyYear)
+  // };
 
   const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
+
+  // (optional) logging
+  console.log("course counts:", JSON.stringify(courseCounts));
+  console.log("student by state:", JSON.stringify(studentsByState));
+  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
+  console.log("signups totals:", JSON.stringify(signupsLast7Days));
+    console.log("signups totals:", JSON.stringify(signupsLast30Days));
+      console.log("signups totals:", JSON.stringify(signupsLast365));
+
+
+
   res.render('admin_dashboard', {
     user: req.session.user,
     classes,
@@ -95,7 +121,13 @@ router.get('/', async (req, res) => {
     announcements,
     pendingCount: pendingStudents.length,
     approvedCount: approvedStudents.length,
-    classSizes
+    classSizes,
+    courseCounts,
+    studentsByState,
+    affiliateCounts,
+    signupsLast7Days,
+    signupsLast30Days,
+    signupsLast365
   });
 });
 
@@ -103,6 +135,33 @@ async function renderPending(_req, res) {
   const users = await userModel.getAll();
   const pending = users.filter(u => u.role === 'student' && (u.status === 'pending' || !u.status));
   res.render('admin_pending', { pending });
+}
+
+function buildDailySeries(people, days, tz = 'America/New_York') {
+  const fmtDay = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const fmtDow = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' });
+
+  const todayUTC = new Date();
+  const keys = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(todayUTC);
+    d.setUTCDate(d.getUTCDate() - i);
+    keys.push(d);
+  }
+
+  const counts = Object.fromEntries(keys.map(d => [fmtDay.format(d), 0]));
+
+  for (const s of people) {
+    if (!s.appliedAt) continue;
+    const bucket = fmtDay.format(new Date(s.appliedAt));
+    if (bucket in counts) counts[bucket] += 1;
+  }
+
+  return keys.map(d => {
+    const date = fmtDay.format(d);           // YYYY-MM-DD
+    const dow  = fmtDow.format(d);           // Mon/Tue/...
+    return { date, dow, count: counts[date] };
+  });
 }
 
 router.get('/approvals', renderPending);
@@ -357,6 +416,80 @@ router.get('/classes', async (_req, res) => {
   const users = await userModel.getAll();
   const teacherMap = Object.fromEntries(users.filter(u => u.role === 'teacher').map(u => [u.id, u.name]));
   res.render('class_list', { classes, teacherMap });
+});
+
+router.get('/chart/NewSignups', async (req, res) => {
+      const users = await userModel.getAll();
+  const classes = await classModel.getAllClasses();
+  const teachers = users.filter(u => u.role === 'teacher');
+  const students = users.filter(u => u.role === 'student');
+  const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
+  const approvedStudents = students.filter(u => u.status === 'approved');
+  const announcements = await announcementModel.forAdmin();
+
+  // ----- course counts -----
+  const courseCountsMap = students.reduce((acc, s) => {
+    const course = (s.profile && s.profile.course) || 'Unknown';
+    acc[course] = (acc[course] || 0) + 1;
+    return acc;
+  }, {});
+  const courseCounts = Object.entries(courseCountsMap).map(([course, count]) => ({ course, count }));
+
+  // ----- state counts -----
+  const stateCounts = {};
+  students.forEach(s => {
+    const state = s.profile && s.profile.address && s.profile.address.state;
+    if (state) stateCounts[state] = (stateCounts[state] || 0) + 1;
+  });
+  const studentsByState = Object.entries(stateCounts).map(([state, count]) => ({ state, count }));
+
+  // ----- affiliate counts -----
+  const affiliateCounts = students.reduce((acc, s) => {
+    const program = (s.profile && s.profile.affiliateProgram) || 'Unspecified';
+    acc[program] = (acc[program] || 0) + 1;
+    return acc;
+  }, {});
+
+
+const signupsLast7Days  = buildDailySeries(students, 7);    // day-by-day for past 7 days
+const signupsLast30Days = buildDailySeries(students, 30);   // optional
+const signupsLast365    = buildDailySeries(students, 365);  // optional
+
+  // const sum = a => a.reduce((n, x) => n + x.count, 0);
+  // const signupsTotals = {
+  //   week:  sum(signupsDailyWeek),
+  //   month: sum(signupsDailyMonth),
+  //   year:  sum(signupsDailyYear)
+  // };
+
+  const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
+
+  // (optional) logging
+  console.log("course counts:", JSON.stringify(courseCounts));
+  console.log("student by state:", JSON.stringify(studentsByState));
+  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
+  console.log("signups totals:", JSON.stringify(signupsLast7Days));
+    console.log("signups totals:", JSON.stringify(signupsLast30Days));
+      console.log("signups totals:", JSON.stringify(signupsLast365));
+
+
+res.json(signupsLast7Days);
+  // res.render('admin_dashboard', {
+  //   user: req.session.user,
+  //   classes,
+  //   teachers,
+  //   students,
+  //   announcements,
+  //   pendingCount: pendingStudents.length,
+  //   approvedCount: approvedStudents.length,
+  //   classSizes,
+  //   courseCounts,
+  //   studentsByState,
+  //   affiliateCounts,
+  //   signupsLast7Days,
+  //   signupsLast30Days,
+  //   signupsLast365
+  // });
 });
 
 router.get('/chart/signups', async (req, res) => {

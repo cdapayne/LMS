@@ -296,25 +296,237 @@
 <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
     const signupSelect = document.getElementById('signupRange');
+         
+  
   let signupRoot;
-  async function loadSignupChart(range) {
-    const res = await fetch('/admin/chart/signups?range=' + range);
-    const data = await res.json();
-    if (signupRoot) signupRoot.dispose();
-    const root = am5.Root.new('chart-signups');
-    signupRoot = root;
-    root.setThemes([am5themes_Animated.new(root)]);
-    const chart = root.container.children.push(am5xy.XYChart.new(root, {}));
-    const xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField: 'date' }));
-    const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, { min: 0 }));
-    const series = chart.series.push(am5xy.ColumnSeries.new(root, { xAxis, yAxis, valueYField: 'count', categoryXField: 'date' }));
-    xAxis.data.setAll(data);
-    series.data.setAll(data);
+
+
+
+ async function loadSignupChart(range) {
+  const res = await fetch('/admin/chart/Newsignups'); // should return [{ date:"2025-08-18", count:3 }, ...]
+  const raw = await res.json();
+
+  // Map YYYY-MM-DD -> epoch ms (midnight UTC). If you need ET, adjust on server or here.
+  const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
+    ts: new Date(d.date + 'T00:00:00Z').getTime(),
+    count: Number(d.count || 0),
+    dateStr: d.date
+  }));
+
+  if (signupRoot) signupRoot.dispose();
+
+  const root = am5.Root.new('chart-signups');
+  signupRoot = root;
+  root.setThemes([am5themes_Animated.new(root)]);
+
+  const chart = root.container.children.push(am5xy.XYChart.new(root, {
+    layout: root.verticalLayout,
+    panX: true, panY: false, wheelX: "panX", wheelY: "zoomX"
+  }));
+
+  const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
+    baseInterval: { timeUnit: "day", count: 1 }, // <-- "day"
+    renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 40 }),
+    tooltip: am5.Tooltip.new(root, {})
+  }));
+
+  const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+    renderer: am5xy.AxisRendererY.new(root, {})
+  }));
+
+  const series = chart.series.push(am5xy.LineSeries.new(root, {
+    name: "Sign-ups",
+    xAxis, yAxis,
+    valueXField: "ts",      // <-- numeric timestamp
+    valueYField: "count",
+    tooltip: am5.Tooltip.new(root, { labelText: "{valueY}" })
+  }));
+  series.strokes.template.setAll({ strokeWidth: 2 });
+
+  chart.set("cursor", am5xy.XYCursor.new(root, { xAxis }));
+  chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
+
+  // IMPORTANT: set data on the series (not the xAxis)
+  series.data.setAll(data);
+
+  // Optional: zoom to full range
+  if (data.length) {
+    xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
   }
-  signupSelect.addEventListener('change', () => loadSignupChart(signupSelect.value));
-  loadSignupChart('week');
+}
+  signupSelect.addEventListener('change', () => loadSignupPieChart(signupSelect.value));
+  loadSignupPieChart('week');
+
+  document.getElementById('chart-signups').addEventListener('click', async () => {
+    const res = await fetch('/admin/chart/Newsignups'); // should return [{ date:"2025-08-18", count:3 }, ...]
+    const raw = await res.json();
+     const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
+            ts: new Date(d.date + 'T00:00:00Z').getTime(),
+            count: Number(d.count || 0),
+            dateStr: d.date
+          }));
+    let popupRoot;
+    Swal.fire({
+      title: 'Pre-Registrations Per Day',
+      html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
+      width: '90%',
+      didOpen: () => {
+        popupRoot = am5.Root.new('signupChartPopup');
+        popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
+
+          const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
+            layout: popupRoot.verticalLayout,
+            panX: true, panY: false, wheelX: "panX", wheelY: "zoomX"
+          }));
+
+          const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
+            baseInterval: { timeUnit: "day", count: 1 }, // <-- "day"
+            renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
+            tooltip: am5.Tooltip.new(popupRoot, {})
+          }));
+
+          const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
+            renderer: am5xy.AxisRendererY.new(popupRoot, {})
+          }));
+
+          const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
+            name: "Sign-ups",
+            xAxis, yAxis,
+            valueXField: "ts",      // <-- numeric timestamp
+            valueYField: "count",
+            tooltip: am5.Tooltip.new(popupRoot, { labelText: "{valueY}" })
+          }));
+          series.strokes.template.setAll({ strokeWidth: 2 });
+
+          chart.set("cursor", am5xy.XYCursor.new(popupRoot, { xAxis }));
+          chart.set("scrollbarX", am5.Scrollbar.new(popupRoot, { orientation: "horizontal" }));
+
+          // IMPORTANT: set data on the series (not the xAxis)
+          series.data.setAll(data);
+
+          // Optional: zoom to full range
+          if (data.length) {
+            xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
+          }
+      },
+      willClose: () => {
+        if (popupRoot) popupRoot.dispose();
+      }
+    });
+  });
+ 
+
+  async function loadSignupPieChart(range) {
+  // You can pass a range if your route supports it
+  const res = await fetch('/admin/chart/Newsignups');
+  const raw = await res.json();
+  const rows = Array.isArray(raw.series) ? raw.series : raw; // [{date:"YYYY-MM-DD", count:N}, ...]
+
+  // Map to pie format; optionally drop zero-count days so the chart isn’t cluttered
+  const pieData = rows
+    .map(d => ({
+      label: d.date,                      // e.g., "2025-08-18"
+      value: Number(d.count || 0)
+    }))
+    .filter(d => d.value > 0);            // remove zeros (optional)
+
+  // If there’s nothing to show, clear and exit gracefully
+  if (signupRoot) signupRoot.dispose();
+  const root = am5.Root.new('chart-signups');
+  signupRoot = root;
+  root.setThemes([ am5themes_Animated.new(root) ]);
+
+  const chart = root.container.children.push(
+    am5percent.PieChart.new(root, {
+      layout: root.verticalLayout,
+      innerRadius: am5.percent(50)        // donut look
+    })
+  );
+
+  const series = chart.series.push(
+    am5percent.PieSeries.new(root, {
+      name: "Sign-ups per day",
+      categoryField: "label",
+      valueField: "value",
+      alignLabels: true
+    })
+  );
+
+  series.slices.template.setAll({
+    tooltipText: "{category}: {value} ({valuePercentTotal.formatNumber('0.0')}%)"
+  });
+  series.labels.template.setAll({ text: "{category}\n{value}" });
+
+  series.data.setAll(pieData);
+
+  // Legend
+  const legend = chart.children.push(
+    am5.Legend.new(root, {
+      centerX: am5.percent(50),
+      x: am5.percent(50),
+      layout: root.verticalLayout
+    })
+  );
+  legend.data.setAll(series.dataItems);
+}
+
+// hook up your selector if you have one
+signupSelect.addEventListener('change', () => loadSignupChart(signupSelect.value));
+//loadSignupChart('week');
+
+// --- Popup: also show a pie ---
+document.getElementById('chart-signups').addEventListener('click', async () => {
+  const res = await fetch('/admin/chart/Newsignups');
+  const raw = await res.json();
+  const rows = Array.isArray(raw.series) ? raw.series : raw;
+  const pieData = rows.map(d => ({ label: d.date, value: Number(d.count || 0) })).filter(d => d.value > 0);
+
+  let popupRoot;
+  Swal.fire({
+    title: 'Pre-Registrations Per Day',
+    html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
+    width: '90%',
+    didOpen: () => {
+      popupRoot = am5.Root.new('signupChartPopup');
+      popupRoot.setThemes([ am5themes_Animated.new(popupRoot) ]);
+
+      const chart = popupRoot.container.children.push(
+        am5percent.PieChart.new(popupRoot, {
+          layout: popupRoot.verticalLayout,
+          innerRadius: am5.percent(50)
+        })
+      );
+
+      const series = chart.series.push(
+        am5percent.PieSeries.new(popupRoot, {
+          name: "Sign-ups per day",
+          categoryField: "label",
+          valueField: "value",
+          alignLabels: true
+        })
+      );
+
+      series.slices.template.setAll({
+        tooltipText: "{category}: {value} ({valuePercentTotal.formatNumber('0.0')}%)"
+      });
+      series.labels.template.setAll({ text: "{category}\n{value}" });
+
+      series.data.setAll(pieData);
+
+      const legend = chart.children.push(
+        am5.Legend.new(popupRoot, { centerX: am5.percent(50), x: am5.percent(50), layout: popupRoot.verticalLayout })
+      );
+      legend.data.setAll(series.dataItems);
+    },
+    willClose: () => {
+      if (popupRoot) popupRoot.dispose();
+    }
+  });
+});
 
   const chartData = {
 
