@@ -359,6 +359,36 @@ router.get('/classes', async (_req, res) => {
   res.render('class_list', { classes, teacherMap });
 });
 
+router.get('/chart/signups', async (req, res) => {
+  const range = req.query.range || 'week';
+  const daysMap = { week: 7, month: 30, year: 365 };
+  const days = daysMap[range] || 7;
+  const start = new Date();
+  start.setDate(start.getDate() - days + 1);
+  const startDate = start.toISOString().slice(0, 10);
+  try {
+    const [rows] = await db.query(
+      `SELECT DATE(appliedAt) AS date, COUNT(*) AS count
+       FROM mdtslms_users
+       WHERE role='student' AND DATE(appliedAt) >= ?
+       GROUP BY DATE(appliedAt)
+       ORDER BY DATE(appliedAt)`,
+      [startDate]
+    );
+    const result = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const ds = d.toISOString().slice(0, 10);
+      const row = rows.find(r => r.date === ds);
+      result.push({ date: ds, count: row ? row.count : 0 });
+    }
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: 'query failed' });
+  }
+});
+
 router.get('/classes/:id', async (req, res) => {
   const id = Number(req.params.id);
   const klass = await classModel.findClassById(id);

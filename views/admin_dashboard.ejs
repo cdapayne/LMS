@@ -200,8 +200,14 @@
   <div class="row g-3 mt-4">
     <div class="col-12 col-md-6">
       <div class="chart-card">
-        <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
-        <div id="chart-student-status" class="chart-container"></div>
+          <div class="d-flex justify-content-end mb-1">
+          <select id="signupRange" class="form-select form-select-sm w-auto">
+            <option value="week">Past Week</option>
+            <option value="month">Past Month</option>
+            <option value="year">Past Year</option>
+          </select>
+        </div>
+        <div id="chart-signups" class="chart-container"></div>
       </div>
     </div>
     <div class="col-12 col-md-6">
@@ -291,18 +297,33 @@
 <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 <script>
+    const signupSelect = document.getElementById('signupRange');
+  let signupRoot;
+  async function loadSignupChart(range) {
+    const res = await fetch('/admin/chart/signups?range=' + range);
+    const data = await res.json();
+    if (signupRoot) signupRoot.dispose();
+    const root = am5.Root.new('chart-signups');
+    signupRoot = root;
+    root.setThemes([am5themes_Animated.new(root)]);
+    const chart = root.container.children.push(am5xy.XYChart.new(root, {}));
+    const xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField: 'date' }));
+    const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, { min: 0 }));
+    const series = chart.series.push(am5xy.ColumnSeries.new(root, { xAxis, yAxis, valueYField: 'count', categoryXField: 'date' }));
+    xAxis.data.setAll(data);
+    series.data.setAll(data);
+  }
+  signupSelect.addEventListener('change', () => loadSignupChart(signupSelect.value));
+  loadSignupChart('week');
+
   const chartData = {
-    "chart-student-status": [
-      { category: "Approved", value: <%= approvedCount %> },
-      { category: "Pending", value: <%= pendingCount %> }
-    ],
+
     "chart-class-size": <%- JSON.stringify(classSizes.map(c => ({ category: c.name, value: c.size }))) %>,
     "chart-pending": [{ category: "Pending", value: <%= pendingCount %> }],
     "chart-approved": [{ category: "Approved", value: <%= approvedCount %> }]
   };
 
   const chartDefaults = {
-    "chart-student-status": "pie",
     "chart-class-size": "bar",
     "chart-pending": "bar",
     "chart-approved": "bar"
