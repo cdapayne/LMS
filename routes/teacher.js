@@ -171,13 +171,17 @@ router.post('/classes/:id/tests', async (req, res) => {
   res.redirect(`/teacher/classes/${classId}`);
 });
 
-router.post('/classes/:id/lectures', async (req, res) => {
+router.post('/classes/:id/lectures', mediaUpload.single('ppt'), async (req, res) => {
   const classId = Number(req.params.id);
   const { title, url, isPowerPoint } = req.body;
-  if (title && url) {
+  let finalUrl = url && url.trim();
+  if (isPowerPoint && req.file) {
+    finalUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  }
+  if (title && finalUrl) {
     await classModel.addLecture(classId, {
       title: title.trim(),
-      url: url.trim(),
+      url: finalUrl,
       isPowerPoint: !!isPowerPoint
     });
   }
@@ -281,6 +285,7 @@ router.post('/classes/:id/grades', async (req, res) => {
   const classId = Number(req.params.id);
   const klass = await classModel.findClassById(classId);
   if (!klass) return res.status(404).send('Not found');
+  // Test grades (if any were submitted)
   for (const key of Object.keys(req.body)) {
     const m = key.match(/^grade_(\d+)_(\d+)$/);
     if (!m) continue;
@@ -294,7 +299,27 @@ router.post('/classes/:id/grades', async (req, res) => {
     if (score > 100) score = 100;
     await classModel.upsertGrade(classId, testId, studentId, score);
   }
-  res.redirect(`/teacher/classes/${classId}`);
+
+  // Assignment grades
+  for (const studentId of klass.studentIds || []) {
+    for (const a of klass.assignments || []) {
+      const key = `asg_${studentId}_${a.id}`;
+      const val = req.body[key];
+      if (val === undefined || val === '') continue;
+      let score = Number(val);
+      if (Number.isNaN(score)) continue;
+      if (score < 0) score = 0;
+      if (score > 100) score = 100;
+      await classModel.upsertAssignmentGrade(classId, a.id, Number(studentId), score);
+    }
+    for (const l of klass.simulations || []) {
+      const key = `lab_${studentId}_${l.id}`;
+      const passed = !!req.body[key];
+      await classModel.upsertLabStatus(classId, l.id, Number(studentId), passed);
+    }
+  }
+
+  res.redirect(`/teacher/classes/${classId}#grades`);
 });
 
 // View student profile
@@ -320,7 +345,7 @@ router.post('/students/:id/reset-password', async (req, res) => {
         text: `Hi ${user.name || 'User'}, your password has been reset. Your new password is: ${newPassword}`,
         html: `
           <div style="font-family:Arial,sans-serif;text-align:center;">
-            <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
+            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
             <p>Hi ${user.name || 'User'}, your password has been reset.</p>
             <p>Your new password is: <strong>${newPassword}</strong></p>
           </div>

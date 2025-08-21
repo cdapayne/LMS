@@ -90,12 +90,49 @@ async function setActive(id, active) {
   await db.query('UPDATE mdtslms_users SET active=? WHERE id=?', [active ? 1 : 0, id]);
   return findById(id);
 }
+async function findByEmail(email) {
+  const [rows] = await db.query('SELECT * FROM mdtslms_users WHERE email = ?', [email]);
+  return mapRow(rows[0]);
+}
 
 
 async function updatePassword(username, newPassword) {
   const { salt, hash } = hashPassword(newPassword);
   const [result] = await db.query('UPDATE mdtslms_users SET salt=?, hash=? WHERE username=?', [salt, hash, username]);
   return result.affectedRows > 0;
+}
+
+async function setResetToken(username, token, expires) {
+  const user = await findByUsername(username);
+  if (!user) return false;
+  user.profile = user.profile || {};
+  user.profile.resetToken = { token, expires };
+  await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), user.id]);
+  return true;
+}
+
+async function findByResetToken(token) {
+  const [rows] = await db.query('SELECT * FROM mdtslms_users');
+  for (const row of rows) {
+    const user = mapRow(row);
+    if (user.profile && user.profile.resetToken && user.profile.resetToken.token === token) {
+      if (user.profile.resetToken.expires && user.profile.resetToken.expires < Date.now()) {
+        return null;
+      }
+      return user;
+    }
+  }
+  return null;
+}
+
+async function clearResetToken(id) {
+  const user = await findById(id);
+  if (!user) return false;
+  if (user.profile && user.profile.resetToken) {
+    delete user.profile.resetToken;
+    await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), id]);
+  }
+  return true;
 }
 
 
@@ -134,6 +171,8 @@ module.exports = {
   hashPassword,
   verifyPassword,
   findByUsername,
+    findByEmail,
+
   findById,
   createStudent,
   createTeacher,
@@ -141,6 +180,9 @@ module.exports = {
     setActive,
   addUploads,
    updatePassword,
+    setResetToken,
+  findByResetToken,
+  clearResetToken,
   getAll,
   getByRole,
   deleteById

@@ -181,7 +181,7 @@ router.post('/approve/:id', async (req, res) => {
         html: `
           <div style="font-family:Arial,sans-serif;text-align:center;">
             <img src="${confettiGif}" alt="Celebration" style="width:100%;max-width:400px;height:auto;margin-bottom:10px;">
-            <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
+            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
             <h2>Congratulations ${name}!</h2>
             <p>You have been approved for MD Technical School.</p>
             <p><a href="https://mdts-apps.com/login">Log in to the student portal</a></p>
@@ -263,7 +263,7 @@ router.post('/students/:id/reset-password', async (req, res) => {
         text: `Hi ${user.name || 'User'}, your password has been reset. Your new password is: ${newPassword}`,
         html: `
           <div style="font-family:Arial,sans-serif;text-align:center;">
-            <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
+            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
             <p>Hi ${user.name || 'User'}, your password has been reset.</p>
             <p>Your new password is: <strong>${newPassword}</strong></p>
           </div>

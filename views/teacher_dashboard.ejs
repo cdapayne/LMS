@@ -136,8 +136,10 @@
     }
 
     /* Focus visibility */
-    :focus-visible{ outline: 3px solid color-mix(in srgb, var(--primary) 50%, transparent); outline-offset: 2px; border-radius: 8px; }
-        .chart{ height:250px; }
+        :focus-visible{ outline: 3px solid color-mix(in srgb, var(--primary) 50%, transparent); outline-offset: 2px; border-radius: 8px; }
+      .chart{ height:300px; }
+      .chart-title{ font-weight:600; text-align:center; margin:0 0 .5rem 0; }
+
 
   </style>
 </head>
@@ -236,7 +238,7 @@
         </div>
       </section>
 
-      <!-- Right: Weekly Calendar -->
+     <!-- Right: Weekly Calendar -->
       <section class="col-12 col-lg-6" aria-labelledby="weekly-schedule-title">
         <div class="cardish h-100">
           <div class="section-title"><span class="dot"></span><span id="weekly-schedule-title">Weekly Schedule</span></div>
@@ -246,16 +248,28 @@
     </div>
         <div class="row g-3 mt-1">
       <div class="col-12 col-md-6">
-        <div class="cardish"><div id="t-chart-student-status" class="chart"></div></div>
+        <div class="cardish">
+          <div class="chart-title">Student Status</div>
+          <div id="t-chart-student-status" class="chart"></div>
+        </div>
       </div>
       <div class="col-12 col-md-6">
-        <div class="cardish"><div id="t-chart-class-size" class="chart"></div></div>
+        <div class="cardish">
+          <div class="chart-title">Class Sizes</div>
+          <div id="t-chart-class-size" class="chart"></div>
+        </div>
       </div>
       <div class="col-12 col-md-6">
-        <div class="cardish"><div id="t-chart-pending" class="chart"></div></div>
+        <div class="cardish">
+          <div class="chart-title">Pending Students</div>
+          <div id="t-chart-pending" class="chart"></div>
+        </div>
       </div>
       <div class="col-12 col-md-6">
-        <div class="cardish"><div id="t-chart-approved" class="chart"></div></div>
+        <div class="cardish">
+          <div class="chart-title">Approved Students</div>
+          <div id="t-chart-approved" class="chart"></div>
+        </div>
       </div>
     </div>
   </main>

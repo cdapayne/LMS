@@ -201,9 +201,10 @@
           </ul>
         <% } %>
           <% if (typeof studentView === 'undefined' || !studentView) { %>
-          <form method="POST" action="/admin/classes/<%= klass.id %>/lectures" class="mt-3 d-flex gap-2 flex-wrap">
+                 <form method="POST" action="/admin/classes/<%= klass.id %>/lectures" enctype="multipart/form-data" class="mt-3 d-flex gap-2 flex-wrap">
             <input type="text" name="title" class="form-control" placeholder="Title" style="max-width:200px">
             <input type="url" name="url" class="form-control" placeholder="URL">
+            <input type="file" name="ppt" class="form-control" accept=".ppt,.pptx">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="isPowerPoint" id="ppt-<%= klass.id %>">
               <label class="form-check-label" for="ppt-<%= klass.id %>">PowerPoint</label>

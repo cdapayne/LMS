@@ -104,7 +104,15 @@
       <div class="alert alert-success text-center">Password reset email sent.</div>
     <% } %>
     <!-- Key facts -->
+       <div class="d-flex justify-content-between align-items-center mt-3">
+      <a class="btn btn-link" href="javascript:history.back()">Back</a>
+   <% if (role === 'admin' || role === 'teacher') { %>
+        <form method="post" action="/<%= role %>/students/<%= student.id %>/reset-password" style="margin:0;" onsubmit="return confirm('Reset password for this user?');">
+          <button class="btn btn-warning">Reset Password</button>
+        </form>
+      <% } %>    </div>
     <div class="cardish">
+      
       <div class="row g-3">
         <div class="col-12 col-md-4">
           <div class="muted">Student ID</div>
@@ -199,13 +207,7 @@
       <% } %>
     </section>
 
-    <div class="d-flex justify-content-between align-items-center mt-3">
-      <a class="btn btn-link" href="javascript:history.back()">Back</a>
-   <% if (role === 'admin' || role === 'teacher') { %>
-        <form method="post" action="/<%= role %>/students/<%= student.id %>/reset-password" style="margin:0;" onsubmit="return confirm('Reset password for this user?');">
-          <button class="btn btn-warning">Reset Password</button>
-        </form>
-      <% } %>    </div>
+  
   </div>
 </body>
 </html>

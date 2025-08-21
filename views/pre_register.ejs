@@ -62,7 +62,7 @@
   </style>
 </head>
 <body>
-  <button id="themeToggle" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-3"></button>
+
 
   <main class="form-wrap">
     <section class="form-card">
@@ -79,10 +79,10 @@
               <div class="display-6 mb-2">🎉 You're on the list!</div>
               <p class="lead mb-3">We’re opening your course curriculum…</p>
               <div class="small mb-3">Redirecting in <span id="countdown">10</span> seconds.</div>
-              <a id="openNow" class="btn btn-primary w-100" href="/docs/sept13.pdf">
+              <a id="openCurriculum" class="btn btn-primary w-100 mb-2" href="/docs/sept13.pdf">
                 Open Curriculum PDF
               </a>
-                 <a id="openNow" class="btn btn-primary w-100" href="/register">
+              <a id="goRegister" class="btn btn-outline-secondary w-100" href="/register">
                 Fully Register Now
               </a>
             </div>
@@ -95,8 +95,8 @@
               const pdfUrl = '/docs/sept13.pdf';
               const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-              // Fire a few bursts
               function fire(particleRatio, opts) {
+                if (!window.confetti) return;
                 confetti(Object.assign({
                   origin: { y: 0.2 },
                   spread: 70,
@@ -106,7 +106,6 @@
               }
 
               if (!prefersReduced && window.confetti) {
-                // Staggered bursts for ~1.5s
                 fire(0.25, { spread: 26, startVelocity: 55 });
                 fire(0.20, { spread: 60 });
                 fire(0.35, { spread: 100, decay: 0.92, scalar: 0.9 });
@@ -115,17 +114,12 @@
               }
 
               // Countdown + redirect
-              let secs = 5;
+              let secs = 10;
               const cd = document.getElementById('countdown');
               const iv = setInterval(() => {
                 secs -= 1; if (cd) cd.textContent = String(secs);
                 if (secs <= 0) { clearInterval(iv); window.location.assign(pdfUrl); }
               }, 1000);
-
-              // Also navigate if the user clicks the button
-              document.getElementById('openNow')?.addEventListener('click', () => {
-                // no-op; normal link behavior
-              });
             })();
           </script>
         <% } else { %>
@@ -215,12 +209,13 @@
                 <label class="form-label req" for="course">Course</label>
                 <select id="course" name="course" class="form-select" required>
                   <option value="">Select a course</option>
-                  <% [
-                    "Jr network engineer","helpdesk","ccna","rmf","itil","ceh",
-                    "cnd","securityplus","casp+","chfi","internship","other"
-                  ].forEach(opt => { %>
+                  <% const courseOptions = [
+                    "Jr Network Engineer","Helpdesk","CCNA","RMF","ITIL 4 Foundations","CEH",
+                    "CND","Security+","CASP+","CHFI","Internship","Other"
+                  ]; %>
+                  <% for (const opt of courseOptions) { %>
                     <option value="<%= opt %>" <%= formData.course === opt ? 'selected' : '' %>><%= opt %></option>
-                  <% }) %>
+                  <% } %>
                 </select>
                 <div class="invalid-feedback">Please choose a course.</div>
               </div>
@@ -229,12 +224,13 @@
                 <label class="form-label req" for="applicantType">Applicant Type</label>
                 <select id="applicantType" name="applicantType" class="form-select" required>
                   <option value="">Select applicant type</option>
-                  <% [
-                    "airforce","army","college student","coast guard","dars","corporation",
-                    "mycaa","navy","other","post 911","self pay","vr&e","wioa","wioa veteran"
-                  ].forEach(opt => { %>
+                  <% const applicantOptions = [
+                    "Airforce","Army","College Student","Coastguard","DARS","Corporation",
+                    "MYCAA","Navy","Other","Post 911","Self Pay","VR&E","WIOA","WIOA Veteran"
+                  ]; %>
+                  <% for (const opt of applicantOptions) { %>
                     <option value="<%= opt %>" <%= formData.applicantType === opt ? 'selected' : '' %>><%= opt %></option>
-                  <% }) %>
+                  <% } %>
                 </select>
                 <div class="invalid-feedback">Please choose an applicant type.</div>
               </div>
@@ -259,9 +255,6 @@
                     I consent to receive Marketing and Promotional texts from MD Technical Schools (up to 4 SMS/month). Reply HELP for info, STOP to opt out. Message & data rates may apply.
                   </label>
                   <div class="invalid-feedback">Consent is required.</div>
-                </div>
-                <div class="consent-box small">
-                  For details, see our <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
                 </div>
               </div>
             </div>
@@ -305,11 +298,11 @@
       grp.style.display = yes ? '' : 'none';
       if (yes) inp.setAttribute('required','required'); else inp.removeAttribute('required');
     }
-    document.querySelectorAll('input[name="serving"]').forEach(r=>r.addEventListener('change',toggleBranch));
+    document.querySelectorAll('input[name="serving"]').forEach(function(r){ r.addEventListener('change', toggleBranch); });
     toggleBranch();
 
     // Bootstrap validation + submit UX
-    (() => {
+    (function () {
       const form = document.querySelector('.needs-validation');
       const btnQuick = document.getElementById('btnQuick');
       const btnEnroll = document.getElementById('btnEnroll');

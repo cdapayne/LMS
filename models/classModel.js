@@ -99,14 +99,27 @@ async function byTeacher(teacherId) {
 }
 
 
-async function recordGrade(classId, testId, studentId, score) {
+async function upsertItemGrade(classId, key, itemId, studentId, extra) {
   const klass = await findClassById(classId);
   if (!klass) return null;
   klass.grades = klass.grades || [];
-  klass.grades.push({ classId, testId, studentId, score, gradedAt: new Date().toISOString() });
+  const now = new Date().toISOString();
+  const existing = klass.grades.find(g => g[key] === itemId && g.studentId === studentId);
+  if (existing) {
+    Object.assign(existing, extra, { gradedAt: now });
+  } else {
+    const entry = { classId, studentId, gradedAt: now, ...extra };
+    entry[key] = itemId;
+    klass.grades.push(entry);
+  }
   await db.query('UPDATE mdtslms_classes SET grades=? WHERE id=?', [JSON.stringify(klass.grades), classId]);
   return true;
 }
+
+async function recordGrade(classId, testId, studentId, score) {
+  return upsertItemGrade(classId, 'testId', testId, studentId, { score });
+}
+
 
 async function recordAttendance(classId, date, presentIds) {
   const klass = await findClassById(classId);
@@ -128,19 +141,15 @@ async function byTeacher(teacherId) {
 
 }
 async function upsertGrade(classId, testId, studentId, score) {
-  const klass = await findClassById(classId);
-  if (!klass) return null;
-  klass.grades = klass.grades || [];
-  const now = new Date().toISOString();
-  const existing = klass.grades.find(g => g.testId === testId && g.studentId === studentId);
-  if (existing) {
-    existing.score = score;
-    existing.gradedAt = now;
-  } else {
-    klass.grades.push({ classId, testId, studentId, score, gradedAt: now });
-  }
-  await db.query('UPDATE mdtslms_classes SET grades=? WHERE id=?', [JSON.stringify(klass.grades), classId]);
-  return true;
+  return upsertItemGrade(classId, 'testId', testId, studentId, { score });
+}
+
+async function upsertAssignmentGrade(classId, assignmentId, studentId, score) {
+  return upsertItemGrade(classId, 'assignmentId', assignmentId, studentId, { score });
+}
+
+async function upsertLabStatus(classId, labId, studentId, passed) {
+  return upsertItemGrade(classId, 'labId', labId, studentId, { passed: !!passed });
 }
 
 module.exports = {
@@ -151,12 +160,14 @@ module.exports = {
   addTest,
   addLecture,
   addSimulation,
-    addAssignment,
+  addAssignment,
 
   recordGrade,
   byTeacher,
   recordAttendance,
   upsertGrade,
+    upsertAssignmentGrade,
+  upsertLabStatus,
   duplicateClass
 };
 

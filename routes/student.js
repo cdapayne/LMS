@@ -129,8 +129,9 @@ router.get('/', async (req, res) => {
   const tasks = [];
 
   my.forEach(klass => {
-    const studentGrades = (klass.grades || []).filter(g => g.studentId === req.session.user.id);
-
+  const studentGrades = (klass.grades || []).filter(
+      g => g.studentId === req.session.user.id && g.testId !== undefined
+    );
     if (studentGrades.length) {
           // current average grade for this class
       const avg = Math.round(studentGrades.reduce((sum, g) => sum + g.score, 0) / studentGrades.length);

@@ -63,18 +63,8 @@
     }
 
     /* Action grid (mobile-first) */
-    .action-grid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:.5rem;
-    }
-    @media (min-width: 576px){
-            .action-grid{ grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (min-width: 992px){
-      .action-grid{ grid-template-columns: repeat(4, 1fr); }
-    }
-    .action-grid .btn{ width:100%; }
+       .qa-column h6{ font-weight:600; margin-bottom:.5rem; }
+
 
     /* Themed buttons */
     .btn-primary{ background: var(--primary-color) !important; border-color: var(--primary-color) !important; }
@@ -100,11 +90,15 @@
       border-radius:14px;
       padding:.5rem;
       box-shadow: 0 .6rem 1.2rem rgba(0,0,0,.06);
-      height:300px;
+      height:350px;
       position:relative;
     }
-    .chart-card .chart-container{ width:100%; height:100%; }
-    .chart-edit{ position:absolute; top:4px; right:4px; }
+ .chart-title{
+      font-weight:600;
+      text-align:center;
+      margin:0 0 .5rem 0;
+    }
+    .chart-card .chart-container{ width:100%; height:calc(100% - 2rem); }    .chart-edit{ position:absolute; top:4px; right:4px; }
   </style>
 </head>
 <body>
@@ -137,30 +131,38 @@
       </div>
     </div>
 
-    <!-- Quick Actions -->
+  <!-- Quick Actions -->
     <section class="qa">
       <div class="qa-title">Quick Actions</div>
-      <div class="action-grid">
-        <!-- Students -->
-        <a class="btn btn-primary" href="/admin/students/pending">Pending Students</a>
-        <a class="btn btn-outline-primary" href="/admin/students">Accepted Students</a>
-        <a class="btn btn-outline-danger" href="/admin/denied">Denied Students</a>
-          <a class="btn btn-outline-secondary" href="/admin/pre-registrations">Pre-Registered Users</a>
-
-        <!-- Classes -->
-        <a class="btn btn-outline-primary" href="/admin/classes">All Classes</a>
-        <a class="btn btn-success" href="/admin/classes/new">Create Class</a>
-
-        <!-- Teachers -->
-        <a class="btn btn-warning" href="/admin/teachers/new">Create Teacher</a>
-        <a class="btn btn-warning" href="/admin/teachers">Teacher List</a>
-
-        <!-- Reports / Events -->
-        <a class="btn btn-outline-secondary" href="/admin/reports">Reports</a>
-        <a class="btn btn-outline-secondary" href="/admin/events">Events Dashboard</a>
-                <a class="btn btn-info" href="/admin/marketing">Marketing</a>
-    <a class="btn btn-outline-secondary" href="/admin/create-event">Create Event</a>
-        <a class="btn btn-outline-secondary" href="/admin/event-rsvps">Event RSVPs</a>
+      <div class="row row-cols-1 row-cols-md-3 g-3">
+        <div class="col qa-column">
+          <h6>Students</h6>
+          <div class="d-grid gap-2">
+            <a class="btn btn-primary" href="/admin/students/pending">Pending Students</a>
+            <a class="btn btn-outline-primary" href="/admin/students">Accepted Students</a>
+            <a class="btn btn-outline-danger" href="/admin/denied">Denied Students</a>
+            <a class="btn btn-outline-secondary" href="/admin/pre-registrations">Pre-Registered Users</a>
+          </div>
+        </div>
+        <div class="col qa-column">
+          <h6>Classes</h6>
+          <div class="d-grid gap-2">
+            <a class="btn btn-outline-primary" href="/admin/classes">All Classes</a>
+            <a class="btn btn-success" href="/admin/classes/new">Create Class</a>
+              <a class="btn btn-warning" href="/admin/teachers/new">Create Teacher</a>
+            <a class="btn btn-warning" href="/admin/teachers">Teacher List</a>
+          </div>
+        </div>
+        <div class="col qa-column">
+          <h6>Other</h6>
+          <div class="d-grid gap-2">
+            <a class="btn btn-outline-secondary" href="/admin/reports">Reports</a>
+            <a class="btn btn-outline-secondary" href="/admin/events">Events Dashboard</a>
+            <a class="btn btn-info" href="/admin/marketing">Marketing</a>
+            <a class="btn btn-outline-secondary" href="/admin/create-event">Create Event</a>
+            <a class="btn btn-outline-secondary" href="/admin/event-rsvps">Event RSVPs</a>
+          </div>
+        </div>
       </div>
     </section>
       <!-- Announcements -->
@@ -196,38 +198,38 @@
     </section>
     
  <!-- Charts -->
-
+ <section class="qa mt-4">
+      <div class="qa-title">Charts</div>
   <div class="row g-3 mt-4">
     <div class="col-12 col-md-6">
       <div class="chart-card">
-         <div class="d-flex justify-content-end mb-1">
-         
-        </div>
+              <div class="chart-title">Sign-ups (Bar Chart)</div>
+
         <div id="chart-signups-1" class="chart-container"></div>
       </div>
     </div>
     <div class="col-12 col-md-6">
       <div class="chart-card">
-       <div class="d-flex justify-content-end mb-1">
-         
-        </div>
-        <div id="chart-signups-2" class="chart-container"></div>      </div>
+        <div class="chart-title">Sign-ups (Pie Chart)</div>
+        <div id="chart-signups-2" class="chart-container"></div>
+      </div>
     </div>
     <div class="col-12 col-md-6">
       <div class="chart-card">
-            <div class="d-flex justify-content-end mb-1">
-        </div>
+               <div class="chart-title">Sign-ups (Horizontal Bar)</div>
+
         <div id="chart-signups-3" class="chart-container"></div>
       </div>
     </div>
     <div class="col-12 col-md-6">
       <div class="chart-card">
-        <div class="d-flex justify-content-end mb-1">
-        </div>
+              <div class="chart-title">Sign-ups (Funnel Chart)</div>
+
         <div id="chart-signups-4" class="chart-container"></div>
       </div>
     </div>
   </div>
+   </section>
   </div>
 
 <!-- Chart edit modal -->
@@ -615,7 +617,7 @@ function ColorfulUnifiedTheme(root, opts = {}) {
 
       // Interface colors (subtle grid & readable text)
       root.interfaceColors.set('grid', am5.color(dark ? 0x3a3f47 : 0xE5E7EB));
-      if (dark) root.interfaceColors.set('text', am5.color(0xE5E7EB));
+      if (dark) root.interfaceColors.set('text', am5.color(0xffffff));
 
       // Axis labels & general labels a bit bolder
       root.rule('AxisLabel').setAll({ fontWeight: '600' });

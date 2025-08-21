@@ -3,6 +3,8 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const multer = require('multer');
 const path = require('path');
+const crypto = require('crypto');
+
 
 const userModel = require('../models/userModel');
 
@@ -58,21 +60,28 @@ router.get('/forgot-password', (req, res) => {
 });
 
 router.post('/forgot-password', async (req, res) => {
-  const email = ensureStr(req.body.email);
+  const email = ensureStr(req.body.email).toLowerCase();
   try {
-        const brand = req.app.locals.branding;
-
-    await transporter.sendMail({
-      from: 'no-reply@mdts-apps.com',
-      to: process.env.SMTP_USER,
-      subject: 'Password reset request',
-      text: `Password reset requested for ${email}`,
-      html: `
-        <div style="font-family:Arial,sans-serif;text-align:center;">
-          <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
-          <p>Password reset requested for ${email}</p>
-        </div>
-      `    });
+    const user = await userModel.findByEmail(email);
+    if (user) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = Date.now() + 1000 * 60 * 60; // 1 hour
+      await userModel.setResetToken(user.username, token, expires);
+      const brand = req.app.locals.branding;
+      const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${token}`;
+      await transporter.sendMail({
+        from: 'no-reply@mdts-apps.com',
+        to: user.email,
+        subject: 'Password reset',
+        text: `Reset your password: ${resetLink}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;text-align:center;">
+            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
+            <p><a href="${resetLink}">Click here to reset your password</a></p>
+          </div>
+        `
+      });
+    }
     return res.render('forgot_password', { sent: true, error: null });
   } catch (e) {
     console.error(e);
@@ -80,30 +89,42 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-router.get('/reset-password', (req, res) => {
-  res.render('reset_password', { error: null, success: false });
+router.get('/reset-password', async (req, res) => {
+  const token = ensureStr(req.query.token);
+  if (!token) {
+    return res.status(400).render('reset_password', { error: 'Invalid or expired link', success: false, token: null });
+  }
+  const user = await userModel.findByResetToken(token);
+  if (!user) {
+    return res.status(400).render('reset_password', { error: 'Invalid or expired link', success: false, token: null });
+  }
+  return res.render('reset_password', { error: null, success: false, token });
 });
 
 router.post('/reset-password', async (req, res) => {
-  const username = ensureStr(req.body.username);
+  const token = ensureStr(req.body.token);
   const password = ensureStr(req.body.password);
   const confirm = ensureStr(req.body.confirm);
 
-  if (!username || !password || password !== confirm) {
+  if (!token || !password || password !== confirm) {
     return res.status(400).render('reset_password', {
       error: 'Invalid request',
-      success: false
+       success: false,
+      token
     });
   }
 
-  const ok = await userModel.updatePassword(username, password);
-  if (!ok) {
-    return res.status(404).render('reset_password', {
-      error: 'User not found',
-      success: false
+  const user = await userModel.findByResetToken(token);
+  if (!user) {
+    return res.status(400).render('reset_password', {
+      error: 'Invalid or expired link',
+      success: false,
+      token: null
     });
   }
-  return res.render('reset_password', { error: null, success: true });
+  await userModel.updatePassword(user.username, password);
+  await userModel.clearResetToken(user.id);
+  return res.render('reset_password', { error: null, success: true, token: null });
 });
 
 router.post('/login', async (req, res) => {
@@ -241,7 +262,7 @@ router.post('/register', (req, res) => {
     text: `Hi ${firstName}, your registration is pending admin approval. Username: ${username}.`,
         html: `
           <div style="font-family:Arial,sans-serif;text-align:center;">
-            <img src="${brand.primaryLogo}" alt="Logo" style="max-height:80px;margin-bottom:10px;">
+            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
             <p>Hi ${firstName}, your registration is pending admin approval.</p>
             <p><strong>Username:</strong> ${username}</p>
           </div>

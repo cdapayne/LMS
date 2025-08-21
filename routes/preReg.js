@@ -1,6 +1,55 @@
 const express = require('express');
 const router = express.Router();
 const preRegModel = require('../models/preRegModel');
+const nodemailer = require('nodemailer');
+const PDFDocument = require('pdfkit');
+
+const transporter = nodemailer.createTransport({
+  host: 'mdts-apps.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'noreply@mdts-apps.com',
+    pass: 'c@r,5ysPI@&s'
+  }
+});
+
+function generateRandomInvoiceNumber() {
+  const randomNumber = Math.floor(Math.random() * 9000) + 1000;
+  const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  return `${randomNumber}-${currentDate}`;
+}
+
+function getPrice(course) {
+  const prices = {
+    'ITIL 4 Foundation': '$1,424.00',
+    CEH: '$3,074.00',
+    CND: '$2,724.00',
+    'Security+': '$2,875.00',
+    'CASP+': '$3,075.00',
+    CHFI: '$3,074.99'
+  };
+  return prices[course] || 'Please contact us for pricing.';
+}
+
+function createInvoicePdf({ name, course, price, invoiceNumber }) {
+  return new Promise(resolve => {
+    const doc = new PDFDocument();
+    const buffers = [];
+    doc.on('data', buffers.push.bind(buffers));
+    doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+    doc.fontSize(20).text('Tuition Invoice', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Invoice #: ${invoiceNumber}`);
+    doc.text(`Date: ${new Date().toISOString().slice(0, 10)}`);
+    doc.moveDown();
+    doc.text(`Student: ${name}`);
+    doc.text(`Course: ${course}`);
+    doc.text(`Amount Due: ${price}`);
+    doc.end();
+  });
+}
 
 router.get('/pre-register', (_req, res) => {
   res.render('pre_register', { error: null, success: false, formData: {} });
@@ -80,6 +129,33 @@ router.post('/pre-register', async (req, res) => {
       referralEmail: (referralEmail || '').trim() || null,
       consent: true
     });
+
+       const invoiceNumber = generateRandomInvoiceNumber();
+    const price = getPrice(course.trim());
+    try {
+      const pdfBuffer = await createInvoicePdf({
+        name: name.trim(),
+        course: course.trim(),
+        price,
+        invoiceNumber
+      });
+      await transporter.sendMail({
+        from: 'noreply@mdts-apps.com',
+        to: email.trim(),
+        bcc: 'lance.durante@mdtechgo.com,differentcoders@gmail.com,carol.scott@mdtechnicalschool.com,benseghirolga@gmail.com,OlgaB@mdtechnicalschool.com,snyderr@mdtechnicalschool.com,durantelp@mdtechnicalschool.com',
+        subject: 'MD Technical School Pre-Registration',
+        html: `<p>Thank you, ${name.trim()}, for pre-registering for ${course.trim()}.</p>`,
+        attachments: [
+          {
+            filename: `invoice-${invoiceNumber}.pdf`,
+            content: pdfBuffer
+          }
+        ]
+      });
+    } catch (err) {
+      console.error('Error sending pre-registration email', err);
+    }
+
 
     if (action === 'enroll') {
       const [firstName, ...rest] = name.trim().split(' ');
