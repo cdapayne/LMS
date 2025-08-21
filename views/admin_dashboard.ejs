@@ -100,7 +100,7 @@
       border-radius:14px;
       padding:.5rem;
       box-shadow: 0 .6rem 1.2rem rgba(0,0,0,.06);
-      height:250px;
+      height:300px;
       position:relative;
     }
     .chart-card .chart-container{ width:100%; height:100%; }
@@ -200,31 +200,31 @@
   <div class="row g-3 mt-4">
     <div class="col-12 col-md-6">
       <div class="chart-card">
-          <div class="d-flex justify-content-end mb-1">
-          <select id="signupRange" class="form-select form-select-sm w-auto">
-            <option value="week">Past Week</option>
-            <option value="month">Past Month</option>
-            <option value="year">Past Year</option>
-          </select>
+         <div class="d-flex justify-content-end mb-1">
+         
         </div>
-        <div id="chart-signups" class="chart-container"></div>
+        <div id="chart-signups-1" class="chart-container"></div>
       </div>
     </div>
     <div class="col-12 col-md-6">
       <div class="chart-card">
-       <div id="chart-signups2" class="chart-container"></div>
+       <div class="d-flex justify-content-end mb-1">
+         
+        </div>
+        <div id="chart-signups-2" class="chart-container"></div>      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="chart-card">
+            <div class="d-flex justify-content-end mb-1">
+        </div>
+        <div id="chart-signups-3" class="chart-container"></div>
       </div>
     </div>
     <div class="col-12 col-md-6">
       <div class="chart-card">
-        <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
-        <div id="chart-pending" class="chart-container"></div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6">
-      <div class="chart-card">
-        <button class="chart-edit btn btn-sm btn-link" type="button">Edit</button>
-        <div id="chart-approved" class="chart-container"></div>
+        <div class="d-flex justify-content-end mb-1">
+        </div>
+        <div id="chart-signups-4" class="chart-container"></div>
       </div>
     </div>
   </div>
@@ -298,535 +298,559 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    const signupSelect = document.getElementById('signupRange');
-         
-  
-  let signupRoot;
+    const signupSelects = document.querySelectorAll('.signupRange'); //this needs to be changed per chart
+      const signupSelects2 = document.querySelectorAll('.signupRange'); //this needs to be changed per chart
+        const signupSelects3 = document.querySelectorAll('.signupRange'); //this needs to be changed per chart
+          const signupSelects4 = document.querySelectorAll('.signupRange'); //this needs to be changed per chart
+  const signupRoots = {};
 
-
-
-//  async function loadSignupChart(range) {
-//   const res = await fetch('/admin/chart/Newsignups'); // should return [{ date:"2025-08-18", count:3 }, ...]
-//   const raw = await res.json();
-
-//   // Map YYYY-MM-DD -> epoch ms (midnight UTC). If you need ET, adjust on server or here.
-//   const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
-//     ts: new Date(d.date + 'T00:00:00Z').getTime(),
-//     count: Number(d.count || 0),
-//     dateStr: d.date
-//   }));
-
-//   if (signupRoot) signupRoot.dispose();
-
-//   const root = am5.Root.new('chart-signups');
-//   signupRoot = root;
-//   root.setThemes([am5themes_Animated.new(root)]);
-
-//   const chart = root.container.children.push(am5xy.XYChart.new(root, {
-//     layout: root.verticalLayout,
-//     panX: true, panY: false, wheelX: "panX", wheelY: "zoomX"
-//   }));
-
-//   const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
-//     baseInterval: { timeUnit: "day", count: 1 }, // <-- "day"
-//     renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 40 }),
-//     tooltip: am5.Tooltip.new(root, {})
-//   }));
-
-//   const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
-//     renderer: am5xy.AxisRendererY.new(root, {})
-//   }));
-
-//   const series = chart.series.push(am5xy.LineSeries.new(root, {
-//     name: "Sign-ups",
-//     xAxis, yAxis,
-//     valueXField: "ts",      // <-- numeric timestamp
-//     valueYField: "count",
-//     tooltip: am5.Tooltip.new(root, { labelText: "{valueY}" })
-//   }));
-//   series.strokes.template.setAll({ strokeWidth: 2 });
-
-//   chart.set("cursor", am5xy.XYCursor.new(root, { xAxis }));
-//   chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
-
-//   // IMPORTANT: set data on the series (not the xAxis)
-//   series.data.setAll(data);
-
-//   // Optional: zoom to full range
-//   if (data.length) {
-//     xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
-//   }
-// }
-  
-
-  // document.getElementById('chart-signups').addEventListener('click', async () => {
-  //   const res = await fetch('/admin/chart/Newsignups'); // should return [{ date:"2025-08-18", count:3 }, ...]
-  //   const raw = await res.json();
-  //    const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
-  //           ts: new Date(d.date + 'T00:00:00Z').getTime(),
-  //           count: Number(d.count || 0),
-  //           dateStr: d.date
-  //         }));
-  //   let popupRoot;
-  //   Swal.fire({
-  //     title: 'Pre-Registrations Per Day',
-  //     html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
-  //     width: '90%',
-  //     didOpen: () => {
-  //       popupRoot = am5.Root.new('signupChartPopup');
-  //       popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
-
-  //         const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
-  //           layout: popupRoot.verticalLayout,
-  //           panX: true, panY: false, wheelX: "panX", wheelY: "zoomX"
-  //         }));
-
-  //         const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
-  //           baseInterval: { timeUnit: "day", count: 1 }, // <-- "day"
-  //           renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
-  //           tooltip: am5.Tooltip.new(popupRoot, {})
-  //         }));
-
-  //         const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
-  //           renderer: am5xy.AxisRendererY.new(popupRoot, {})
-  //         }));
-
-  //         const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
-  //           name: "Sign-ups",
-  //           xAxis, yAxis,
-  //           valueXField: "ts",      // <-- numeric timestamp
-  //           valueYField: "count",
-  //           tooltip: am5.Tooltip.new(popupRoot, { labelText: "{valueY}" })
-  //         }));
-  //         series.strokes.template.setAll({ strokeWidth: 2 });
-
-  //         chart.set("cursor", am5xy.XYCursor.new(popupRoot, { xAxis }));
-  //         chart.set("scrollbarX", am5.Scrollbar.new(popupRoot, { orientation: "horizontal" }));
-
-  //         // IMPORTANT: set data on the series (not the xAxis)
-  //         series.data.setAll(data);
-
-  //         // Optional: zoom to full range
-  //         if (data.length) {
-  //           xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
-  //         }
-  //     },
-  //     willClose: () => {
-  //       if (popupRoot) popupRoot.dispose();
-  //     }
-  //   });
-  // });
-  /////////////////////////////////********************************************************************//////////
-    /////////////////////////////////********************************************************************//////////
-      /////////////////////////////////********************************************************************//////////
-        /////////////////////////////////********************************************************************//////////
- signupSelect.addEventListener('change', () => loadSignupPieChart(signupSelect.value));
-  loadSignupPieChart('week');
-
-  async function loadSignupPieChart(range) {
-  // You can pass a range if your route supports it
-  const res = await fetch('/admin/chart/Newsignups');
-  const raw = await res.json();
-  const rows = Array.isArray(raw.series) ? raw.series : raw; // [{date:"YYYY-MM-DD", count:N}, ...]
-
-  // Map to pie format; optionally drop zero-count days so the chart isn’t cluttered
-  const pieData = rows
-    .map(d => ({
-      label: d.date,                      // e.g., "2025-08-18"
-      value: Number(d.count || 0)
-    }))
-    .filter(d => d.value > 0);            // remove zeros (optional)
-
-  // If there’s nothing to show, clear and exit gracefully
-  if (signupRoot) signupRoot.dispose();
-  const root = am5.Root.new('chart-signups');
-  signupRoot = root;
-  root.setThemes([ am5themes_Animated.new(root) ]);
-
-  const chart = root.container.children.push(
-    am5percent.PieChart.new(root, {
-      layout: root.verticalLayout,
-      innerRadius: am5.percent(50)        // donut look
-    })
-  );
-
-  const series = chart.series.push(
-    am5percent.PieSeries.new(root, {
-      name: "Sign-ups per day",
-      categoryField: "label",
-      valueField: "value",
-      alignLabels: true
-    })
-  );
-
-  series.slices.template.setAll({
-    tooltipText: "{category}: {value} ({valuePercentTotal.formatNumber('0.0')}%)"
-  });
-  series.labels.template.setAll({ text: "{category}\n{value}" });
-
-  series.data.setAll(pieData);
-
-  // Legend
-  const legend = chart.children.push(
-    am5.Legend.new(root, {
-      centerX: am5.percent(50),
-      x: am5.percent(50),
-      layout: root.verticalLayout
-    })
-  );
-  legend.data.setAll(series.dataItems);
-}
-
-// hook up your selector if you have one
-//signupSelect.addEventListener('change', () => loadSignupChart(signupSelect.value));
-//loadSignupChart('week');
-
-// --- Popup: also show a pie ---
-document.getElementById('chart-signups').addEventListener('click', async () => {
+async function renderSignupPieChart(id, range) {
   const res = await fetch('/admin/chart/Newsignups');
   const raw = await res.json();
   const rows = Array.isArray(raw.series) ? raw.series : raw;
-  const pieData = rows.map(d => ({ label: d.date, value: Number(d.count || 0) })).filter(d => d.value > 0);
 
-  let popupRoot;
-  Swal.fire({
-    title: 'Pre-Registrations Per Day',
-    html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
-    width: '90%',
-    didOpen: () => {
-      popupRoot = am5.Root.new('signupChartPopup');
-      popupRoot.setThemes([ am5themes_Animated.new(popupRoot) ]);
+  // Prepare data for a category-based column chart
+  const barData = rows
+    .map(d => ({ label: d.date, value: Number(d.count || 0) }))
+    .filter(d => d.value > 0);
 
-      const chart = popupRoot.container.children.push(
-        am5percent.PieChart.new(popupRoot, {
-          layout: popupRoot.verticalLayout,
-          innerRadius: am5.percent(50)
-        })
-      );
+  // Dispose existing root (if any)
+  if (signupRoots[id]) signupRoots[id].dispose();
 
-      const series = chart.series.push(
-        am5percent.PieSeries.new(popupRoot, {
-          name: "Sign-ups per day",
-          categoryField: "label",
-          valueField: "value",
-          alignLabels: true
-        })
-      );
-
-      series.slices.template.setAll({
-        tooltipText: "{category}: {value} ({valuePercentTotal.formatNumber('0.0')}%)"
-      });
-      series.labels.template.setAll({ text: "{category}\n{value}" });
-
-      series.data.setAll(pieData);
-
-      const legend = chart.children.push(
-        am5.Legend.new(popupRoot, { centerX: am5.percent(50), x: am5.percent(50), layout: popupRoot.verticalLayout })
-      );
-      legend.data.setAll(series.dataItems);
-    },
-    willClose: () => {
-      if (popupRoot) popupRoot.dispose();
-    }
-  });
-});
-  /////////////////////////////////********************************************************************//////////
-    /////////////////////////////////********************************************************************//////////
-      /////////////////////////////////********************************************************************//////////
-
-       /////////////////////////////////********************************************************************//////////
-    /////////////////////////////////********************************************************************//////////
-      /////////////////////////////////************************Chart 2*************************//////////
-        /////////////////////////////////********************************************************************//////////
- //signupSelect2.addEventListener('change', () => loadSignupPieChart(signupSelect2.value));
-  loadSignupPieChart2('week');
-
-  async function loadSignupPieChart2(range) {
-  // You can pass a range if your route supports it
-  const res = await fetch('/admin/chart/Newsignups');
-  const raw = await res.json();
-  const rows = Array.isArray(raw.series) ? raw.series : raw; // [{date:"YYYY-MM-DD", count:N}, ...]
-
-  // Map to pie format; optionally drop zero-count days so the chart isn’t cluttered
-  const pieData = rows
-    .map(d => ({
-      label: d.date,                      // e.g., "2025-08-18"
-      value: Number(d.count || 0)
-    }))
-    .filter(d => d.value > 0);            // remove zeros (optional)
-
-  // If there’s nothing to show, clear and exit gracefully
-  if (signupRoot) signupRoot.dispose();
-  const root = am5.Root.new('chart-signups2');
-  signupRoot = root;
-  root.setThemes([ am5themes_Animated.new(root) ]);
-
+  // Init
+  const root = am5.Root.new(id);
+  signupRoots[id] = root;
+root.setThemes([
+  am5themes_Animated.new(root),
+ ColorfulUnifiedTheme(root, { dark: true }) // optionally: ColorfulUnifiedTheme(root, { dark: true })
+]);
+  // Base chart
   const chart = root.container.children.push(
-    am5percent.PieChart.new(root, {
+    am5xy.XYChart.new(root, {
       layout: root.verticalLayout,
-      innerRadius: am5.percent(50)        // donut look
+      panX: true,
+      panY: false,
+      wheelX: 'panX',
+      wheelY: 'zoomX'
     })
   );
 
+  // Axes
+  const xAxis = chart.xAxes.push(
+    am5xy.CategoryAxis.new(root, {
+      categoryField: 'label',
+      renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 30 }),
+      tooltip: am5.Tooltip.new(root, {})
+    })
+  );
+  xAxis.data.setAll(barData);
+
+  const yAxis = chart.yAxes.push(
+    am5xy.ValueAxis.new(root, {
+      renderer: am5xy.AxisRendererY.new(root, {})
+    })
+  );
+
+  // Series (bar/column)
   const series = chart.series.push(
-    am5percent.PieSeries.new(root, {
-      name: "Sign-ups per day",
-      categoryField: "label",
-      valueField: "value",
-      alignLabels: true
+    am5xy.ColumnSeries.new(root, {
+      name: 'Sign-ups per day',
+      xAxis,
+      yAxis,
+      categoryXField: 'label',
+      valueYField: 'value',
+      tooltip: am5.Tooltip.new(root, { labelText: '{categoryX}: {valueY}' })
     })
   );
 
-  series.slices.template.setAll({
-    tooltipText: "{category}: {value} ({valuePercentTotal.formatNumber('0.0')}%)"
+  // Column styling
+  series.columns.template.setAll({
+    cornerRadiusTL: 4,
+    cornerRadiusTR: 4,
+    strokeOpacity: 0
   });
-  series.labels.template.setAll({ text: "{category}\n{value}" });
 
-  series.data.setAll(pieData);
+  
 
-  // Legend
-  const legend = chart.children.push(
-    am5.Legend.new(root, {
-      centerX: am5.percent(50),
-      x: am5.percent(50),
-      layout: root.verticalLayout
-    })
-  );
-  legend.data.setAll(series.dataItems);
+  // Data
+  series.data.setAll(barData);
+
+
+  // Optional: labels on bars
+  // series.bullets.push(() =>
+  //   am5.Bullet.new(root, {
+  //     locationY: 1,
+  //     sprite: am5.Label.new(root, {
+  //       text: '{valueY}',
+  //       centerY: am5.p50,
+  //       centerX: am5.p50,
+  //       populateText: true
+  //     })
+  //   })
+  // );
+
+  // Interactions
+  chart.set('cursor', am5xy.XYCursor.new(root, { xAxis }));
+  chart.set('scrollbarX', am5.Scrollbar.new(root, { orientation: 'horizontal' }));
+
+  // Optional: legend (useful if you add more series later)
+  // const legend = chart.children.push(
+  //   am5.Legend.new(root, { centerX: am5.percent(50), x: am5.percent(50) })
+  // );
+  // legend.data.setAll(chart.series.values);
 }
 
-// hook up your selector if you have one
-//signupSelect.addEventListener('change', () => loadSignupChart(signupSelect.value));
-//loadSignupChart('week');
+  async function renderSignupPieChart2(id, range) {
+    const res = await fetch('/admin/chart/Newsignups');
+    const raw = await res.json();
+    const rows = Array.isArray(raw.series) ? raw.series : raw;
+    const pieData = rows
+      .map(d => ({ label: d.date, value: Number(d.count || 0) }))
+      .filter(d => d.value > 0);
 
-// --- Popup: also show a pie ---
-document.getElementById('chart-signups2').addEventListener('click', async () => {
-  const res = await fetch('/admin/chart/Newsignups');
-  const raw = await res.json();
-  const rows = Array.isArray(raw.series) ? raw.series : raw;
-  const pieData = rows.map(d => ({ label: d.date, value: Number(d.count || 0) })).filter(d => d.value > 0);
-
-  let popupRoot;
-  Swal.fire({
-    title: 'Pre-Registrations Per Day',
-    html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
-    width: '90%',
-    didOpen: () => {
-      popupRoot = am5.Root.new('signupChartPopup2');
-      popupRoot.setThemes([ am5themes_Animated.new(popupRoot) ]);
-
-      const chart = popupRoot.container.children.push(
-        am5percent.PieChart.new(popupRoot, {
-          layout: popupRoot.verticalLayout,
-          innerRadius: am5.percent(50)
-        })
-      );
-
-      const series = chart.series.push(
-        am5percent.PieSeries.new(popupRoot, {
-          name: "Sign-ups per day",
-          categoryField: "label",
-          valueField: "value",
-          alignLabels: true
-        })
-      );
-
-      series.slices.template.setAll({
-        tooltipText: "{category}: {value} ({valuePercentTotal.formatNumber('0.0')}%)"
-      });
-      series.labels.template.setAll({ text: "{category}\n{value}" });
-
-      series.data.setAll(pieData);
-
-      const legend = chart.children.push(
-        am5.Legend.new(popupRoot, { centerX: am5.percent(50), x: am5.percent(50), layout: popupRoot.verticalLayout })
-      );
-      legend.data.setAll(series.dataItems);
-    },
-    willClose: () => {
-      if (popupRoot) popupRoot.dispose();
-    }
-  });
-});
-  /////////////////////////////////********************************************************************//////////
-    /////////////////////////////////********************************************************************//////////
-      /////////////////////////////////********************************************************************//////////
-  const chartData = {
-
-    "chart-class-size": <%- JSON.stringify(classSizes.map(c => ({ category: c.name, value: c.size }))) %>,
-    "chart-pending": [{ category: "Pending", value: <%= pendingCount %> }],
-    "chart-approved": [{ category: "Approved", value: <%= approvedCount %> }]
-  };
-
-  const chartDefaults = {
-    "chart-class-size": "bar",
-    "chart-pending": "bar",
-    "chart-approved": "bar"
-  };
-
-  const roots = {};
-  let metaTables = {};
-  const modal = new bootstrap.Modal(document.getElementById('chartModal'));
-  const form = document.getElementById('chartForm');
-  const tableSelect = document.getElementById('dataTable');
-  const categorySelect = document.getElementById('categoryField');
-  const valueSelect = document.getElementById('valueField');
-  const latSelect = document.getElementById('latField');
-  const lonSelect = document.getElementById('lonField');
-  const typeSelect = document.getElementById('chartType');
-  const fieldSelectors = document.getElementById('fieldSelectors');
-  const mapSelectors = document.getElementById('mapSelectors');
-
-  async function loadMeta() {
-    if (Object.keys(metaTables).length) return;
-    const res = await fetch('/admin/chart/meta');
-    const data = await res.json();
-    metaTables = data.tables || {};
-  }
-
-  function populateTables() {
-    tableSelect.innerHTML = '<option value="">Select table</option>';
-    Object.keys(metaTables).forEach(t => {
-      const opt = document.createElement('option');
-      opt.value = t; opt.textContent = t; tableSelect.appendChild(opt);
-    });
-  }
-
-  tableSelect.addEventListener('change', () => {
-    const cols = metaTables[tableSelect.value] || [];
-    [categorySelect, valueSelect, latSelect, lonSelect].forEach(sel => {
-      sel.innerHTML = '';
-      cols.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c; opt.textContent = c; sel.appendChild(opt);
-      });
-    });
-  });
-
-  typeSelect.addEventListener('change', () => {
-    const isMap = typeSelect.value === 'map';
-    fieldSelectors.classList.toggle('d-none', isMap);
-    mapSelectors.classList.toggle('d-none', !isMap);
-  });
-
-  document.querySelectorAll('.chart-edit').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await loadMeta();
-      populateTables();
-      const card = btn.closest('.chart-card');
-      const id = card.querySelector('.chart-container').id;
-      document.getElementById('chartId').value = id;
-      const config = JSON.parse(localStorage.getItem('chartConfig:' + id) || '{}');
-      typeSelect.value = config.type || chartDefaults[id];
-      tableSelect.value = config.table || '';
-      tableSelect.dispatchEvent(new Event('change'));
-      categorySelect.value = config.category || '';
-      valueSelect.value = config.value || '';
-      latSelect.value = config.lat || '';
-      lonSelect.value = config.lon || '';
-      typeSelect.dispatchEvent(new Event('change'));
-      modal.show();
-    });
-  });
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('chartId').value;
-    const config = {
-      type: typeSelect.value,
-      table: tableSelect.value,
-      category: categorySelect.value,
-      value: valueSelect.value,
-      lat: latSelect.value,
-      lon: lonSelect.value
-    };
-    localStorage.setItem('chartConfig:' + id, JSON.stringify(config));
-    modal.hide();
-    renderChart(id, config);
-  });
-
-  async function fetchData(config, id) {
-    if (config.table) {
-      const params = new URLSearchParams(config);
-      const res = await fetch('/admin/chart/data?' + params.toString());
-      return res.json();
-    }
-    return chartData[id];
-  }
-
-  async function renderChart(id, config) {
-    const data = await fetchData(config, id);
-    if (roots[id]) roots[id].dispose();
+    if (signupRoots[id]) signupRoots[id].dispose();
     const root = am5.Root.new(id);
-    roots[id] = root;
+    signupRoots[id] = root;
     root.setThemes([am5themes_Animated.new(root)]);
-    let chart, series;
-    switch(config.type) {
-      case 'pie':
-        chart = root.container.children.push(am5percent.PieChart.new(root, {}));
-        series = chart.series.push(am5percent.PieSeries.new(root, { valueField:'value', categoryField:'category' }));
-        series.data.setAll(data);
-        break;
-      case 'line':
-        chart = root.container.children.push(am5xy.XYChart.new(root, {}));
-        const lx = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField:'category' }));
-        const ly = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
-        series = chart.series.push(am5xy.LineSeries.new(root, { xAxis: lx, yAxis: ly, valueYField:'value', categoryXField:'category' }));
-        lx.data.setAll(data); series.data.setAll(data);
-        break;
-      case 'bar':
-        chart = root.container.children.push(am5xy.XYChart.new(root, { paddingLeft:0, paddingRight:0 }));
-        const bx = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField:'category', renderer: am5xy.AxisRendererX.new(root, {}) }));
-        const by = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
-        series = chart.series.push(am5xy.ColumnSeries.new(root, { xAxis: bx, yAxis: by, valueYField:'value', categoryXField:'category' }));
-        bx.data.setAll(data); series.data.setAll(data);
-        break;
-      case 'realtime':
-        chart = root.container.children.push(am5xy.XYChart.new(root, {}));
-        const rx = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField:'category' }));
-        const ry = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
-        series = chart.series.push(am5xy.ColumnSeries.new(root, { xAxis: rx, yAxis: ry, valueYField:'value', categoryXField:'category', sequencedInterpolation:true }));
-        rx.data.setAll(data); series.data.setAll(data);
-        series.events.on('datavalidated', () => {
-          series.dataItems.sort((a,b) => b.get('valueY') - a.get('valueY'));
-          series.dataItems.forEach((di,i) => di.set('index', i));
-        });
-        break;
-      case 'cylinder3d':
-        chart = root.container.children.push(am5xy.XYChart.new(root, {}));
-        const cx = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField:'category' }));
-        const cy = chart.yAxes.push(am5xy.ValueAxis.new(root, { min:0 }));
-        series = chart.series.push(am5xy.CylinderColumnSeries.new(root, { xAxis: cx, yAxis: cy, valueYField:'value', categoryXField:'category' }));
-        cx.data.setAll(data); series.data.setAll(data);
-        break;
-      case 'pie3d':
-        chart = root.container.children.push(am5percent.PieChart.new(root, { innerRadius: am5.percent(40) }));
-        series = chart.series.push(am5percent.PieSeries.new(root, { valueField:'value', categoryField:'category' }));
-        series.slices.template.setAll({ depth: 10, cornerRadius:5 });
-        series.data.setAll(data);
-        break;
-      case 'map':
-        chart = root.container.children.push(am5map.MapChart.new(root, { projection: am5map.geoMercator() }));
-        chart.series.push(am5map.MapPolygonSeries.new(root, { geoJSON: am5geodata_worldLow }));
-        const pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
-        pointSeries.bullets.push(() => am5.Bullet.new(root, { sprite: am5.Circle.new(root, { radius:4, fill: root.interfaceColors.get('alternativeBackground') }) }));
-        pointSeries.data.setAll(data.map(d => ({ latitude: d.latitude, longitude: d.longitude, title: d.category })));
-        break;
-      case 'pictorial':
-        chart = root.container.children.push(am5xy.SlicedChart.new(root, {}));
-        series = chart.series.push(am5xy.PictorialStackedSeries.new(root, { valueField:'value', categoryField:'category', orientation:'vertical', svgPath:"M0,0L100,0 100,100 0,100Z" }));
-        series.data.setAll(data);
-        break;
-      default:
-        alert('Selected chart type not implemented.');
-    }
+
+    const chart = root.container.children.push(
+      am5percent.PieChart.new(root, { layout: root.verticalLayout, innerRadius: am5.percent(50) })
+    );
+
+    const series = chart.series.push(
+      am5percent.PieSeries.new(root, { name: 'Sign-ups per day', categoryField: 'label', valueField: 'value', alignLabels: true })
+    );
+
+    series.slices.template.setAll({
+      tooltipText: '{category}: {value} ({valuePercentTotal.formatNumber("0.0")}%)'
+    });
+    series.labels.template.setAll({ text: '{category}\n{value}' });
+
+    series.data.setAll(pieData);
+
+    // const legend = chart.children.push(
+    //   am5.Legend.new(root, { centerX: am5.percent(50), x: am5.percent(50), layout: root.verticalLayout })
+    // );
+    // legend.data.setAll(series.dataItems);
   }
 
-  Object.keys(chartData).forEach(id => {
-    const config = JSON.parse(localStorage.getItem('chartConfig:' + id) || '{}');
-    config.type = config.type || chartDefaults[id];
-    renderChart(id, config);
+async function renderSignupPieChart3(id, range) {
+  const res = await fetch('/admin/chart/Newsignups');
+  const raw = await res.json();
+  const rows = Array.isArray(raw.series) ? raw.series : raw;
+
+  // Build + sort (desc by value)
+  const barData = rows
+    .map(d => ({ label: d.date, value: Number(d.count || 0) }))
+    .filter(d => d.value > 0)
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+
+  // Dispose old root
+  if (signupRoots[id]) signupRoots[id].dispose();
+
+  // Init
+  const root = am5.Root.new(id);
+  signupRoots[id] = root;
+  root.setThemes([am5themes_Animated.new(root)]);
+
+  // Base chart
+  const chart = root.container.children.push(
+    am5xy.XYChart.new(root, {
+      layout: root.verticalLayout,
+      panX: false,
+      panY: true,
+      wheelX: 'none',
+      wheelY: 'zoomY'
+    })
+  );
+
+  // Axes: horizontal values, vertical categories (for horizontal bars)
+  const xAxis = chart.xAxes.push(
+    am5xy.ValueAxis.new(root, {
+      renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 40 })
+    })
+  );
+
+  const yAxis = chart.yAxes.push(
+    am5xy.CategoryAxis.new(root, {
+      categoryField: 'label',
+      renderer: am5xy.AxisRendererY.new(root, {
+        minGridDistance: 20,
+        // Keep highest at the top because data is already sorted desc
+        inversed: true
+      })
+    })
+  );
+  yAxis.data.setAll(barData);
+
+  // Series (horizontal bars)
+  const series = chart.series.push(
+    am5xy.ColumnSeries.new(root, {
+      name: 'Sign-ups per day',
+      xAxis,
+      yAxis,
+      valueXField: 'value',
+      categoryYField: 'label',
+      tooltip: am5.Tooltip.new(root, { labelText: '{categoryY}: {valueX}' })
+    })
+  );
+
+  // Bar styling
+  series.columns.template.setAll({
+    height: am5.p100,
+    strokeOpacity: 0,
+    cornerRadiusTR: 4,
+    cornerRadiusBR: 4
   });
-</script>
-</body>
-</html>
+
+  // Labels at the end of bars (optional)
+  // series.bullets.push(() =>
+  //   am5.Bullet.new(root, {
+  //     locationX: 1,
+  //     sprite: am5.Label.new(root, {
+  //       text: '{valueX}',
+  //       centerY: am5.p50,
+  //       populateText: true
+  //     })
+  //   })
+  // );
+
+  // Data
+  series.data.setAll(barData);
+
+  // Interactions
+  chart.set('cursor', am5xy.XYCursor.new(root, { yAxis }));
+  chart.set('scrollbarY', am5.Scrollbar.new(root, { orientation: 'vertical' }));
+
+  // Appear animation
+  series.appear(600);
+  chart.appear(600, 80);
+}
+
+async function renderSignupPieChart4(id, range) {
+  const res = await fetch('/admin/chart/Newsignups');
+  const raw = await res.json();
+  const rows = Array.isArray(raw.series) ? raw.series : raw;
+
+  // Prepare + sort (largest at the top is typical for funnels)
+  const funnelData = rows
+    .map(d => ({ label: d.date, value: Number(d.count || 0) }))
+    .filter(d => d.value > 0)
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+
+  // Dispose any existing chart
+  if (signupRoots[id]) signupRoots[id].dispose();
+
+  // Init
+  const root = am5.Root.new(id);
+  signupRoots[id] = root;
+  root.setThemes([am5themes_Animated.new(root)]);
+
+  // Base Sliced chart (container for funnel / pyramid series)
+  const chart = root.container.children.push(
+    am5percent.SlicedChart.new(root, {
+      layout: root.verticalLayout
+    })
+  );
+
+  // Funnel series
+  const series = chart.series.push(
+    am5percent.FunnelSeries.new(root, {
+      name: 'Sign-ups per day',
+      valueField: 'value',
+      categoryField: 'label',
+      orientation: 'vertical', // change to 'horizontal' if you prefer
+      // Optional: make steps visually more separated
+      bottomRatio: 1, // 1 = classic straight sides; <1 narrows the bottom more
+    })
+  );
+
+  // Labels & tooltips
+  series.slices.template.setAll({
+    tooltipText: '{category}: {value} ({valuePercentTotal.formatNumber("0.0")}%)'
+  });
+  series.labels.template.setAll({
+    text: '{category}\n{value}',
+    centerX: am5.p50,
+    populateText: true
+  });
+
+  // Data
+  series.data.setAll(funnelData);
+
+  // Legend
+  // const legend = chart.children.push(
+  //   am5.Legend.new(root, {
+  //     centerX: am5.percent(50),
+  //     x: am5.percent(50),
+  //     layout: root.verticalLayout
+  //   })
+  // );
+  // legend.data.setAll(series.dataItems);
+
+  // Appear animation
+  series.appear(700, 80);
+  chart.appear(700, 80);
+}
+
+function ColorfulUnifiedTheme(root, opts = {}) {
+  const paletteHex = opts.palette || [
+    0xFF6B6B, 0xFFD93D, 0x6BCB77, 0x4D96FF, 0x9D4EDD,
+    0xFF8FAB, 0xFFA62B, 0x2EC4B6, 0x00BBF9, 0x845EC2,
+    0xFFC75F, 0xF9F871, 0xFF9671, 0x2B9EB3, 0x6A2C70,
+    0xE83F6F, 0x17C3B2, 0xB8DE6F
+  ];
+  const dark = !!opts.dark;
+
+  const palette = paletteHex.map(c => am5.color(c));
+
+  return am5.Theme.new(root, {
+    setup(root) {
+      // Global palette: used by series, slices, bullets, etc.
+      root.rule('ColorSet').setAll({
+        colors: palette,
+        reuse: true,
+        step: 1
+      });
+
+      // Interface colors (subtle grid & readable text)
+      root.interfaceColors.set('grid', am5.color(dark ? 0x3a3f47 : 0xE5E7EB));
+      if (dark) root.interfaceColors.set('text', am5.color(0xE5E7EB));
+
+      // Axis labels & general labels a bit bolder
+      root.rule('AxisLabel').setAll({ fontWeight: '600' });
+      root.rule('Label').setAll({ fontWeight: 500 });
+
+      // Softer grid lines
+      root.rule('Grid').setAll({ strokeOpacity: 0.08 });
+
+      // Tooltips: slightly stronger background for readability
+      root.rule('Tooltip').setAll({
+        getFillFromSprite: false,
+        background: am5.Rectangle.new(root, { fillOpacity: 0.95 })
+      });
+
+      // Columns: rounded top corners, light stroke
+      // (Only affects column-type series; safe for other charts)
+      root.rule('Column').setAll({
+        cornerRadiusTL: 6,
+        cornerRadiusTR: 6,
+        strokeOpacity: 0.15
+      });
+
+      // Pies: keep labels aligned by default (non-breaking)
+      root.rule('PieSeries').setAll({ alignLabels: true });
+    }
+  });
+}
+
+ 
+    const chartId = `chart-signups-1`;
+    //select.addEventListener('change', () => renderSignupPieChart(chartId, select.value));
+    renderSignupPieChart(chartId, 'week');
+
+    document.getElementById(chartId).addEventListener('click', async () => {
+      const res = await fetch('/admin/chart/Newsignups');
+      const raw = await res.json();
+      const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
+        ts: new Date(d.date + 'T00:00:00Z').getTime(),
+        count: Number(d.count || 0),
+        dateStr: d.date
+      }));
+      let popupRoot;
+      Swal.fire({
+        title: 'Pre-Registrations Per Day',
+        html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
+        width: '90%',
+        didOpen: () => {
+          popupRoot = am5.Root.new('signupChartPopup');
+          popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
+          const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
+            layout: popupRoot.verticalLayout,
+            panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
+          }));
+          const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
+            baseInterval: { timeUnit: 'day', count: 1 },
+            renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
+            tooltip: am5.Tooltip.new(popupRoot, {})
+          }));
+          const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
+            renderer: am5xy.AxisRendererY.new(popupRoot, {})
+          }));
+          const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
+            name: 'Sign-ups',
+            xAxis, yAxis,
+            valueXField: 'ts',
+            valueYField: 'count',
+            tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
+          }));
+          series.strokes.template.setAll({ strokeWidth: 2 });
+          chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
+          chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
+          series.data.setAll(data);
+          if (data.length) {
+            xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
+          }
+        },
+        willClose: () => { if (popupRoot) popupRoot.dispose(); }
+      });
+    });
+
+
+      const chartId2 = `chart-signups-2`;
+   // select.addEventListener('change', () => renderSignupPieChart(chartId2, select.value));
+    renderSignupPieChart2(chartId2, 'week');
+
+    document.getElementById(chartId2).addEventListener('click', async () => {
+      const res = await fetch('/admin/chart/Newsignups');
+      const raw = await res.json();
+      const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
+        ts: new Date(d.date + 'T00:00:00Z').getTime(),
+        count: Number(d.count || 0),
+        dateStr: d.date
+      }));
+      let popupRoot;
+      Swal.fire({
+        title: 'Pre-Registrations Per Day',
+        html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
+        width: '90%',
+        didOpen: () => {
+          popupRoot = am5.Root.new('signupChartPopup');
+          popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
+          const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
+            layout: popupRoot.verticalLayout,
+            panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
+          }));
+          const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
+            baseInterval: { timeUnit: 'day', count: 1 },
+            renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
+            tooltip: am5.Tooltip.new(popupRoot, {})
+          }));
+          const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
+            renderer: am5xy.AxisRendererY.new(popupRoot, {})
+          }));
+          const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
+            name: 'Sign-ups',
+            xAxis, yAxis,
+            valueXField: 'ts',
+            valueYField: 'count',
+            tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
+          }));
+          series.strokes.template.setAll({ strokeWidth: 2 });
+          chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
+          chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
+          series.data.setAll(data);
+          if (data.length) {
+            xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
+          }
+        },
+        willClose: () => { if (popupRoot) popupRoot.dispose(); }
+      });
+    });
+
+        const chartId3 = `chart-signups-3`;
+   // select.addEventListener('change', () => renderSignupPieChart(chartId2, select.value));
+    renderSignupPieChart3(chartId3, 'week');
+
+    document.getElementById(chartId3).addEventListener('click', async () => {
+      const res = await fetch('/admin/chart/Newsignups');
+      const raw = await res.json();
+      const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
+        ts: new Date(d.date + 'T00:00:00Z').getTime(),
+        count: Number(d.count || 0),
+        dateStr: d.date
+      }));
+      let popupRoot;
+      Swal.fire({
+        title: 'Pre-Registrations Per Day',
+        html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
+        width: '90%',
+        didOpen: () => {
+          popupRoot = am5.Root.new('signupChartPopup');
+          popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
+          const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
+            layout: popupRoot.verticalLayout,
+            panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
+          }));
+          const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
+            baseInterval: { timeUnit: 'day', count: 1 },
+            renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
+            tooltip: am5.Tooltip.new(popupRoot, {})
+          }));
+          const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
+            renderer: am5xy.AxisRendererY.new(popupRoot, {})
+          }));
+          const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
+            name: 'Sign-ups',
+            xAxis, yAxis,
+            valueXField: 'ts',
+            valueYField: 'count',
+            tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
+          }));
+          series.strokes.template.setAll({ strokeWidth: 2 });
+          chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
+          chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
+          series.data.setAll(data);
+          if (data.length) {
+            xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
+          }
+        },
+        willClose: () => { if (popupRoot) popupRoot.dispose(); }
+      });
+    });
+
+         const chartId4 = `chart-signups-4`;
+   // select.addEventListener('change', () => renderSignupPieChart(chartId2, select.value));
+    renderSignupPieChart4(chartId4, 'week');
+
+    document.getElementById(chartId4).addEventListener('click', async () => {
+      const res = await fetch('/admin/chart/Newsignups');
+      const raw = await res.json();
+      const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
+        ts: new Date(d.date + 'T00:00:00Z').getTime(),
+        count: Number(d.count || 0),
+        dateStr: d.date
+      }));
+      let popupRoot;
+      Swal.fire({
+        title: 'Pre-Registrations Per Day',
+        html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
+        width: '90%',
+        didOpen: () => {
+          popupRoot = am5.Root.new('signupChartPopup');
+          popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
+          const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
+            layout: popupRoot.verticalLayout,
+            panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
+          }));
+          const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
+            baseInterval: { timeUnit: 'day', count: 1 },
+            renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
+            tooltip: am5.Tooltip.new(popupRoot, {})
+          }));
+          const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
+            renderer: am5xy.AxisRendererY.new(popupRoot, {})
+          }));
+          const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
+            name: 'Sign-ups',
+            xAxis, yAxis,
+            valueXField: 'ts',
+            valueYField: 'count',
+            tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
+          }));
+          series.strokes.template.setAll({ strokeWidth: 2 });
+          chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
+          chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
+          series.data.setAll(data);
+          if (data.length) {
+            xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
+          }
+        },
+        willClose: () => { if (popupRoot) popupRoot.dispose(); }
+      });
+    });
+
+
+ </script>
+ </body>
+ </html>
