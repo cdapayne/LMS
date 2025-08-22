@@ -317,15 +317,9 @@ router.get('/students', async (_req, res) => {
 });
 
 // Marketing email form
-router.get('/marketing', async (req, res) => {
+router.post('/marketing', mediaUpload.single('attachment'), async (req, res) => {
   const students = await userModel.getByRole('student');
-  res.render('admin_marketing', { students, user: req.session.user, sent: req.query.sent, error: null });
-});
-
-// Send marketing email
-router.post('/marketing', async (req, res) => {
-  const students = await userModel.getByRole('student');
-  const { studentId, type, subject, imageUrl, message } = req.body;
+  const { studentId, type, subject, imageUrl, message, ccIds, bccIds } = req.body;
   const allowed = ['recruitment', 'retention', 'approval', 'events', 'information'];
     const prefaces = {
     recruitment: 'Join the MD Technical School family!',
@@ -339,6 +333,17 @@ router.post('/marketing', async (req, res) => {
     if (!student || !student.email || !allowed.includes(type)) {
       return res.status(400).render('admin_marketing', { students, user: req.session.user, sent: null, error: 'Invalid form submission.' });
     }
+
+       const ccList = Array.isArray(ccIds) ? ccIds : ccIds ? [ccIds] : [];
+    const bccList = Array.isArray(bccIds) ? bccIds : bccIds ? [bccIds] : [];
+    const ccEmails = ccList.map(id => {
+      const s = students.find(st => st.id === Number(id));
+      return s && s.email;
+    }).filter(Boolean);
+    const bccEmails = bccList.map(id => {
+      const s = students.find(st => st.id === Number(id));
+      return s && s.email;
+    }).filter(Boolean);
 
     const subj = (subject && subject.trim()) || `MDTS ${type.charAt(0).toUpperCase() + type.slice(1)} Update`;
         const preface = prefaces[type] || '';
@@ -355,13 +360,20 @@ router.post('/marketing', async (req, res) => {
         const text = [preface, message || ''].filter(Boolean).join('\n\n');
 
 
-    await transporter.sendMail({
+    const mail = {
       from: 'no-reply@mdts-apps.com',
       to: student.email,
       subject: subj,
       html,
       text
-    });
+    };
+    if (ccEmails.length) mail.cc = ccEmails;
+    if (bccEmails.length) mail.bcc = bccEmails;
+    if (req.file) {
+      mail.attachments = [{ filename: req.file.originalname, path: req.file.path }];
+    }
+
+    await transporter.sendMail(mail);
 
     res.redirect('/admin/marketing?sent=1');
   } catch (e) {
@@ -370,7 +382,11 @@ router.post('/marketing', async (req, res) => {
   }
 });
 
-
+// Marketing email form
+router.get('/marketing', async (req, res) => {
+  const students = await userModel.getByRole('student');
+  res.render('admin_marketing', { students, user: req.session.user, sent: req.query.sent, error: null });
+});
 
 
 // New class form

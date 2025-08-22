@@ -38,6 +38,39 @@ router.get('/mailbox', async (req, res) => {
   res.render('mailbox', { messages: formatted, users: teachers, user: req.session.user });
 });
 
+router.get('/simplify', (req, res) => {
+  res.render('topic_helper', { user: { role: 'student' }, result: null, topic: '' });
+});
+
+router.post('/simplify', async (req, res) => {
+  const { topic } = req.body;
+  const apiKey = process.env.OPENAI_API_KEY;
+  let result = '';
+  if (!apiKey) result = 'Missing OpenAI API key';
+  if (!topic) result = 'Topic is required';
+  if (!result) {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [{ role: 'user', content: `Explain the following in simple terms for a 5th grade student: ${topic}` }]
+        })
+      });
+      const data = await response.json();
+      result = data.choices?.[0]?.message?.content || 'No summary generated';
+    } catch (e) {
+      console.error('OpenAI error', e);
+      result = 'Error generating summary';
+    }
+  }
+  res.render('topic_helper', { user: { role: 'student' }, result, topic });
+});
+
 router.post('/mailbox', async (req, res) => {
   const recipientId = Number(req.body.to);
   const { subject, body } = req.body;

@@ -37,10 +37,25 @@
       <div class="alert alert-danger"><%= error %></div>
     <% } %>
     <div class="cardish mt-3">
-      <form method="post" action="/admin/marketing">
-        <div class="mb-3">
+  <form method="post" action="/admin/marketing" enctype="multipart/form-data">        <div class="mb-3">
           <label class="form-label">Student</label>
           <select name="studentId" class="form-select" required>
+            <% students.forEach(function(s){ %>
+              <option value="<%= s.id %>"><%= s.name || (s.profile?.firstName + ' ' + s.profile?.lastName) %></option>
+            <% }); %>
+          </select>
+        </div>
+                <div class="mb-3">
+          <label class="form-label">CC</label>
+          <select name="ccIds" class="form-select" multiple>
+            <% students.forEach(function(s){ %>
+              <option value="<%= s.id %>"><%= s.name || (s.profile?.firstName + ' ' + s.profile?.lastName) %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">BCC</label>
+          <select name="bccIds" class="form-select" multiple>
             <% students.forEach(function(s){ %>
               <option value="<%= s.id %>"><%= s.name || (s.profile?.firstName + ' ' + s.profile?.lastName) %></option>
             <% }); %>
@@ -63,6 +78,10 @@
         <div class="mb-3">
           <label class="form-label">Image URL</label>
           <input type="url" name="imageUrl" class="form-control">
+        </div>
+           <div class="mb-3">
+          <label class="form-label">Attachment</label>
+          <input type="file" name="attachment" class="form-control">
         </div>
         <div class="mb-3">
           <label class="form-label">Message</label>
