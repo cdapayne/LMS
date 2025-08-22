@@ -81,7 +81,7 @@
         <div class="muted mt-1">Your current enrollments with quick links to lectures, simulations and tests.</div>
       </div>
       <div>
-        <span class="pill">Enrolled: <%= classes.length %></span>
+        <span class="pill">Classes Enrolled In: <%= classes.length %></span>
       </div>
     </div>
   </div>
@@ -92,15 +92,30 @@
         <h5>Announcements</h5>
         <ul class="list-group">
           <% announcements.forEach(a => { %>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>
-                <% if (a.classId) { %>
-                  <strong><%= (classes.find(c => c.id === a.classId) || {}).name %>:</strong>
-                <% } %>
-                <%= a.message %>
-              </span>
-              <small class="text-muted"><%= new Date(a.createdAt).toLocaleString() %></small>
-            </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center gap-3"
+    data-ann-id="<%= a.id || a._id || (a.classId ? `${a.classId}-` : '') + new Date(a.createdAt).getTime() %>">
+  <span class="flex-grow-1">
+    <% if (a.classId) { %>
+      <strong><%= (classes.find(c => c.id === a.classId) || {}).name %>:</strong>
+    <% } %>
+    <%= a.message %>
+  </span>
+
+  <div class="d-flex align-items-center gap-3">
+    <small class="text-muted"><%= new Date(a.createdAt).toLocaleString() %></small>
+
+    <!-- Hide (remove) button -->
+    <button type="button"
+            class="btn btn-sm btn-outline-secondary hide-ann"
+            title="Hide this announcement"
+            aria-label="Hide this announcement">
+      Hide
+    </button>
+    <!-- Or use a close icon:
+    <button type="button" class="btn-close hide-ann" aria-label="Hide"></button>
+    -->
+  </div>
+</li>
           <% }) %>
         </ul>
       </section>
@@ -237,6 +252,38 @@
       input?.addEventListener('input', filter);
       clearBtn?.addEventListener('click', () => { input.value=''; filter(); });
     })();
+     (function(){
+    const KEY = 'hiddenAnnouncements'; // localStorage key
+
+    function loadHiddenSet(){
+      try { return new Set(JSON.parse(localStorage.getItem(KEY) || '[]')); }
+      catch { return new Set(); }
+    }
+    function saveHiddenSet(set){
+      localStorage.setItem(KEY, JSON.stringify(Array.from(set)));
+    }
+
+    const hidden = loadHiddenSet();
+
+    // Hide any items that were previously dismissed
+    document.querySelectorAll('[data-ann-id]').forEach(li => {
+      const id = li.getAttribute('data-ann-id');
+      if (hidden.has(id)) li.remove();
+    });
+
+    // Wire up Hide buttons
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.hide-ann');
+      if (!btn) return;
+      const li = btn.closest('[data-ann-id]');
+      if (!li) return;
+
+      const id = li.getAttribute('data-ann-id');
+      hidden.add(id);
+      saveHiddenSet(hidden);
+      li.remove();
+    });
+  })();
   </script>
   <% } %>
 </body>

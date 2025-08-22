@@ -24,7 +24,13 @@ async function getAllEvents() {
   return rows;
 }
 
+async function getEventById(id) {
+  const [rows] = await db.query('SELECT * FROM mdtslms_events WHERE id = ?', [id]);
+  return rows[0];
+}
+
 module.exports = {
   createEvent,
-  getAllEvents
+  getAllEvents,
+  getEventById
 };

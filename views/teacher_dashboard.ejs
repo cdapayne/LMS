@@ -246,7 +246,7 @@
         </div>
       </section>
     </div>
-        <div class="row g-3 mt-1">
+        <!-- <div class="row g-3 mt-1">
       <div class="col-12 col-md-6">
         <div class="cardish">
           <div class="chart-title">Student Status</div>
@@ -271,7 +271,7 @@
           <div id="t-chart-approved" class="chart"></div>
         </div>
       </div>
-    </div>
+    </div> -->
   </main>
 
   <script>
@@ -355,46 +355,46 @@
   <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
   <script>
-    am5.ready(function() {
-      var root = am5.Root.new("t-chart-student-status");
-      root.setThemes([am5themes_Animated.new(root)]);
-      var chart = root.container.children.push(am5percent.PieChart.new(root, {}));
-      var series = chart.series.push(am5percent.PieSeries.new(root, { valueField: "value", categoryField: "category" }));
-      series.data.setAll([
-        { category: "Approved", value: <%= approvedCount %> },
-        { category: "Pending", value: <%= pendingCount %> }
-      ]);
+    // am5.ready(function() {
+    //   var root = am5.Root.new("t-chart-student-status");
+    //   root.setThemes([am5themes_Animated.new(root)]);
+    //   var chart = root.container.children.push(am5percent.PieChart.new(root, {}));
+    //   var series = chart.series.push(am5percent.PieSeries.new(root, { valueField: "value", categoryField: "category" }));
+    //   series.data.setAll([
+    //     { category: "Approved", value: <%= approvedCount %> },
+    //     { category: "Pending", value: <%= pendingCount %> }
+    //   ]);
 
-      var root2 = am5.Root.new("t-chart-class-size");
-      root2.setThemes([am5themes_Animated.new(root2)]);
-      var chart2 = root2.container.children.push(am5xy.XYChart.new(root2, { paddingLeft:0, paddingRight:0 }));
-      var xAxis = chart2.xAxes.push(am5xy.CategoryAxis.new(root2, { categoryField: "class", renderer: am5xy.AxisRendererX.new(root2, {}) }));
-      var yAxis = chart2.yAxes.push(am5xy.ValueAxis.new(root2, { min:0 }));
-      var series2 = chart2.series.push(am5xy.ColumnSeries.new(root2, { xAxis:xAxis, yAxis:yAxis, valueYField:"size", categoryXField:"class" }));
-      var classData = <%- JSON.stringify(classSizes.map(c => ({ class: c.name, size: c.size }))) %>;
-      xAxis.data.setAll(classData);
-      series2.data.setAll(classData);
+    //   var root2 = am5.Root.new("t-chart-class-size");
+    //   root2.setThemes([am5themes_Animated.new(root2)]);
+    //   var chart2 = root2.container.children.push(am5xy.XYChart.new(root2, { paddingLeft:0, paddingRight:0 }));
+    //   var xAxis = chart2.xAxes.push(am5xy.CategoryAxis.new(root2, { categoryField: "class", renderer: am5xy.AxisRendererX.new(root2, {}) }));
+    //   var yAxis = chart2.yAxes.push(am5xy.ValueAxis.new(root2, { min:0 }));
+    //   var series2 = chart2.series.push(am5xy.ColumnSeries.new(root2, { xAxis:xAxis, yAxis:yAxis, valueYField:"size", categoryXField:"class" }));
+    //   var classData = <%- JSON.stringify(classSizes.map(c => ({ class: c.name, size: c.size }))) %>;
+    //   xAxis.data.setAll(classData);
+    //   series2.data.setAll(classData);
 
-      var root3 = am5.Root.new("t-chart-pending");
-      root3.setThemes([am5themes_Animated.new(root3)]);
-      var chart3 = root3.container.children.push(am5xy.XYChart.new(root3, {}));
-      var xAxis3 = chart3.xAxes.push(am5xy.CategoryAxis.new(root3, { categoryField: "category" }));
-      var yAxis3 = chart3.yAxes.push(am5xy.ValueAxis.new(root3, { min:0 }));
-      var series3 = chart3.series.push(am5xy.ColumnSeries.new(root3, { xAxis:xAxis3, yAxis:yAxis3, valueYField:"value", categoryXField:"category" }));
-      var pendingData = [{ category:"Pending", value:<%= pendingCount %> }];
-      xAxis3.data.setAll(pendingData);
-      series3.data.setAll(pendingData);
+    //   var root3 = am5.Root.new("t-chart-pending");
+    //   root3.setThemes([am5themes_Animated.new(root3)]);
+    //   var chart3 = root3.container.children.push(am5xy.XYChart.new(root3, {}));
+    //   var xAxis3 = chart3.xAxes.push(am5xy.CategoryAxis.new(root3, { categoryField: "category" }));
+    //   var yAxis3 = chart3.yAxes.push(am5xy.ValueAxis.new(root3, { min:0 }));
+    //   var series3 = chart3.series.push(am5xy.ColumnSeries.new(root3, { xAxis:xAxis3, yAxis:yAxis3, valueYField:"value", categoryXField:"category" }));
+    //   var pendingData = [{ category:"Pending", value:<%= pendingCount %> }];
+    //   xAxis3.data.setAll(pendingData);
+    //   series3.data.setAll(pendingData);
 
-      var root4 = am5.Root.new("t-chart-approved");
-      root4.setThemes([am5themes_Animated.new(root4)]);
-      var chart4 = root4.container.children.push(am5xy.XYChart.new(root4, {}));
-      var xAxis4 = chart4.xAxes.push(am5xy.CategoryAxis.new(root4, { categoryField: "category" }));
-      var yAxis4 = chart4.yAxes.push(am5xy.ValueAxis.new(root4, { min:0 }));
-      var series4 = chart4.series.push(am5xy.ColumnSeries.new(root4, { xAxis:xAxis4, yAxis:yAxis4, valueYField:"value", categoryXField:"category" }));
-      var approvedData = [{ category:"Approved", value:<%= approvedCount %> }];
-      xAxis4.data.setAll(approvedData);
-      series4.data.setAll(approvedData);
-    });
+    //   var root4 = am5.Root.new("t-chart-approved");
+    //   root4.setThemes([am5themes_Animated.new(root4)]);
+    //   var chart4 = root4.container.children.push(am5xy.XYChart.new(root4, {}));
+    //   var xAxis4 = chart4.xAxes.push(am5xy.CategoryAxis.new(root4, { categoryField: "category" }));
+    //   var yAxis4 = chart4.yAxes.push(am5xy.ValueAxis.new(root4, { min:0 }));
+    //   var series4 = chart4.series.push(am5xy.ColumnSeries.new(root4, { xAxis:xAxis4, yAxis:yAxis4, valueYField:"value", categoryXField:"category" }));
+    //   var approvedData = [{ category:"Approved", value:<%= approvedCount %> }];
+    //   xAxis4.data.setAll(approvedData);
+    //   series4.data.setAll(approvedData);
+    // });
   </script>
 </body>
 </html>
