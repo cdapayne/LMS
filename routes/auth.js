@@ -147,9 +147,15 @@ router.post('/login', async (req, res) => {
   return res.redirect('/dashboard');
 });
 
-router.get('/register', (req, res) => {
-    const formData = req.session.preRegData || {};
+router.get('/register', async (req, res) => {
+  const formData = req.session.preRegData || {};
   delete req.session.preRegData;
+  try {
+    formData.studentId = await userModel.generateStudentId();
+  } catch (e) {
+    console.error('Error generating student ID', e);
+    formData.studentId = '';
+  }
   res.render('register', {
     error: null,
     docVersion: DOC_VERSION,
@@ -176,8 +182,7 @@ router.post('/register', (req, res) => {
       const email = ensureStr(req.body.email);
       const confirmEmail = ensureStr(req.body.confirmEmail);
       const password = ensureStr(req.body.password);
-      const studentId = ensureStr(req.body.studentId);
-      const agree = ensureStr(req.body.agree);
+ const studentId = ensureStr(req.body.studentId) || await userModel.generateStudentId();      const agree = ensureStr(req.body.agree);
       const signatureDataUrl = ensureStr(req.body.signatureDataUrl);
       const suffix = ensureStr(req.body.suffix);
       const address = ensureStr(req.body.address);
@@ -193,18 +198,7 @@ router.post('/register', (req, res) => {
       const emergencyName = ensureStr(req.body.emergencyName);
       const emergencyRelation = ensureStr(req.body.emergencyRelation);
       const emergencyPhone = ensureStr(req.body.emergencyPhone);
-      const admissionDate = ensureStr(req.body.admissionDate);
-      const startDate = ensureStr(req.body.startDate);
-      const endDate = ensureStr(req.body.endDate);
-      const classTime = ensureStr(req.body.classTime);
-      const classDays = Array.isArray(req.body.classDays) ? req.body.classDays.join(',') : ensureStr(req.body.classDays);
-      const totalHours = ensureStr(req.body.totalHours);
-      const tuition = ensureStr(req.body.tuition);
-      const registrationFee = ensureStr(req.body.registrationFee);
-      const books = ensureStr(req.body.books);
-      const equipment = ensureStr(req.body.equipment);
-      const miscFees = ensureStr(req.body.miscFees);
-      const totalCost = ensureStr(req.body.totalCost);
+   
       const selfPay = affiliateProgram === 'Self Pay';
 
       const grievanceAck = ensureStr(req.body.grievanceAck);
@@ -250,13 +244,7 @@ router.post('/register', (req, res) => {
         phones: { home: phoneHome, cell: phoneCell, work: phoneWork },
         ssn,
         emergencyContact: { name: emergencyName, relation: emergencyRelation, phone: emergencyPhone },
-        admissionDate,
-        startDate,
-        endDate,
-        classTime,
-        classDays,
-        totalHours,
-        tuition: { tuition, registrationFee, books, equipment, miscFees, totalCost },
+     
         grievanceAck,
         name: `${firstName} ${lastName}`.trim(),
         email,

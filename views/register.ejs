@@ -89,7 +89,7 @@
         <div class="brand">
           <img src="<%= branding.primaryLogo %>" alt="Logo">
           <div>
-            <h1>Student Registration</h1>
+            <h1>Student Registration Application</h1>
             <p>Welcome to <strong>MD Technical School</strong> — please complete the steps below.</p>
           </div>
         </div>
@@ -171,8 +171,7 @@
 
             <div class="col-md-4">
               <label class="form-label">Student ID<span class="req">*</span></label>
-              <input name="studentId" class="form-control" required value="<%= formData?.studentId || '' %>">
-            </div>
+  <input name="studentId" class="form-control bg-light" required readonly value="<%= formData?.studentId || '' %>">            </div>
           </div>
 
           <div class="form-check mt-3">
@@ -189,7 +188,8 @@
               <label class="form-label">Course<span class="req">*</span></label>
               <select class="form-select" name="course" required>
                 <option value="">Select a course…</option>
-                <% ['ITIL 4 Foundation','CEH','CND','Security+','CASP+','CHFI','Other'].forEach(c => { %>
+                <% [ "Jr Network Engineer","Helpdesk","CCNA","RMF","ITIL 4 Foundations","CEH",
+                    "CND","Security+","CASP+","CHFI","Internship","Other"].forEach(c => { %>
                   <option value="<%= c %>" <%= formData?.course === c ? 'selected' : '' %>><%= c %></option>
                 <% }) %>
               </select>
@@ -198,79 +198,13 @@
               <label class="form-label">Affiliated Program<span class="req">*</span></label>
               <select class="form-select" name="affiliateProgram" required>
                 <option value="">Select…</option>
-                <% ['Army','Airforce','MyCAA','WIOA','WIOA veteran','DARS','Corporation','Self Pay','Other'].forEach(p => { %>
+                <% ["Airforce","Army","College Student","Coastguard","DARS","Corporation",
+                    "MYCAA","Navy","Other","Post 911","Self Pay","VR&E","WIOA","WIOA Veteran"].forEach(p => { %>
                   <option value="<%= p %>" <%= formData?.affiliateProgram === p ? 'selected' : '' %>><%= p %></option>
                 <% }) %>
               </select>
             </div>
-             <div class="col-md-6">
-                  <label class="form-label">Date of Admission<span class="req">*</span></label>
-                  <input type="date" name="admissionDate" class="form-control" required value="<%= formData?.admissionDate || '' %>">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Start Date<span class="req">*</span></label>
-                  <input type="date" name="startDate" class="form-control" required value="<%= formData?.startDate || '' %>">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Anticipated End Date<span class="req">*</span></label>
-                  <input type="date" name="endDate" class="form-control" required value="<%= formData?.endDate || '' %>">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Class Time<span class="req">*</span></label>
-                  <select name="classTime" class="form-select" required>
-                    <option value="">Select…</option>
-                    <% ['Day','Evening','Both'].forEach(t=> { %>
-                      <option value="<%= t %>" <%=formData?.classTime===t ? 'selected' : '' %>><%= t %></option>
-                    <% }) %>
-                  </select>
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Days Class Meets<span class="req">*</span></label>
-                  <div class="d-flex flex-wrap gap-3">
-                    <% const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']; %>
-                    <% days.forEach(d => { %>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="classDays" value="<%= d %>" <%= (formData?.classDays||'').split(',').includes(d) ? 'checked' : '' %>>
-                        <label class="form-check-label"><%= d %></label>
-                      </div>
-                    <% }) %>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Total Credit/Clock Hours<span class="req">*</span></label>
-                  <input type="number" name="totalHours" class="form-control" required value="<%= formData?.totalHours || '' %>">
-                </div>
-              </div>
-
-              <hr class="my-4">
-
-              <!-- Tuition -->
-              <div class="section-title">Tuition</div>
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <label class="form-label">Tuition</label>
-                  <input type="number" name="tuition" class="form-control" value="<%= formData?.tuition || '' %>">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Registration Fee</label>
-                  <input type="number" name="registrationFee" class="form-control" value="<%= formData?.registrationFee || '' %>">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Books/Supplies</label>
-                  <input type="number" name="books" class="form-control" value="<%= formData?.books || '' %>">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Equipment</label>
-                  <input type="number" name="equipment" class="form-control" value="<%= formData?.equipment || '' %>">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Misc. Fees</label>
-                  <input type="number" name="miscFees" class="form-control" value="<%= formData?.miscFees || '' %>">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Total Cost</label>
-                  <input type="number" name="totalCost" class="form-control" value="<%= formData?.totalCost || '' %>">
-                </div>
+            
           </div>
 
           <hr class="my-4">
@@ -286,7 +220,8 @@
               <input type="email" name="referralEmail" class="form-control" value="<%= formData?.referralEmail || '' %>">
             </div>
           </div>
-
+<hr class="my-4">
+  <div class="section-title">Personal Information </div>
                <div class="row g-3 mt-1">
                 <div class="col-md-4">
                   <label class="form-label">Home Phone</label>
@@ -300,10 +235,13 @@
                   <label class="form-label">Work Phone</label>
                   <input name="phoneWork" class="form-control" value="<%= formData?.phoneWork || '' %>">
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label">Social Security #</label>
-                  <input name="ssn" class="form-control" value="<%= formData?.ssn || '' %>">
+              <div class="col-md-4">
+                <label class="form-label">Social Security #</label>
+                <div class="input-group">
+                  <input type="password" name="ssn" id="ssn" class="form-control" value="<%= formData?.ssn || '' %>">
+                  <button type="button" class="btn btn-outline-secondary" id="toggleSsn">Show</button>
                 </div>
+              </div>
                 <div class="col-md-4">
                   <label class="form-label">Emergency Contact</label>
                   <input name="emergencyName" class="form-control" value="<%= formData?.emergencyName || '' %>">
@@ -323,14 +261,13 @@
 
           <!-- Upload Documents -->
           <div class="section-title">Upload Documents</div>
-          <p class="text-muted mb-2">Two forms of ID or supporting docs. Accepted: PDF, JPG, PNG, DOC, DOCX — max 2 files, 15MB each.</p>
+          <p class="text-muted mb-2">One form of Government Issued ID <b>AND</b> a GED, HS, Diploma or College Degree</p>
           <input type="file" name="docs" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple>
 
           <hr class="my-4">
 
           <!-- Agreements -->
-          <div class="section-title">Registration Agreement <span class="text-muted">(version <%= docVersion %>)</span></div>
-          <div class="cardish mb-3 docbox"><p class="mb-0"><%= docText %></p></div>
+<div class="section-title">Registration Agreement <a href="/docs/course-curriculm.pdf" target="_blank" class="ms-2 small">View PDF</a> <span class="text-muted">(version <%= docVersion %>)</span></div>          <div class="cardish mb-3 docbox"><p class="mb-0"><%= docText %></p></div>
 
           <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" value="yes" id="agree" name="agree" <%= formData?.agree ? 'checked' : '' %> required>
@@ -346,8 +283,7 @@
 
           <hr class="my-4">
 
-          <div class="section-title">Code of Conduct</div>
-          <div class="cardish mb-3 docbox">
+<div class="section-title">Code of Conduct <a href="/docs/code-of-conduct.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="cardish mb-3 docbox">
             <p class="mb-0">Students agree to uphold academic integrity, maintain professionalism, respect peers and instructors, follow school policies, and safeguard account credentials.</p>
           </div>
           <div class="mb-3">
@@ -357,14 +293,12 @@
             <input type="hidden" name="codeConductSig" id="codeConductSig">
           </div>
 
-          <div class="section-title">Grievance Acknowledgement</div>
-          <div class="form-check mb-3">
+          <div class="section-title">Grievance Acknowledgement <a href="/docs/grievance-acknowledgement.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" id="grievanceAck" name="grievanceAck" <%= formData?.grievanceAck ? 'checked' : '' %>>
             <label class="form-check-label" for="grievanceAck">I acknowledge I have received the grievance process information.</label>
           </div>
 
-          <div class="section-title">Cancellation Policy</div>
-          <div class="cardish mb-3 docbox">
+      <div class="section-title">Cancellation Policy <a href="/docs/cancellation-policy.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="cardish mb-3 docbox">
             <p class="mb-0">Cancellations and refunds follow the published policy. Fees and deadlines apply. Contact the admin office for assistance.</p>
           </div>
           <div class="mb-3">
@@ -374,8 +308,7 @@
             <input type="hidden" name="cancellationSig" id="cancellationSig">
           </div>
 
-          <div class="section-title">Notice to Buyer</div>
-          <div class="cardish mb-3 docbox">
+       <div class="section-title">Notice to Buyer <a href="/docs/notice-to-buyer.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="cardish mb-3 docbox">
             <p class="mb-0">You may have legal rights regarding refunds, disclosures, and cooling-off periods as required by law.</p>
           </div>
           <div class="mb-3">
@@ -387,8 +320,7 @@
 
                   <hr class="my-4">
 
-              <div class="section-title">Electronic Use Agreement</div>
-              <div class="cardish mb-3 docbox">
+      <div class="section-title">Electronic Use Agreement <a href="/docs/electronic-use-agreement.pdf" target="_blank" class="ms-2 small">View PDF</a></div>              <div class="cardish mb-3 docbox">
                 <p class="mb-0">Students agree to follow all school technology policies, maintain equipment, and refrain from
                   prohibited activities. Misuse may result in disciplinary action and fees for damages.</p>
               </div>
@@ -401,8 +333,7 @@
 
               <hr class="my-4">
 
-          <div class="section-title">Contract Acceptance</div>
-          <div class="cardish mb-3 docbox">
+    <div class="section-title">Contract Acceptance <a href="/docs/contract-acceptance.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="cardish mb-3 docbox">
             <p class="mb-0">By signing, you agree to the terms and conditions of enrollment and payment obligations.</p>
           </div>
           <div class="row g-3 align-items-end">
@@ -567,6 +498,21 @@
         const saved = localStorage.getItem('reg_' + el.name);
         if (saved !== null) el.type === 'checkbox' ? (el.checked = saved === 'true') : (el.value = saved);
       });
+
+        const ssnInput = document.getElementById('ssn');
+  const toggleBtn = document.getElementById('toggleSsn');
+
+  if (ssnInput && toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      if (ssnInput.type === 'password') {
+        ssnInput.type = 'text';
+        toggleBtn.textContent = 'Hide';
+      } else {
+        ssnInput.type = 'password';
+        toggleBtn.textContent = 'Show';
+      }
+    });
+  }
 
       // Live validation for password UX
       const pw = document.getElementById('password');

@@ -3,6 +3,7 @@ const router = express.Router();
 const preRegModel = require('../models/preRegModel');
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
+const path = require('path');
 
 const transporter = nodemailer.createTransport({
   host: 'mdts-apps.com',
@@ -20,42 +21,236 @@ function generateRandomInvoiceNumber() {
   return `${randomNumber}-${currentDate}`;
 }
 
-function getPrice(course) {
+function getPriceValue(course) {
   const prices = {
-    'ITIL 4 Foundation': '$1,424.00',
-    CEH: '$3,074.00',
-    CND: '$2,724.00',
-    'Security+': '$2,875.00',
-    'CASP+': '$3,075.00',
-    CHFI: '$3,074.99'
+    'ITIL 4 Foundation': 1424.00,
+    'CEH': 3074.00,
+    'CND': 2724.00,
+    'Security+': 2875.00,
+    'CASP+': 3075.00,
+    'CHFI': 3074.99
   };
-  return prices[course] || 'Please contact us for pricing.';
+  return prices[course] ?? null; // null => unknown (we’ll handle)
 }
 
-function createInvoicePdf({ name, course, price, invoiceNumber }) {
+function formatCurrency(n) {
+  if (typeof n !== 'number') return n;
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+}
+
+function createInvoicePdf({ name, course, priceValue, invoiceNumber }) {
   return new Promise(resolve => {
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
     const buffers = [];
     doc.on('data', buffers.push.bind(buffers));
     doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-    doc.fontSize(20).text('Tuition Invoice', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Invoice #: ${invoiceNumber}`);
-    doc.text(`Date: ${new Date().toISOString().slice(0, 10)}`);
-    doc.moveDown();
-    doc.text(`Student: ${name}`);
-    doc.text(`Course: ${course}`);
-    doc.text(`Amount Due: ${price}`);
+    // ------- Branding / constants -------
+    const BRAND = {
+      name: 'MD Technical School',
+      color: '#1e90ff', // dodgerblue
+      accent: '#0b60c8',
+      textMuted: '#6b7280',
+      addressLines: [
+        'MD Technical School',
+        '10304 Spotsylvania Ave, Ste 210',
+        'Fredericksburg, VA 22408',
+        'register@cybertraining4u.com',
+        '(757) 810-3470'
+      ],
+      logoPath: path.join(__dirname, './docs/logo.svg')
+    };
+
+    // Helpers
+    const line = (y, color = '#e5e7eb') => {
+      doc.save().moveTo(50, y).lineTo(562, y).lineWidth(1).strokeColor(color).stroke().restore();
+    };
+
+    const rightText = (txt, y, options = {}) => {
+      doc.text(txt, 300, y, { width: 262, align: 'right', ...options });
+    };
+
+    const label = (txt, x, y) => {
+      doc.fillColor(BRAND.textMuted).fontSize(9).text(txt, x, y);
+      doc.fillColor('black').fontSize(11);
+    };
+
+    // ------- Header band -------
+    doc.rect(0, 0, doc.page.width, 110).fill(BRAND.color);
+    doc.fillColor('#ffffff').fontSize(20).text('Tuition Invoice', 50, 35);
+    doc.fontSize(10).text(BRAND.name, 50, 65);
+
+    // Optional logo (if you have a file on disk)
+    if (BRAND.logoPath) {
+      try {
+        doc.image(BRAND.logoPath, 462, 20, { width: 90, height: 90, align: 'right' });
+      } catch (_) { /* ignore if missing */ }
+    }
+
+    // Invoice badge
+    doc
+      .roundedRect(50, 115, 200, 28, 6)
+      .fillAndStroke('#f5f9ff', BRAND.accent)
+      .fillColor(BRAND.accent)
+      .fontSize(12)
+      .text(`Invoice # ${invoiceNumber}`, 60, 123);
+
+    // ------- Meta info -------
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    rightText(`Date: ${dateStr}`, 120);
+    rightText(`Status: Pending`, 138);
+    rightText(`Due Upon Receipt`, 156);
+
+    // ------- Bill To / Summary -------
+    let y = 160 + 30;
+    label('Bill To', 50, y);
+    doc.text(name, 50, y + 14);
+
+    label('Program', 300, y);
+    doc.text(course, 300, y + 14, { width: 260, align: 'right' });
+
+    y += 54;
+    line(y);
+
+    // ------- Excited blurb -------
+    y += 16;
+    doc
+      .fontSize(12)
+      .fillColor('black')
+      .text(
+        `Welcome to ${BRAND.name}! We’re thrilled you’ve taken the next step toward your IT career. ` +
+        `Your seat is being prepared, your resources are getting queued up, and we can’t wait to see you in class!`,
+        50, y, { width: 512 }
+      );
+
+    y = doc.y + 10;
+
+    // ------- Items table header -------
+    y += 16;
+    doc.fontSize(10).fillColor(BRAND.textMuted);
+    doc.text('Description', 50, y);
+    rightText('Amount', y);
+    y += 10;
+    line(y);
+    doc.fillColor('black');
+
+    // ------- Line items -------
+    const priceKnown = typeof priceValue === 'number';
+    const tuitionAmount = priceKnown ? priceValue : 0;
+
+    y += 14;
+    doc.fontSize(11);
+    doc.text(`${course} – Tuition`, 50, y, { width: 380 });
+    rightText(priceKnown ? formatCurrency(tuitionAmount) : 'Contact for pricing', y);
+
+    // (Optional) add registration fee or materials if you want:
+    // y += 18;
+    // doc.text(`Student Services & Materials`, 50, y, { width: 380 });
+    // rightText(formatCurrency(0), y);
+
+    y += 24;
+    line(y);
+    y += 8;
+
+    // ------- Totals -------
+    const subtotal = tuitionAmount;
+    const discount = 0;
+    const total = subtotal - discount;
+
+    const totalsXLeft = 300;
+    const row = (labelTxt, valTxt) => {
+      doc.fillColor(BRAND.textMuted).fontSize(10).text(labelTxt, totalsXLeft, y, { width: 150, align: 'right' });
+      doc.fillColor('black').fontSize(11).text(valTxt, totalsXLeft + 160, y, { width: 102, align: 'right' });
+      y += 18;
+    };
+
+    row('Subtotal', priceKnown ? formatCurrency(subtotal) : '—');
+    // row('Scholarship/Discount', formatCurrency(discount));
+    doc.fillColor(BRAND.accent).fontSize(12).text('Amount Due', totalsXLeft, y, { width: 150, align: 'right' });
+    doc
+      .fillColor(BRAND.accent)
+      .fontSize(12)
+      .text(priceKnown ? formatCurrency(total) : 'Contact for pricing', totalsXLeft + 160, y, { width: 102, align: 'right' });
+    doc.fillColor('black');
+    y += 16;
+
+    // ------- Payment instructions -------
+    y += 8;
+    line(y);
+    y += 14;
+
+// ------- How to Pay -------
+y = doc.y + 16;           // start a bit below the previous block
+line(y);
+y += 14;
+
+doc.fontSize(12).fillColor('black').text('How to Pay', 50, y);
+doc.moveDown(0.5);
+
+// Use PDFKit lists so spacing is handled for you
+doc.fontSize(10).fillColor(BRAND.textMuted).list(
+  [
+    'Contact Us at (540) 455-2878',
+    'Financial Aid: https://climbcredit.com/apply/mdtechnical?page=create-account&schoolId=MD4644868617478',
+    'Questions? Email: register@cybertraining4u.com'
+  ],
+  50,                      // x
+  doc.y,                   // let it flow from current y
+  { width: 512, bulletRadius: 2, textIndent: 10, bulletIndent: 10 }
+);
+doc.fillColor('black');
+
+// ------- Notes / Terms -------
+y = doc.y + 16;           // start below the list that just flowed
+line(y);
+y += 14;
+
+doc.fontSize(12).fillColor('black').text('Notes & Terms', 50, y);
+doc.moveDown(0.5);
+
+doc.fontSize(10).fillColor(BRAND.textMuted).text(
+  'Thank you for choosing MD Technical School! Your enrollment team will reach out with next steps, including materials access, class schedule, and onboarding details.',
+  50, doc.y, { width: 512 }
+);
+doc.text(
+  'Refunds and cancellations follow the published policy. Some programs may be eligible for funding through Army, Air Force, MyCAA, WIOA, DARS, or other affiliates. Please contact our office for details.',
+  50, doc.y + 6, { width: 512 }
+);
+doc.fillColor('black');
+
+    y = doc.y + 8;
+    doc
+      .text(
+        'Refunds and cancellations follow the published policy. Some programs may be eligible for funding ' +
+        'through Army, Air Force, MyCAA, WIOA, DARS, or other affiliates. Please contact our office for details.',
+        50, y, { width: 512 }
+      );
+    doc.fillColor('black');
+
+    // ------- Address footer -------
+    const footerY = doc.page.height - 70;
+    line(footerY - 10);
+    doc.fontSize(9).fillColor(BRAND.textMuted);
+    // BRAND.addressLines.forEach((ln, i) => {
+    //   doc.text(ln, 50, footerY + i * 12);
+    // });
+    //doc.text(`Page ${doc.page.number}`, 460, footerY + 0, { width: 100, align: 'right' });
+    doc.fillColor('black');
+
     doc.end();
   });
 }
+
 
 router.get('/pre-register', (_req, res) => {
   res.render('pre_register', { error: null, success: false, formData: {} });
 });
 
 router.post('/pre-register', async (req, res) => {
+
+  try{
   const {
     name,
     email,
@@ -130,28 +325,49 @@ router.post('/pre-register', async (req, res) => {
       consent: true
     });
 
-       const invoiceNumber = generateRandomInvoiceNumber();
-    const price = getPrice(course.trim());
-    try {
-      const pdfBuffer = await createInvoicePdf({
-        name: name.trim(),
-        course: course.trim(),
-        price,
-        invoiceNumber
-      });
-      await transporter.sendMail({
-        from: 'noreply@mdts-apps.com',
-        to: email.trim(),
-        bcc: 'lance.durante@mdtechgo.com,differentcoders@gmail.com,carol.scott@mdtechnicalschool.com,benseghirolga@gmail.com,OlgaB@mdtechnicalschool.com,snyderr@mdtechnicalschool.com,durantelp@mdtechnicalschool.com',
-        subject: 'MD Technical School Pre-Registration',
-        html: `<p>Thank you, ${name.trim()}, for pre-registering for ${course.trim()}.</p>`,
-        attachments: [
-          {
-            filename: `invoice-${invoiceNumber}.pdf`,
-            content: pdfBuffer
-          }
-        ]
-      });
+const invoiceNumber = generateRandomInvoiceNumber();
+const priceValue = getPriceValue(course.trim());
+
+const pdfBuffer = await createInvoicePdf({
+  name: name.trim(),
+  course: course.trim(),
+  priceValue,
+  invoiceNumber
+});
+
+await transporter.sendMail({
+  from: 'noreply@mdts-apps.com',
+  to: email.trim(),
+  bcc: 'lance.durante@mdtechgo.com,differentcoders@gmail.com,carol.scott@mdtechnicalschool.com,benseghirolga@gmail.com,OlgaB@mdtechnicalschool.com,snyderr@mdtechnicalschool.com,durantelp@mdtechnicalschool.com',
+  subject: `🎉 You’re In! Pre-Registration Confirmed – ${course.trim()}`,
+  html: `
+    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
+      <h2 style="color:#1e90ff;margin:0 0 8px;">Welcome to MD Technical School, ${name.split(' ')[0]}!</h2>
+      <p>We’re <strong>thrilled</strong> you pre-registered for <strong>${course.trim()}</strong>. Your invoice is attached to this email.</p>
+      <p>Next up: our enrollment team will reach out with your onboarding steps, schedule, and learning platform access. 
+         If you’re ready to take care of tuition now, you can pay online or over the phone.</p>
+      <ul style="margin:10px 0 16px; padding-left:18px;">
+
+        <li><strong>Financial Aid:</strong> <a href="https://climbcredit.com/apply/mdtechnical?page=create-account&schoolId=MD4644868617478">https://climbcredit.com/apply/mdtechnical?page=create-account&schoolId=MD4644868617478</a></li>
+        <li><strong>Contact Us at:</strong> (540) 455-2878</li>
+        <li><strong>Questions?</strong> <a href="register@cybertraining4u.com">register@cybertraining4u.com</a></li>
+      </ul>
+      <p style="color:#555;margin:14px 0 0;">
+        We can’t wait to help you level up your career. Let’s do this! 💪
+      </p>
+      <hr style="border:none;border-top:1px solid #eee;margin:18px 0;">
+      <p style="font-size:12px;color:#6b7280;margin:0;">
+        Refunds and cancellations follow the published policy. Funding assistance may be available through Army, Air Force, MyCAA, WIOA, DARS, or other affiliates.
+      </p>
+    </div>
+  `,
+  attachments: [
+    {
+      filename: `invoice-${invoiceNumber}.pdf`,
+      content: pdfBuffer
+    }
+  ]
+});
     } catch (err) {
       console.error('Error sending pre-registration email', err);
     }

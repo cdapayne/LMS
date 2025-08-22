@@ -25,19 +25,22 @@
       <button class="btn btn-primary">Generate Questions</button>
     </form>
     <% if (typeof questions !== 'undefined') { %>
-      <% questions.forEach((q, i) => { %>
-        <div class="mb-3">
-          <strong>Q<%= i + 1 %>:</strong> <%= q.question %>
-          <ul>
-            <% q.options.forEach((opt, j) => { %>
-              <li <%= q.answer === j ? 'class="text-success"' : '' %>><%= opt %></li>
-            <% }) %>
-          </ul>
-          <div class="mb-2"><em>Answer: <%= q.options[q.answer] %></em></div>
-          <div class="small text-muted"><%= q.explanation %></div>
-        </div>
-      <% }) %>
-    <% } %>
+        <% questions.forEach((q, i) => { %>
+          <div class="mb-3">
+            <% if (q.picture) { %>
+              <img src="<%= q.picture %>" alt="Question Image" class="img-fluid d-block mb-2">
+            <% } %>
+            <strong>Q<%= i + 1 %>:</strong> <%= q.question %>
+            <ul>
+              <% q.options.forEach((opt, j) => { %>
+                <li <%= q.answer === j ? 'class="text-success"' : '' %>><%= opt %></li>
+              <% }) %>
+            </ul>
+            <div class="mb-2"><em>Answer: <%= q.options[q.answer] %></em></div>
+            <div class="small text-muted"><%= q.explanation %></div>
+          </div>
+        <% }) %>
+      <% } %>
   </div>
 </body>
 </html>

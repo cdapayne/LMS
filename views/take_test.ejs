@@ -14,6 +14,9 @@
     <form method="post" action="/student/classes/<%= klass.id %>/tests/<%= test.id %>">
       <% test.questions.forEach((q, i) => { %>
         <div class="mb-3">
+              <% if (q.picture) { %>
+            <img src="<%= q.picture %>" alt="Question Image" class="img-fluid d-block mb-2">
+          <% } %>
           <strong>Q<%= i+1 %>:</strong> <%= q.question %>
           <div class="ms-3">
             <% q.options.forEach((opt, j) => { %>

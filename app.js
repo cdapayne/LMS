@@ -38,6 +38,9 @@ app.use(session({
   cookie: { sameSite: 'lax', httpOnly: true }
 }));
 
+app.use('/docs', express.static(path.join(__dirname, 'docs')));
+
+
 app.get('/', (req, res) => res.redirect('/dashboard'));
 
 app.get('/dashboard', (req, res) => {

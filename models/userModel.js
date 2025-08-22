@@ -42,6 +42,27 @@ async function createTeacher({ name, username, email, password }) {
   return { id: result.insertId };
 }
 
+// Generate a unique six-digit student ID
+async function generateStudentId() {
+  const [rows] = await db.query('SELECT profile FROM mdtslms_users');
+  let max = 99999;
+  for (const row of rows) {
+    if (!row.profile) continue;
+    let parsed;
+    try {
+      parsed = JSON.parse(row.profile);
+    } catch (_) {
+      continue;
+    }
+    const num = Number(parsed.studentId);
+    if (Number.isInteger(num) && String(num).length === 6 && num > max) {
+      max = num;
+    }
+  }
+  const next = Math.max(100000, max + 1);
+  return String(next).padStart(6, '0');
+}
+
 async function createStudent({ username, name, email, password, studentId, signatureDataUrl, agreedDocVersion,
   firstName, lastName, suffix, address, city, state, zip, course, affiliateProgram,
   phones, ssn, emergencyContact, admissionDate, startDate, endDate, classTime, classDays, totalHours,
@@ -196,6 +217,8 @@ module.exports = {
     findByEmail,
 
   findById,
+    generateStudentId,
+
   createStudent,
   createTeacher,
   setStatus,

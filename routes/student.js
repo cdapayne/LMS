@@ -201,6 +201,81 @@ router.get('/', async (req, res) => {
   });
 });
 
+// study mode for existing tests
+router.get('/classes/:id/tests/:testId/study', async (req, res) => {
+  const classId = Number(req.params.id);
+  const testId = Number(req.params.testId);
+  const klass = await classModel.findClassById(classId);
+  if (!klass) return res.status(404).send('Not found');
+  const test = (klass.tests || []).find(t => t.id === testId);
+  if (!test) return res.status(404).send('Test not found');
+
+  if (!req.session.study) req.session.study = {};
+  if (!req.session.study[testId]) {
+    req.session.study[testId] = { index: 0, correct: 0, start: Date.now() };
+  }
+  const progress = req.session.study[testId];
+  const total = test.questions.length;
+
+  if (progress.index >= total) {
+    const score = Math.round((progress.correct / total) * 100);
+    delete req.session.study[testId];
+    return res.render('test_result', { klass, test, score });
+  }
+
+  const question = test.questions[progress.index];
+  const totalSeconds = (test.timeLimit || 90) * total;
+  const elapsed = Math.floor((Date.now() - progress.start) / 1000);
+  const remaining = Math.max(totalSeconds - elapsed, 0);
+
+  res.render('study_mode', {
+    klass,
+    test,
+    question,
+    index: progress.index,
+    correct: progress.correct,
+    total,
+    answered: progress.index,
+    remaining
+  });
+});
+
+router.post('/classes/:id/tests/:testId/study', async (req, res) => {
+  const classId = Number(req.params.id);
+  const testId = Number(req.params.testId);
+  const klass = await classModel.findClassById(classId);
+  if (!klass) return res.status(404).send('Not found');
+  const test = (klass.tests || []).find(t => t.id === testId);
+  if (!test) return res.status(404).send('Test not found');
+
+  if (!req.session.study || !req.session.study[testId]) {
+    return res.redirect(`/student/classes/${classId}/tests/${testId}/study`);
+  }
+  const progress = req.session.study[testId];
+  const total = test.questions.length;
+  const question = test.questions[progress.index];
+  const chosen = Number(req.body.choice);
+  const correct = question.answer === chosen;
+  if (correct) progress.correct++;
+  progress.index++;
+  const totalSeconds = (test.timeLimit || 90) * total;
+  const elapsed = Math.floor((Date.now() - progress.start) / 1000);
+  const remaining = Math.max(totalSeconds - elapsed, 0);
+
+  res.render('study_mode', {
+    klass,
+    test,
+    question,
+    index: progress.index - 1,
+    correct: progress.correct,
+    total,
+    answered: progress.index,
+    remaining,
+    feedback: { chosen, correct },
+    isLast: progress.index >= total
+  });
+});
+
 router.post('/classes/:id/tests/:testId', async (req, res) => {
   const id = Number(req.params.id);
   const testId = Number(req.params.testId);
