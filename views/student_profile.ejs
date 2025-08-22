@@ -101,18 +101,10 @@
 
   <div class="container pb-4">
       <% if (reset) { %>
-      <div class="alert alert-success text-center">Password reset email sent.</div>
+           <div class="alert alert-success text-center">Password reset email sent.</div>
     <% } %>
     <!-- Key facts -->
-       <div class="d-flex justify-content-between align-items-center mt-3">
-      <a class="btn btn-link" href="javascript:history.back()">Back</a>
-   <% if (role === 'admin' || role === 'teacher') { %>
-        <form method="post" action="/<%= role %>/students/<%= student.id %>/reset-password" style="margin:0;" onsubmit="return confirm('Reset password for this user?');">
-          <button class="btn btn-warning">Reset Password</button>
-        </form>
-      <% } %>    </div>
     <div class="cardish">
-      
       <div class="row g-3">
         <div class="col-12 col-md-4">
           <div class="muted">Student ID</div>
@@ -134,7 +126,7 @@
       <section class="cardish">
         <div class="section-title">Personal</div>
         <div class="mb-2"><strong>Name:</strong> <%= student.name %> <%= student.profile?.suffix ? '('+student.profile.suffix+')' : '' %></div>
-        <div class="mb-0">
+        <div class="mb-2">
           <strong>Address:</strong>
           <span>
             <%= student.profile?.address?.line1 || '' %>
@@ -143,15 +135,34 @@
             <%= student.profile?.address?.zip ? ' ' + student.profile.address.zip : '' %>
           </span>
         </div>
+        <div class="mb-2"><strong>Phones:</strong> Home: <%= student.profile?.phones?.home || '-' %>, Cell: <%= student.profile?.phones?.cell || '-' %>, Work: <%= student.profile?.phones?.work || '-' %></div>
+        <div class="mb-2"><strong>SSN:</strong> <%= student.profile?.ssn || '-' %></div>
+        <div class="mb-0"><strong>Emergency Contact:</strong> <%= student.profile?.emergencyContact?.name || '-' %> (<%= student.profile?.emergencyContact?.relation || '-' %>) - <%= student.profile?.emergencyContact?.phone || '-' %></div>
       </section>
 
       <section class="cardish">
         <div class="section-title">Program</div>
         <div class="mb-2"><strong>Course:</strong> <%= student.profile?.course || '-' %></div>
         <div class="mb-2"><strong>Affiliated Program:</strong> <%= student.profile?.affiliateProgram || '-' %></div>
+        <div class="mb-2"><strong>Admission Date:</strong> <%= student.profile?.program?.admissionDate || '-' %></div>
+        <div class="mb-2"><strong>Start Date:</strong> <%= student.profile?.program?.startDate || '-' %></div>
+        <div class="mb-2"><strong>End Date:</strong> <%= student.profile?.program?.endDate || '-' %></div>
+        <div class="mb-2"><strong>Class Time:</strong> <%= student.profile?.program?.classTime || '-' %></div>
+        <div class="mb-2"><strong>Days:</strong> <%= student.profile?.program?.classDays || '-' %></div>
+        <div class="mb-2"><strong>Total Hours:</strong> <%= student.profile?.program?.totalHours || '-' %></div>
         <div class="mb-0"><strong>Grievance Acknowledged:</strong> <%= student.profile?.grievanceAcknowledged ? 'Yes' : 'No' %></div>
       </section>
     </div>
+
+    <section class="cardish">
+      <div class="section-title">Tuition</div>
+      <div class="mb-2"><strong>Tuition:</strong> $<%= student.profile?.tuition?.tuition || '0' %></div>
+      <div class="mb-2"><strong>Registration Fee:</strong> $<%= student.profile?.tuition?.registrationFee || '0' %></div>
+      <div class="mb-2"><strong>Books/Supplies:</strong> $<%= student.profile?.tuition?.books || '0' %></div>
+      <div class="mb-2"><strong>Equipment:</strong> $<%= student.profile?.tuition?.equipment || '0' %></div>
+      <div class="mb-2"><strong>Misc. Fees:</strong> $<%= student.profile?.tuition?.miscFees || '0' %></div>
+      <div class="mb-0"><strong>Total Cost:</strong> $<%= student.profile?.tuition?.totalCost || '0' %></div>
+    </section>
 
     <!-- Uploaded Documents -->
     <section class="cardish">
@@ -193,9 +204,17 @@
               <div class="card h-100 border" style="border-color: var(--border);">
                 <div class="card-body">
                   <h5 class="card-title text-capitalize mb-1"><%= d.type.replace(/-/g,' ') %></h5>
-                  <div class="text-muted mb-2">Version: <%= d.version %> • Signed: <%= d.signedAt %></div>
+                  <div class="text-muted mb-2">Version: <%= d.version %> • Signed: <%= d.signedAt || '-' %></div>
                   <% if (d.signatureDataUrl) { %>
                     <img src="<%= d.signatureDataUrl %>" alt="Signature" style="max-width:100%;border:1px solid #ddd;background:#fff;border-radius:6px;">
+                  <% } else if (role === 'admin' && d.requiredRole === 'admin') { %>
+                    <form method="post" action="/admin/students/<%= student.id %>/sign-doc" onsubmit="return captureAdmin('<%= d.type %>')">
+                      <canvas class="sig" id="sig_<%= d.type %>" style="width:100%;height:160px;touch-action:none;border:1px solid #ced4da;border-radius:8px;"></canvas>
+                      <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button></div>
+                      <input type="hidden" name="docType" value="<%= d.type %>">
+                      <input type="hidden" name="signatureDataUrl" id="sigInput_<%= d.type %>">
+                      <button class="btn btn-primary btn-sm mt-2">Sign</button>
+                    </form>
                   <% } else { %>
                     <div class="text-muted">No signature on file.</div>
                   <% } %>
@@ -207,7 +226,38 @@
       <% } %>
     </section>
 
-  
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <a class="btn btn-link" href="javascript:history.back()">Back</a>
+   <% if (role === 'admin' || role === 'teacher') { %>
+        <form method="post" action="/<%= role %>/students/<%= student.id %>/reset-password" style="margin:0;" onsubmit="return confirm('Reset password for this user?');">
+          <button class="btn btn-warning">Reset Password</button>
+        </form>
+      <% } %>    </div>
   </div>
+
+<% const adminDocs = docs.filter(d => !d.signatureDataUrl && d.requiredRole === 'admin'); %>
+<% if (role === 'admin' && adminDocs.length) { %>
+<script>
+  const pads = {};
+  function setupPad(id){
+    const el=document.getElementById(id); const ctx=el.getContext('2d');
+    const DPR=window.devicePixelRatio||1; function resize(){const r=el.getBoundingClientRect(); el.width=r.width*DPR; el.height=r.height*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle='#000';}
+    resize(); window.addEventListener('resize',resize);
+    let drawing=false,prev=null; function pos(e){const b=el.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:(t.clientX-b.left), y:(t.clientY-b.top)};}
+    function start(e){drawing=true; prev=pos(e);} function move(e){ if(!drawing) return; const p=pos(e); ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(p.x,p.y); ctx.stroke(); prev=p; }
+    function end(){drawing=false;}
+    el.addEventListener('mousedown',start); el.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
+    el.addEventListener('touchstart',e=>{e.preventDefault();start(e);}); el.addEventListener('touchmove',e=>{e.preventDefault();move(e);}); window.addEventListener('touchend',end);
+    pads[id]={el,ctx};
+  }
+  function clearPad(id){ const p=pads[id]; if(p) p.ctx.clearRect(0,0,p.el.width,p.el.height); }
+  function capture(id){ const p=pads[id]; if(!p) return ''; return p.el.toDataURL('image/png'); }
+  function captureAdmin(type){ const id='sig_'+type; const v=capture(id); document.getElementById('sigInput_'+type).value=v; if(!v){alert('Please sign before submitting.'); return false;} return true; }
+  document.addEventListener('DOMContentLoaded', ()=>{
+    <% adminDocs.forEach(d => { %>setupPad('sig_<%= d.type %>');<% }) %>
+  });
+</script>
+<% } %>
+
 </body>
 </html>

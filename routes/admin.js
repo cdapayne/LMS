@@ -275,6 +275,34 @@ router.post('/students/:id/reset-password', async (req, res) => {
   }
   res.redirect(`/admin/students/${id}?reset=1`);});
 
+  router.post('/students/:id/sign-doc', async (req, res) => {
+  const id = Number(req.params.id);
+  const { docType, signatureDataUrl } = req.body;
+  if (!docType || !signatureDataUrl) return res.redirect(`/admin/students/${id}`);
+  try {
+    await userModel.signDocument(id, docType, signatureDataUrl);
+    const user = await userModel.findById(id);
+    const docs = (user.profile && user.profile.documents) || [];
+    const pending = docs.filter(d => d.requiredRole === 'admin' && !d.signatureDataUrl);
+    if (!pending.length && user.email) {
+      try {
+        await transporter.sendMail({
+          from: 'no-reply@mdts-apps.com',
+          to: user.email,
+          subject: 'Registration Complete',
+          text: `Hi ${user.name}, your registration documents are fully signed.`,
+          html: `<p>Hi ${user.name}, your registration documents are fully signed.</p>`
+        });
+      } catch (e) {
+        console.error('Error sending completion email', e);
+      }
+    }
+  } catch (e) {
+    console.error('Error signing document', e);
+  }
+  res.redirect(`/admin/students/${id}`);
+});
+
 router.get('/denied', async (_req, res) => {
   const users = await userModel.getAll();
   const denied = users.filter(u => u.role === 'student' && u.status === 'declined');
@@ -533,13 +561,17 @@ router.get('/classes/:id', async (req, res) => {
   const classStudents = students.filter(s => (klass.studentIds||[]).includes(s.id));
   res.render('view_class', { klass, students, classStudents, studentView: false, discussions });});
 
-router.post('/classes/:id/lectures', async (req, res) => {
+router.post('/classes/:id/lectures', mediaUpload.single('ppt'), async (req, res) => {
   const classId = Number(req.params.id);
   const { title, url, isPowerPoint } = req.body;
-  if (title && url) {
+  let finalUrl = url && url.trim();
+  if (isPowerPoint && req.file) {
+    finalUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  }
+  if (title && finalUrl) {
     await classModel.addLecture(classId, {
       title: title.trim(),
-      url: url.trim(),
+      url: finalUrl,
       isPowerPoint: !!isPowerPoint
     });
   }

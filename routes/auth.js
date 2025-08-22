@@ -169,7 +169,7 @@ router.post('/register', (req, res) => {
       });
     }
 
-    try {
+     try {
       const firstName = ensureStr(req.body.firstName);
       const lastName = ensureStr(req.body.lastName);
       const username = ensureStr(req.body.username) || `${firstName}${lastName}`.replace(/\s+/g, '');
@@ -179,14 +179,33 @@ router.post('/register', (req, res) => {
       const studentId = ensureStr(req.body.studentId);
       const agree = ensureStr(req.body.agree);
       const signatureDataUrl = ensureStr(req.body.signatureDataUrl);
-       const suffix = ensureStr(req.body.suffix);
+      const suffix = ensureStr(req.body.suffix);
       const address = ensureStr(req.body.address);
       const city = ensureStr(req.body.city);
       const state = ensureStr(req.body.state);
       const zip = ensureStr(req.body.zip);
       const course = ensureStr(req.body.course);
       const affiliateProgram = ensureStr(req.body.affiliateProgram);
-            const selfPay = affiliateProgram === 'Self Pay';
+      const phoneHome = ensureStr(req.body.phoneHome);
+      const phoneCell = ensureStr(req.body.phoneCell);
+      const phoneWork = ensureStr(req.body.phoneWork);
+      const ssn = ensureStr(req.body.ssn);
+      const emergencyName = ensureStr(req.body.emergencyName);
+      const emergencyRelation = ensureStr(req.body.emergencyRelation);
+      const emergencyPhone = ensureStr(req.body.emergencyPhone);
+      const admissionDate = ensureStr(req.body.admissionDate);
+      const startDate = ensureStr(req.body.startDate);
+      const endDate = ensureStr(req.body.endDate);
+      const classTime = ensureStr(req.body.classTime);
+      const classDays = Array.isArray(req.body.classDays) ? req.body.classDays.join(',') : ensureStr(req.body.classDays);
+      const totalHours = ensureStr(req.body.totalHours);
+      const tuition = ensureStr(req.body.tuition);
+      const registrationFee = ensureStr(req.body.registrationFee);
+      const books = ensureStr(req.body.books);
+      const equipment = ensureStr(req.body.equipment);
+      const miscFees = ensureStr(req.body.miscFees);
+      const totalCost = ensureStr(req.body.totalCost);
+      const selfPay = affiliateProgram === 'Self Pay';
 
       const grievanceAck = ensureStr(req.body.grievanceAck);
       const codeConductSig = ensureStr(req.body.codeConductSig);
@@ -194,6 +213,7 @@ router.post('/register', (req, res) => {
       const noticeSig = ensureStr(req.body.noticeSig);
       const contractSig = ensureStr(req.body.contractSig);
       const contractSigDate = ensureStr(req.body.contractSigDate);
+      const electronicSig = ensureStr(req.body.electronicSig);
       const financialAid = ensureStr(req.body.financialAid);
       const referralName = ensureStr(req.body.referralName);
       const referralEmail = ensureStr(req.body.referralEmail);
@@ -227,17 +247,28 @@ router.post('/register', (req, res) => {
         zip,
         course,
         affiliateProgram,
+        phones: { home: phoneHome, cell: phoneCell, work: phoneWork },
+        ssn,
+        emergencyContact: { name: emergencyName, relation: emergencyRelation, phone: emergencyPhone },
+        admissionDate,
+        startDate,
+        endDate,
+        classTime,
+        classDays,
+        totalHours,
+        tuition: { tuition, registrationFee, books, equipment, miscFees, totalCost },
         grievanceAck,
         name: `${firstName} ${lastName}`.trim(),
         email,
         password,
         studentId,
         signatureDataUrl,
-                codeConductSig,
+        codeConductSig,
         cancellationSig,
         noticeSig,
         contractSig,
         contractSigDate,
+        electronicSig,
         financialAid: financialAid === 'yes',
         agreedDocVersion: DOC_VERSION,
         referralName,

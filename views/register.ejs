@@ -203,6 +203,74 @@
                 <% }) %>
               </select>
             </div>
+             <div class="col-md-6">
+                  <label class="form-label">Date of Admission<span class="req">*</span></label>
+                  <input type="date" name="admissionDate" class="form-control" required value="<%= formData?.admissionDate || '' %>">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Start Date<span class="req">*</span></label>
+                  <input type="date" name="startDate" class="form-control" required value="<%= formData?.startDate || '' %>">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Anticipated End Date<span class="req">*</span></label>
+                  <input type="date" name="endDate" class="form-control" required value="<%= formData?.endDate || '' %>">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Class Time<span class="req">*</span></label>
+                  <select name="classTime" class="form-select" required>
+                    <option value="">Select…</option>
+                    <% ['Day','Evening','Both'].forEach(t=> { %>
+                      <option value="<%= t %>" <%=formData?.classTime===t ? 'selected' : '' %>><%= t %></option>
+                    <% }) %>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Days Class Meets<span class="req">*</span></label>
+                  <div class="d-flex flex-wrap gap-3">
+                    <% const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']; %>
+                    <% days.forEach(d => { %>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="classDays" value="<%= d %>" <%= (formData?.classDays||'').split(',').includes(d) ? 'checked' : '' %>>
+                        <label class="form-check-label"><%= d %></label>
+                      </div>
+                    <% }) %>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Total Credit/Clock Hours<span class="req">*</span></label>
+                  <input type="number" name="totalHours" class="form-control" required value="<%= formData?.totalHours || '' %>">
+                </div>
+              </div>
+
+              <hr class="my-4">
+
+              <!-- Tuition -->
+              <div class="section-title">Tuition</div>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Tuition</label>
+                  <input type="number" name="tuition" class="form-control" value="<%= formData?.tuition || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Registration Fee</label>
+                  <input type="number" name="registrationFee" class="form-control" value="<%= formData?.registrationFee || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Books/Supplies</label>
+                  <input type="number" name="books" class="form-control" value="<%= formData?.books || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Equipment</label>
+                  <input type="number" name="equipment" class="form-control" value="<%= formData?.equipment || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Misc. Fees</label>
+                  <input type="number" name="miscFees" class="form-control" value="<%= formData?.miscFees || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Total Cost</label>
+                  <input type="number" name="totalCost" class="form-control" value="<%= formData?.totalCost || '' %>">
+                </div>
           </div>
 
           <hr class="my-4">
@@ -218,6 +286,37 @@
               <input type="email" name="referralEmail" class="form-control" value="<%= formData?.referralEmail || '' %>">
             </div>
           </div>
+
+               <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                  <label class="form-label">Home Phone</label>
+                  <input name="phoneHome" class="form-control" value="<%= formData?.phoneHome || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Cell Phone</label>
+                  <input name="phoneCell" class="form-control" value="<%= formData?.phoneCell || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Work Phone</label>
+                  <input name="phoneWork" class="form-control" value="<%= formData?.phoneWork || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Social Security #</label>
+                  <input name="ssn" class="form-control" value="<%= formData?.ssn || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Emergency Contact</label>
+                  <input name="emergencyName" class="form-control" value="<%= formData?.emergencyName || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Relationship</label>
+                  <input name="emergencyRelation" class="form-control" value="<%= formData?.emergencyRelation || '' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Emergency Phone</label>
+                  <input name="emergencyPhone" class="form-control" value="<%= formData?.emergencyPhone || '' %>">
+                </div>
+              </div>
 
           <hr class="my-4">
 
@@ -285,6 +384,22 @@
             <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_notice')">Clear</button></div>
             <input type="hidden" name="noticeSig" id="noticeSig">
           </div>
+
+                  <hr class="my-4">
+
+              <div class="section-title">Electronic Use Agreement</div>
+              <div class="cardish mb-3 docbox">
+                <p class="mb-0">Students agree to follow all school technology policies, maintain equipment, and refrain from
+                  prohibited activities. Misuse may result in disciplinary action and fees for damages.</p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Signature (Electronic Use Agreement)</label>
+                <canvas class="sig" id="sig_electronic"></canvas>
+                <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_electronic')">Clear</button></div>
+                <input type="hidden" name="electronicSig" id="electronicSig">
+              </div>
+
+              <hr class="my-4">
 
           <div class="section-title">Contract Acceptance</div>
           <div class="cardish mb-3 docbox">
@@ -422,6 +537,7 @@
       document.getElementById('codeConductSig').value = capture('sig_conduct');
       document.getElementById('cancellationSig').value = capture('sig_cancel');
       document.getElementById('noticeSig').value = capture('sig_notice');
+         document.getElementById('electronicSig').value = capture('sig_electronic');
       document.getElementById('contractSig').value = capture('sig_contract');
 
       if (!document.getElementById('signatureDataUrl').value) {
@@ -465,8 +581,7 @@
       }
 
       // Initialize signature pads
-      ['sig_registration','sig_conduct','sig_cancel','sig_notice','sig_contract'].forEach(setupPad);
-    });
+    ['sig_registration', 'sig_conduct', 'sig_cancel', 'sig_notice', 'sig_electronic', 'sig_contract'].forEach(setupPad);    });
   </script>
 </body>
 </html>
