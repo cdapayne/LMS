@@ -783,8 +783,9 @@ router.post('/classes/:id/tests/generate', async (req, res) => {
         path: q.Path
       }));
       const testTitle = title || 'AI Generated Test';
-  questions.forEach(q => { if (!q.test) q.test = testTitle; });
-      await testModel.insertQuestions(questions);      await classModel.addTest(classId, { title: testTitle, timeLimit: Number(timeLimit) || 90 });
+  questions.forEach(q => { q.test = q.test || testTitle; });
+      await testModel.insertQuestions(questions);
+      await classModel.addTest(classId, { title: testTitle, timeLimit: Number(timeLimit) || 90 });
     } catch (e) {
       console.error('OpenAI error', e);
     }

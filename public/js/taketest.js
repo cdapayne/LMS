@@ -1,9 +1,25 @@
 (function(){
   const questions = window.testQuestions || [];
   const total = questions.length;
+  const testId = window.testId;
   let current = 0;
   let score = 0;
   const answers = [];
+
+  function saveProgress(){
+    localStorage.setItem('test_'+testId+'_progress', JSON.stringify({current, score, answers}));
+  }
+
+  function loadProgress(){
+    try{
+      const raw = localStorage.getItem('test_'+testId+'_progress');
+      if(!raw) return;
+      const data = JSON.parse(raw);
+      current = data.current || 0;
+      score = data.score || 0;
+      (data.answers || []).forEach((v,i)=>{ answers[i] = v; });
+    }catch(e){}
+  }
 
   function loadQuestion(idx){
     const q = questions[idx];
@@ -21,7 +37,7 @@
     q.options.forEach((opt, i) => {
       const id = `opt${i}`;
       const div = document.createElement('div');
-      div.className = 'form-check';
+      div.className = 'form-check list-group-item';
       div.innerHTML = `\n        <input class="form-check-input" type="radio" name="answer" id="${id}" value="${i}">\n        <label class="form-check-label" for="${id}">${opt}</label>\n      `;
       container.appendChild(div);
     });
@@ -33,6 +49,7 @@
   }
 
   function finalize(){
+    localStorage.removeItem('test_'+testId+'_progress');
     const form = document.getElementById('final-form');
     form.innerHTML = '';
     questions.forEach((q, i) => {
@@ -51,26 +68,29 @@
     form.submit();
   }
 
-  document.getElementById('question-form').addEventListener('submit', function(e){
-    e.preventDefault();
-    const selected = document.querySelector('input[name="answer"]:checked');
-    if (!selected) return;
-    const val = Number(selected.value);
+  document.getElementById('answers-container').addEventListener('click', function(e){
+    const input = e.target.closest('input[type="radio"]');
+    if (!input) return;
+    const val = Number(input.value);
     const correct = Number(questions[current].answer);
+    const parent = input.closest('.form-check');
     if (val === correct) {
       score++;
-      Swal.fire({title:'Correct!', icon:'success', timer:1000, showConfirmButton:false});
+      parent.classList.add('text-white','bg-success');
     } else {
-      Swal.fire({title:'Incorrect!', icon:'error', timer:1000, showConfirmButton:false});
+      parent.classList.add('text-white','bg-danger');
     }
     answers[current] = val;
-    current++;
     updateGrade();
-    if (current < total) {
-      loadQuestion(current);
-    } else {
-      finalize();
-    }
+    saveProgress();
+    setTimeout(() => {
+      current++;
+      if (current < total) {
+        loadQuestion(current);
+      } else {
+        finalize();
+      }
+    }, 500);
   });
 
   let remaining = (window.timePerQuestion || 90) * total;
@@ -87,10 +107,17 @@
   }
 
   window.addEventListener('load', function(){
-    if (total > 0) {
-      loadQuestion(0);
-      updateGrade();
-      tick();
-    }
+    loadProgress();
+    Swal.fire({
+      title: 'Start Test',
+      text: `You have 5 attempts. This is attempt ${(window.attempts||0)+1} of 5.`,
+      confirmButtonText: 'Begin'
+    }).then(() => {
+      if (total > 0) {
+        loadQuestion(current);
+        updateGrade();
+        tick();
+      }
+    });
   });
 })();
