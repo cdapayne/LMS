@@ -4,6 +4,7 @@ const nodemailer = require('nodemailer');
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
+const emailTemplates = require('../utils/emailTemplates');
 
 
 const userModel = require('../models/userModel');
@@ -70,19 +71,14 @@ router.post('/forgot-password', async (req, res) => {
       const token = crypto.randomBytes(32).toString('hex');
       const expires = Date.now() + 1000 * 60 * 60; // 1 hour
       await userModel.setResetToken(user.username, token, expires);
-      const brand = req.app.locals.branding;
       const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${token}`;
+      const { subject, html, text } = emailTemplates.render('passwordResetLink', { resetLink });
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: user.email,
-        subject: 'Password reset',
-        text: `Reset your password: ${resetLink}`,
-        html: `
-          <div style="font-family:Arial,sans-serif;text-align:center;">
-            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
-            <p><a href="${resetLink}">Click here to reset your password</a></p>
-          </div>
-        `
+        subject,
+        html,
+        text
       });
     }
     return res.render('forgot_password', { sent: true, error: null });
@@ -289,20 +285,14 @@ router.post('/register', (req, res) => {
         await userModel.addUploads(user.id, uploads);
       }
 
-      const brand = req.app.locals.branding;
-
+      const { subject, html, text } = emailTemplates.render('registrationSubmitted', { firstName, username });
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: email,
-        subject: 'Registration submitted (pending approval)',
-    text: `Hi ${firstName}, your registration is pending admin approval. Username: ${username}.`,
-        html: `
-          <div style="font-family:Arial,sans-serif;text-align:center;">
-            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
-            <p>Hi ${firstName}, your registration is pending admin approval.</p>
-            <p><strong>Username:</strong> ${username}</p>
-          </div>
-        `      });
+        subject,
+        html,
+        text
+      });
 
       return res.render('pending', { user: { firstName, lastName, name: `${firstName} ${lastName}` }, financialAid: financialAid === 'yes', selfPay });    } catch (e) {
       console.error(e);

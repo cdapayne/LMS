@@ -1,0 +1,38 @@
+{
+  "studentApproved": {
+    "subject": "Application approved",
+    "html": "<div style=\"font-family:Arial,sans-serif;text-align:center;\">\n            <img src=\"https://register.mdts-apps.com/mdlo.png\" alt=\"Logo\" style=\"max-height:80px;margin-bottom:10px;\">\n            <h2>Congratulations {{name}}!</h2>\n            <p>You have been approved for MD Technical School.</p>\n            <p><a href=\"https://mdts-apps.com/login\">Log in to the student portal</a></p>\n            <p><a href=\"https://mdts-apps.com/classes\">Access your classes</a></p>\n          </div>"
+  },
+  "passwordReset": {
+    "subject": "Password reset",
+    "html": "<div style=\"font-family:Arial,sans-serif;text-align:center;\">\n            <img src=\"https://register.mdts-apps.com/mdlo.png\" alt=\"Logo\" style=\"max-height:80px;margin-bottom:10px;\">\n            <p>Hi {{name}}, your password has been reset.</p>\n            <p>Your new password is: <strong>{{newPassword}}</strong></p>\n          </div>"
+  },
+  "passwordResetLink": {
+    "subject": "Password reset",
+    "html": "<div style=\"font-family:Arial,sans-serif;text-align:center;\">\n            <img src=\"https://register.mdts-apps.com/mdlo.png\" alt=\"Logo\" style=\"max-height:80px;margin-bottom:10px;\">\n            <p><a href=\"{{resetLink}}\">Click here to reset your password</a></p>\n          </div>"
+  },
+  "registrationSubmitted": {
+    "subject": "Registration submitted (pending approval)",
+    "html": "<div style=\"font-family:Arial,sans-serif;text-align:center;\">\n            <img src=\"https://register.mdts-apps.com/mdlo.png\" alt=\"Logo\" style=\"max-height:80px;margin-bottom:10px;\">\n            <p>Hi {{firstName}}, your registration is pending admin approval.</p>\n            <p><strong>Username:</strong> {{username}}</p>\n          </div>"
+  },
+  "registrationComplete": {
+    "subject": "Registration Complete",
+    "html": "<p>Hi {{name}}, your registration documents are fully signed.</p>"
+  },
+  "enrollmentStep2": {
+    "subject": "Enrollment Details Updated",
+    "html": "<p>Hi {{name}}, your enrollment details have been updated. <a href=\"{{link}}\">Click here</a> to finish your registration.</p>"
+  },
+  "preRegConfirmation": {
+    "subject": "\uD83C\uDF89 You’re In! Pre-Registration Confirmed – {{course}}",
+    "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111\">\n      <h2 style=\"color:#1e90ff;margin:0 0 8px;\">Welcome to MD Technical School, {{firstName}}!</h2>\n      <p>We’re <strong>thrilled</strong> you pre-registered for <strong>{{course}}</strong>. Your invoice is attached to this email.</p>\n      <p>Next up: our enrollment team will reach out with your onboarding steps, schedule, and learning platform access. If you’re ready to take care of tuition now, you can pay online or over the phone.</p>\n      <ul style=\"margin:10px 0 16px; padding-left:18px;\">\n        <li><strong>Financial Aid:</strong> <a href=\"https://climbcredit.com/apply/mdtechnical?page=create-account&schoolId=MD4644868617478\">https://climbcredit.com/apply/mdtechnical?page=create-account&schoolId=MD4644868617478</a></li>\n        <li><strong>Contact Us at:</strong> (540) 455-2878</li>\n        <li><strong>Questions?</strong> <a href=\"register@cybertraining4u.com\">register@cybertraining4u.com</a></li>\n      </ul>\n      <p style=\"color:#555;margin:14px 0 0;\">We can’t wait to help you level up your career. Let’s do this! \uD83D\uDCAA</p>\n      <hr style=\"border:none;border-top:1px solid #eee;margin:18px 0;\">\n      <p style=\"font-size:12px;color:#6b7280;margin:0;\">Refunds and cancellations follow the published policy. Funding assistance may be available through Army, Air Force, MyCAA, WIOA, DARS, or other affiliates.</p>\n    </div>"
+  },
+  "eventRsvp": {
+    "subject": "You're in for {{eventName}}!",
+    "html": "<p>Hi {{fullName}},</p>\n          <p>We're excited you've RSVP'd for <strong>{{eventName}}</strong> on {{formattedDate}}.</p>\n          <strong>{{eventDescription}}</strong>\n          <p><a href=\"{{calendarLink}}\">Add to Google Calendar</a></p>\n          <p>We look forward to seeing you!</p>"
+  },
+  "discussionNotification": {
+    "subject": "New discussion message for {{klassName}}",
+    "html": "<p>{{message}}</p>"
+  }
+}

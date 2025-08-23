@@ -9,6 +9,7 @@ const discussionModel = require('../models/discussionModel');
 const userModel = require('../models/userModel');
 const nodemailer = require('nodemailer');
 const messageModel = require('../models/messageModel');
+const emailTemplates = require('../utils/emailTemplates');
 
 const transporter = nodemailer.createTransport({
   host: 'mdts-apps.com',
@@ -102,13 +103,6 @@ router.get('/powerpoint', (req, res) => {
 
 
 
-router.get('/classes/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  const klass = await classModel.findClassById(id);
-  if (!klass) return res.status(404).send('Not found');
- const discussions = await discussionModel.getByClass(id);
-  res.render('view_class', { klass, studentView: true, discussions });});
-
   router.post('/classes/:id/discussion', async (req, res) => {
   const classId = Number(req.params.id);
   const { message } = req.body;
@@ -118,11 +112,16 @@ router.get('/classes/:id', async (req, res) => {
     const teacher = await userModel.findById(klass.teacherId);
     if (teacher && teacher.email) {
       try {
+        const { subject, html, text } = emailTemplates.render('discussionNotification', {
+          klassName: klass.name,
+          message: message.trim()
+        });
         await transporter.sendMail({
           to: teacher.email,
           from: process.env.SMTP_USER,
-          subject: `New discussion message for ${klass.name}`,
-          text: message.trim()
+          subject,
+          html,
+          text
         });
       } catch (e) {
         console.error('Email send failed', e);

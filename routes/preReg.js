@@ -4,6 +4,8 @@ const preRegModel = require('../models/preRegModel');
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 const path = require('path');
+const emailTemplates = require('../utils/emailTemplates');
+
 
 const transporter = nodemailer.createTransport({
   host: 'mdts-apps.com',
@@ -335,32 +337,16 @@ const pdfBuffer = await createInvoicePdf({
   invoiceNumber
 });
 
+const { subject, html } = emailTemplates.render('preRegConfirmation', {
+  firstName: name.split(' ')[0],
+  course: course.trim()
+});
 await transporter.sendMail({
-  from: 'noreply@mdts-apps.com',
+  from: 'no-reply@mdts-apps.com',
   to: email.trim(),
   bcc: 'lance.durante@mdtechgo.com,differentcoders@gmail.com,carol.scott@mdtechnicalschool.com,benseghirolga@gmail.com,OlgaB@mdtechnicalschool.com,snyderr@mdtechnicalschool.com,durantelp@mdtechnicalschool.com',
-  subject: `🎉 You’re In! Pre-Registration Confirmed – ${course.trim()}`,
-  html: `
-    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
-      <h2 style="color:#1e90ff;margin:0 0 8px;">Welcome to MD Technical School, ${name.split(' ')[0]}!</h2>
-      <p>We’re <strong>thrilled</strong> you pre-registered for <strong>${course.trim()}</strong>. Your invoice is attached to this email.</p>
-      <p>Next up: our enrollment team will reach out with your onboarding steps, schedule, and learning platform access. 
-         If you’re ready to take care of tuition now, you can pay online or over the phone.</p>
-      <ul style="margin:10px 0 16px; padding-left:18px;">
-
-        <li><strong>Financial Aid:</strong> <a href="https://climbcredit.com/apply/mdtechnical?page=create-account&schoolId=MD4644868617478">https://climbcredit.com/apply/mdtechnical?page=create-account&schoolId=MD4644868617478</a></li>
-        <li><strong>Contact Us at:</strong> (540) 455-2878</li>
-        <li><strong>Questions?</strong> <a href="register@cybertraining4u.com">register@cybertraining4u.com</a></li>
-      </ul>
-      <p style="color:#555;margin:14px 0 0;">
-        We can’t wait to help you level up your career. Let’s do this! 💪
-      </p>
-      <hr style="border:none;border-top:1px solid #eee;margin:18px 0;">
-      <p style="font-size:12px;color:#6b7280;margin:0;">
-        Refunds and cancellations follow the published policy. Funding assistance may be available through Army, Air Force, MyCAA, WIOA, DARS, or other affiliates.
-      </p>
-    </div>
-  `,
+  subject,
+  html,
   attachments: [
     {
       filename: `invoice-${invoiceNumber}.pdf`,

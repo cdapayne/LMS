@@ -3,6 +3,7 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const eventModel = require('../models/eventModel');
 const rsvpModel = require('../models/rsvpModel');
+const emailTemplates = require('../utils/emailTemplates');
 
 const transporter = nodemailer.createTransport({
   host: 'mdts-apps.com',
@@ -50,18 +51,19 @@ router.post('/events/rsvp', async (req, res) => {
         '\\n'
       )}\nEND:VEVENT\nEND:VCALENDAR`;
 
+ const { subject, html, text } = emailTemplates.render('eventRsvp', {
+        fullName,
+        eventName: event.name,
+        formattedDate,
+        calendarLink,
+        eventDescription: event.description || ''
+      });
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: email,
-        subject: `You're in for ${event.name}!`,
-        text: `Hi ${fullName},\n\nWe're excited you've RSVP'd for ${event.name} on ${formattedDate}.\n\nAdd to your calendar: ${calendarLink}\n\nSee you there!`,
-        html: `
-          <p>Hi ${fullName},</p>
-          <p>We're excited you've RSVP'd for <strong>${event.name}</strong> on ${formattedDate}.</p>
-          <strong>${event.description}</strong>
-          <p><a href="${calendarLink}">Add to Google Calendar</a></p>
-          <p>We look forward to seeing you!</p>
-        `,
+        subject,
+        html,
+        text,
         icalEvent: {
           filename: 'event.ics',
           method: 'PUBLISH',

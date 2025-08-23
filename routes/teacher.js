@@ -7,7 +7,7 @@ const { generateQuestions } = require('../utils/questionGenerator');
 const announcementModel = require('../models/announcementModel');
 const discussionModel = require('../models/discussionModel');
 const messageModel = require('../models/messageModel');
-
+const emailTemplates = require('../utils/emailTemplates');
 
 
 const fs = require('fs');
@@ -153,11 +153,16 @@ router.post('/classes/:id/discussion', async (req, res) => {
     const teacher = await userModel.findById(klass.teacherId);
     if (teacher && teacher.email) {
       try {
+        const { subject, html, text } = emailTemplates.render('discussionNotification', {
+          klassName: klass.name,
+          message: message.trim()
+        });
         await transporter.sendMail({
           to: teacher.email,
           from: process.env.SMTP_USER,
-          subject: `New discussion message for ${klass.name}`,
-          text: message.trim()
+          subject,
+          html,
+          text
         });
       } catch (e) {
         console.error('Email send failed', e);
@@ -166,6 +171,7 @@ router.post('/classes/:id/discussion', async (req, res) => {
   }
   res.redirect(`/teacher/classes/${classId}#discussion`);
 });
+
 
 // new test creation form
 router.get('/classes/:id/tests/new', async (req, res) => {
@@ -371,19 +377,16 @@ router.post('/students/:id/reset-password', async (req, res) => {
   await userModel.updatePassword(user.username, newPassword);
   if (user.email) {
     try {
-      const brand = req.app.locals.branding;
+      const { subject, html, text } = emailTemplates.render('passwordReset', {
+        name: user.name || 'User',
+        newPassword
+      });
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: user.email,
-        subject: 'Password reset',
-        text: `Hi ${user.name || 'User'}, your password has been reset. Your new password is: ${newPassword}`,
-        html: `
-          <div style="font-family:Arial,sans-serif;text-align:center;">
-            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
-            <p>Hi ${user.name || 'User'}, your password has been reset.</p>
-            <p>Your new password is: <strong>${newPassword}</strong></p>
-          </div>
-        `
+        subject,
+        html,
+        text
       });
     } catch (e) {
       console.error('Error sending reset email', e);

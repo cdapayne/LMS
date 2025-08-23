@@ -9,7 +9,7 @@ const preRegModel = require('../models/preRegModel');
 
 const eventModel = require('../models/eventModel');
 const rsvpModel = require('../models/rsvpModel');
-
+const emailTemplates = require('../utils/emailTemplates');
 const announcementModel = require('../models/announcementModel');
 
 const multer = require('multer');
@@ -46,6 +46,8 @@ router.use((req, res, next) => {
   next();
 });
 
+router.use(express.json());
+
 router.get('/chart/meta', async (_req, res) => {
   const [tables] = await db.query('SHOW TABLES');
   const tableNames = tables.map(t => Object.values(t)[0]);
@@ -55,6 +57,50 @@ router.get('/chart/meta', async (_req, res) => {
     out[name] = cols.map(c => c.Field);
   }
   res.json({ tables: out });
+});
+
+router.get('/email-templates', (req, res) => {
+  emailTemplates.load();
+  const key = req.query.key || Object.keys(emailTemplates.templates)[0];
+  const template = key ? emailTemplates.templates[key] : { subject: '', html: '' };
+  res.render('admin_email_templates', {
+    user: req.session.user,
+    templates: emailTemplates.templates,
+    selectedKey: key,
+    template,
+    saved: req.query.saved
+  });
+});
+
+router.post('/email-templates/save', (req, res) => {
+  const { key, subject, html } = req.body;
+  if (key) emailTemplates.saveTemplate(key, { subject, html });
+  res.redirect(`/admin/email-templates?key=${encodeURIComponent(key)}&saved=1`);
+});
+
+router.post('/email-templates/ai', async (req, res) => {
+  const { prompt } = req.body || {};
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return res.status(400).json({ error: 'Missing API key' });
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const html = data.choices?.[0]?.message?.content?.trim() || '';
+    res.json({ html });
+  } catch (e) {
+    console.error('AI error', e);
+    res.status(500).json({ error: 'AI request failed' });
+  }
 });
 
 router.get('/', async (req, res) => {
@@ -176,18 +222,9 @@ router.post('/approve/:id', async (req, res) => {
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: user.email,
-        subject: 'Application approved',
-        text: `Congratulations ${name}! You have been approved for MD Technical School. Visit https://mdts-apps.com/login to start accessing your course materials.`,
-        html: `
-          <div style="font-family:Arial,sans-serif;text-align:center;">
-            <img src="${confettiGif}" alt="Celebration" style="width:100%;max-width:400px;height:auto;margin-bottom:10px;">
-            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
-            <h2>Congratulations ${name}!</h2>
-            <p>You have been approved for MD Technical School.</p>
-            <p><a href="https://mdts-apps.com/login">Log in to the student portal</a></p>
-            <p><a href="https://mdts-apps.com/classes">Access your classes</a></p>
-          </div>
-        `
+        subject,
+        html,
+        text
       });
     } catch (e) {
       console.error('Error sending approval email', e);
@@ -195,6 +232,7 @@ router.post('/approve/:id', async (req, res) => {
   }
   res.redirect('/admin/students/pending');
 });
+
 
 // Render form to create a new event
 router.get('/create-event', (req, res) => {
@@ -253,21 +291,18 @@ router.post('/students/:id/reset-password', async (req, res) => {
   if (!user) return res.status(404).send('Not found');
   const newPassword = crypto.randomBytes(4).toString('hex');
   await userModel.updatePassword(user.username, newPassword);
-  if (user.email) {
+ if (user.email) {
     try {
-      const brand = req.app.locals.branding;
+      const { subject, html, text } = emailTemplates.render('passwordReset', {
+        name: user.name || 'User',
+        newPassword
+      });
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: user.email,
-        subject: 'Password reset',
-        text: `Hi ${user.name || 'User'}, your password has been reset. Your new password is: ${newPassword}`,
-        html: `
-          <div style="font-family:Arial,sans-serif;text-align:center;">
-            <img src="https://register.mdts-apps.com/mdlo.png" alt="Logo" style="max-height:80px;margin-bottom:10px;">
-            <p>Hi ${user.name || 'User'}, your password has been reset.</p>
-            <p>Your new password is: <strong>${newPassword}</strong></p>
-          </div>
-        `
+        subject,
+        html,
+        text
       });
     } catch (e) {
       console.error('Error sending reset email', e);
@@ -286,12 +321,13 @@ router.post('/students/:id/sign-doc', async (req, res) => {
     const pending = docs.filter(d => d.requiredRole === 'admin' && !d.signatureDataUrl);
     if (!pending.length && user.email) {
       try {
+        const { subject, html, text } = emailTemplates.render('registrationComplete', { name: user.name });
         await transporter.sendMail({
           from: 'no-reply@mdts-apps.com',
           to: user.email,
-          subject: 'Registration Complete',
-          text: `Hi ${user.name}, your registration documents are fully signed.`,
-          html: `<p>Hi ${user.name}, your registration documents are fully signed.</p>`
+          subject,
+          html,
+          text
         });
       } catch (e) {
         console.error('Error sending completion email', e);
@@ -317,12 +353,13 @@ router.post('/students/:id/step2', async (req, res) => {
       const expires = Date.now() + 1000 * 60 * 60 * 24;
       await userModel.setStep2Token(id, token, expires);
       const link = `${req.protocol}://${req.get('host')}/step2?token=${token}`;
+      const { subject, html, text } = emailTemplates.render('enrollmentStep2', { name: student.name, link });
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: student.email,
-        subject: 'Enrollment Details Updated',
-        text: `Hi ${student.name}, please review and sign your enrollment documents: ${link}`,
-        html: `<p>Hi ${student.name}, your enrollment details have been updated. <a href="${link}">Click here</a> to finish your registration.</p>`
+        subject,
+        html,
+        text
       });
     }
   } catch (e) {
