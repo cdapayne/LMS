@@ -56,10 +56,15 @@ async function addTest(classId, test) {
   const klass = await findClassById(classId);
   if (!klass) return null;
   klass.tests = klass.tests || [];
-  test.id = (klass.tests.reduce((m, t) => Math.max(m, t.id), 0) || 0) + 1;
-  klass.tests.push(test);
+  const newTest = {
+    id: (klass.tests.reduce((m, t) => Math.max(m, t.id), 0) || 0) + 1,
+    title: test.title,
+    timeLimit: test.timeLimit,
+    dueDate: test.dueDate
+  };
+  klass.tests.push(newTest);
   await db.query('UPDATE mdtslms_classes SET tests=? WHERE id=?', [JSON.stringify(klass.tests), classId]);
-  return test;
+  return newTest;
 }
 
 async function addAssignment(classId, assignment) {

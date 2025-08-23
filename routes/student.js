@@ -4,6 +4,7 @@ const announcementModel = require('../models/announcementModel');
 
 const classModel = require('../models/classModel');
 const { generateQuestions } = require('../utils/questionGenerator');
+const testModel = require('../models/testModel');
 
 const discussionModel = require('../models/discussionModel');
 const userModel = require('../models/userModel');
@@ -148,6 +149,7 @@ router.get('/classes/:id/tests/:testId', async (req, res) => {
   if (!klass) return res.status(404).send('Not found');
   const test = (klass.tests || []).find(t => t.id === testId);
   if (!test) return res.status(404).send('Test not found');
+  test.questions = await testModel.getQuestionsByTest(test.title);
   res.render('take_test', { klass, test });
 });
 
@@ -266,6 +268,7 @@ router.get('/classes/:id/tests/:testId/study', async (req, res) => {
   if (!klass) return res.status(404).send('Not found');
   const test = (klass.tests || []).find(t => t.id === testId);
   if (!test) return res.status(404).send('Test not found');
+  test.questions = await testModel.getQuestionsByTest(test.title);
 
   if (!req.session.study) req.session.study = {};
   if (!req.session.study[testId]) {
@@ -304,6 +307,7 @@ router.post('/classes/:id/tests/:testId/study', async (req, res) => {
   if (!klass) return res.status(404).send('Not found');
   const test = (klass.tests || []).find(t => t.id === testId);
   if (!test) return res.status(404).send('Test not found');
+   test.questions = await testModel.getQuestionsByTest(test.title);
 
   if (!req.session.study || !req.session.study[testId]) {
     return res.redirect(`/student/classes/${classId}/tests/${testId}/study`);
@@ -340,6 +344,7 @@ router.post('/classes/:id/tests/:testId', async (req, res) => {
   if (!klass) return res.status(404).send('Not found');
   const test = (klass.tests || []).find(t => t.id === testId);
   if (!test) return res.status(404).send('Test not found');
+  test.questions = await testModel.getQuestionsByTest(test.title);
 
   let score = 0;
   test.questions.forEach((q, i) => {

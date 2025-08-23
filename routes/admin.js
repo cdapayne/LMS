@@ -11,6 +11,7 @@ const eventModel = require('../models/eventModel');
 const rsvpModel = require('../models/rsvpModel');
 const emailTemplates = require('../utils/emailTemplates');
 const announcementModel = require('../models/announcementModel');
+const testModel = require('../models/testModel');
 
 const multer = require('multer');
 const crypto = require('crypto');
@@ -719,34 +720,35 @@ router.post('/classes/:id/assignments', async (req, res) => {
   res.redirect(`/admin/classes/${classId}#assignments`);
 });
 
-router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) => {
-  const classId = Number(req.params.id);
-  const title = (req.body.title || 'Uploaded Test').trim();
-    const timeLimit = Number(req.body.timeLimit) || 90;
+  router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) => {
+    const classId = Number(req.params.id);
+    const title = (req.body.title || 'Uploaded Test').trim();
+      const timeLimit = Number(req.body.timeLimit) || 90;
 
-  const csv = req.file && req.file.buffer.toString('utf-8');
-  if (csv) {
-    const lines = csv.split(/\r?\n/).filter(l => l.trim());
-    const [, ...rows] = lines;
-    const questions = rows.map(line => {
-      const cols = line.split(',');
-      return {
-        question: cols[0],
-        answer: cols[1],
-        explanation: cols[2],
-        picture: cols[3],
-        options: cols.slice(4, 11).filter(Boolean),
-        test: cols[11],
-        contentType: cols[12],
-        title: cols[13],
-        itemType: cols[14],
-        path: cols[15]
-      };
-    });
-    await classModel.addTest(classId, { title, questions, timeLimit });
-  }
-  res.redirect(`/admin/classes/${classId}#tests`);
-});
+    const csv = req.file && req.file.buffer.toString('utf-8');
+    if (csv) {
+      const lines = csv.split(/\r?\n/).filter(l => l.trim());
+      const [, ...rows] = lines;
+      const questions = rows.map(line => {
+        const cols = line.split(',');
+        return {
+          question: cols[0],
+          answer: cols[1],
+          explanation: cols[2],
+          picture: cols[3],
+          options: cols.slice(4, 11).filter(Boolean),
+          test: cols[11],
+          contentType: cols[12],
+          title: cols[13],
+          itemType: cols[14],
+          path: cols[15]
+        };
+      });
+      await testModel.replaceTestQuestions(title, questions);
+      await classModel.addTest(classId, { title, timeLimit });
+    }
+    res.redirect(`/admin/classes/${classId}#tests`);
+  });
 
 router.post('/classes/:id/tests/generate', async (req, res) => {
   const classId = Number(req.params.id);
@@ -768,23 +770,26 @@ router.post('/classes/:id/tests/generate', async (req, res) => {
     const data = await response.json();
     let items = [];
     try { items = JSON.parse(data.choices[0].message.content); } catch (_) { items = []; }
-    const questions = items.map(q => ({
-      question: q.Question,
-      answer: q.Answer,
-      explanation: q.Explanation,
-      picture: q.Picture,
-      options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD, q.OptionE, q.OptionF, q.OptionG].filter(Boolean),
-      test: q.Test,
-      contentType: q['Content Type'],
-      title: q.Title,
-      itemType: q['Item Type'],
-      path: q.Path
-    }));
- await classModel.addTest(classId, { title: title || 'AI Generated Test', questions, timeLimit: Number(timeLimit) || 90 });  } catch (e) {
-    console.error('OpenAI error', e);
-  }
-  res.redirect(`/admin/classes/${classId}#tests`);
-});
+      const questions = items.map(q => ({
+        question: q.Question,
+        answer: q.Answer,
+        explanation: q.Explanation,
+        picture: q.Picture,
+        options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD, q.OptionE, q.OptionF, q.OptionG].filter(Boolean),
+        test: q.Test,
+        contentType: q['Content Type'],
+        title: q.Title,
+        itemType: q['Item Type'],
+        path: q.Path
+      }));
+      const testTitle = title || 'AI Generated Test';
+      await testModel.replaceTestQuestions(testTitle, questions);
+      await classModel.addTest(classId, { title: testTitle, timeLimit: Number(timeLimit) || 90 });
+    } catch (e) {
+      console.error('OpenAI error', e);
+    }
+    res.redirect(`/admin/classes/${classId}#tests`);
+  });
 
 
 router.get('/reports/pending-students', async (_req, res) => {

@@ -8,7 +8,7 @@ const announcementModel = require('../models/announcementModel');
 const discussionModel = require('../models/discussionModel');
 const messageModel = require('../models/messageModel');
 const emailTemplates = require('../utils/emailTemplates');
-
+const testModel = require('../models/testModel');
 
 const fs = require('fs');
 const path = require('path');
@@ -210,13 +210,16 @@ router.get('/classes/:id/tests/new', async (req, res) => {
 // generate and save a test
 router.post('/classes/:id/tests', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, lecture, questionCount, optionCount, timeLimit } = req.body;  const questions = generateQuestions(
+  const { title, lecture, questionCount, optionCount, timeLimit } = req.body;
+  const questions = generateQuestions(
     lecture || '',
     Number(questionCount) || 0,
     Number(optionCount) || 4,
     title || ''
   );
-  await classModel.addTest(classId, { title, questions, timeLimit: Number(timeLimit) || 90 });  const lines = questions.map(q => {
+  await testModel.replaceTestQuestions(title, questions);
+  await classModel.addTest(classId, { title, timeLimit: Number(timeLimit) || 90 });
+  const lines = questions.map(q => {
     const optionCells = [];
     for (let i = 0; i < 7; i++) optionCells.push(q.options[i] || '');
     return [
@@ -273,34 +276,35 @@ router.post('/classes/:id/simulations', async (req, res) => {
   res.redirect(`/teacher/classes/${classId}#simulations`);
 });
 
-router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) => {
-  const classId = Number(req.params.id);
-  const title = (req.body.title || 'Uploaded Test').trim();
-    const timeLimit = Number(req.body.timeLimit) || 90;
+  router.post('/classes/:id/tests/upload', upload.single('csv'), async (req, res) => {
+    const classId = Number(req.params.id);
+    const title = (req.body.title || 'Uploaded Test').trim();
+      const timeLimit = Number(req.body.timeLimit) || 90;
 
-  const csv = req.file && req.file.buffer.toString('utf-8');
-  if (csv) {
-    const lines = csv.split(/\r?\n/).filter(l => l.trim());
-    const [, ...rows] = lines; // skip header
-    const questions = rows.map(line => {
-      const cols = line.split(',');
-      return {
-        question: cols[0],
-        answer: cols[1],
-        explanation: cols[2],
-        picture: cols[3],
-        options: cols.slice(4, 11).filter(Boolean),
-        test: cols[11],
-        contentType: cols[12],
-        title: cols[13],
-        itemType: cols[14],
-        path: cols[15]
-      };
-    });
-    await classModel.addTest(classId, { title, questions, timeLimit });
-  }
-  res.redirect(`/teacher/classes/${classId}#tests`);
-});
+    const csv = req.file && req.file.buffer.toString('utf-8');
+    if (csv) {
+      const lines = csv.split(/\r?\n/).filter(l => l.trim());
+      const [, ...rows] = lines; // skip header
+      const questions = rows.map(line => {
+        const cols = line.split(',');
+        return {
+          question: cols[0],
+          answer: cols[1],
+          explanation: cols[2],
+          picture: cols[3],
+          options: cols.slice(4, 11).filter(Boolean),
+          test: cols[11],
+          contentType: cols[12],
+          title: cols[13],
+          itemType: cols[14],
+          path: cols[15]
+        };
+      });
+      await testModel.replaceTestQuestions(title, questions);
+      await classModel.addTest(classId, { title, timeLimit });
+    }
+    res.redirect(`/teacher/classes/${classId}#tests`);
+  });
 
 // Upload media assets for tests
 router.post('/classes/:id/tests/media', mediaUpload.single('media'), (req, res) => {
@@ -330,21 +334,24 @@ router.post('/classes/:id/tests/generate', async (req, res) => {
     const data = await response.json();
     let items = [];
     try { items = JSON.parse(data.choices[0].message.content); } catch (_) { items = []; }
-    const questions = items.map(q => ({
-      question: q.Question,
-      answer: q.Answer,
-      explanation: q.Explanation,
-      picture: q.Picture,
-      options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD, q.OptionE, q.OptionF, q.OptionG].filter(Boolean),
-      test: q.Test,
-      contentType: q['Content Type'],
-      title: q.Title,
-      itemType: q['Item Type'],
-      path: q.Path
-    }));
- await classModel.addTest(classId, { title: title || 'AI Generated Test', questions, timeLimit: Number(timeLimit) || 90 });  } catch (e) {
-    console.error('OpenAI error', e);
-  }
+      const questions = items.map(q => ({
+        question: q.Question,
+        answer: q.Answer,
+        explanation: q.Explanation,
+        picture: q.Picture,
+        options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD, q.OptionE, q.OptionF, q.OptionG].filter(Boolean),
+        test: q.Test,
+        contentType: q['Content Type'],
+        title: q.Title,
+        itemType: q['Item Type'],
+        path: q.Path
+      }));
+      const testTitle = title || 'AI Generated Test';
+      await testModel.replaceTestQuestions(testTitle, questions);
+      await classModel.addTest(classId, { title: testTitle, timeLimit: Number(timeLimit) || 90 });
+    } catch (e) {
+      console.error('OpenAI error', e);
+    }
   res.redirect(`/teacher/classes/${classId}#tests`);
 });
 // Grade submission (upsert)
