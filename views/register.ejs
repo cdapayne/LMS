@@ -267,86 +267,18 @@
           <hr class="my-4">
 
           <!-- Agreements -->
-<div class="section-title">Registration Agreement <a href="/docs/course-curriculm.pdf" target="_blank" class="ms-2 small">View PDF</a> <span class="text-muted">(version <%= docVersion %>)</span></div>          <div class="cardish mb-3 docbox"><p class="mb-0"><%= docText %></p></div>
+<div class="section-title">Registration Agreement <a href="/docs/course-curriculm.pdf" target="_blank" class="ms-2 small">View PDF</a> <span class="text-muted">(version <%= docVersion %>)</span></div>
+          <div class="cardish mb-3 docbox"><p class="mb-0"><%= docText %></p></div>
 
           <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" value="yes" id="agree" name="agree" <%= formData?.agree ? 'checked' : '' %> required>
             <label class="form-check-label" for="agree">I have read and agree to the registration agreement.</label>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label">Signature (Registration Agreement)<span class="req">*</span></label>
-            <canvas class="sig" id="sig_registration"></canvas>
-            <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_registration')">Clear</button></div>
-            <input type="hidden" name="signatureDataUrl" id="signatureDataUrl">
-          </div>
-
-          <hr class="my-4">
-
-<div class="section-title">Code of Conduct <a href="/docs/code-of-conduct.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="cardish mb-3 docbox">
-            <p class="mb-0">Students agree to uphold academic integrity, maintain professionalism, respect peers and instructors, follow school policies, and safeguard account credentials.</p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Signature (Code of Conduct)</label>
-            <canvas class="sig" id="sig_conduct"></canvas>
-            <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_conduct')">Clear</button></div>
-            <input type="hidden" name="codeConductSig" id="codeConductSig">
-          </div>
-
-          <div class="section-title">Grievance Acknowledgement <a href="/docs/grievance-acknowledgement.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="form-check mb-3">
+               <div class="section-title">Grievance Acknowledgement <a href="/docs/grievance-acknowledgement.pdf" target="_blank" class="ms-2 small">View PDF</a></div>
+          <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" id="grievanceAck" name="grievanceAck" <%= formData?.grievanceAck ? 'checked' : '' %>>
             <label class="form-check-label" for="grievanceAck">I acknowledge I have received the grievance process information.</label>
-          </div>
-
-      <div class="section-title">Cancellation Policy <a href="/docs/cancellation-policy.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="cardish mb-3 docbox">
-            <p class="mb-0">Cancellations and refunds follow the published policy. Fees and deadlines apply. Contact the admin office for assistance.</p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Signature (Cancellation Policy)</label>
-            <canvas class="sig" id="sig_cancel"></canvas>
-            <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_cancel')">Clear</button></div>
-            <input type="hidden" name="cancellationSig" id="cancellationSig">
-          </div>
-
-       <div class="section-title">Notice to Buyer <a href="/docs/notice-to-buyer.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="cardish mb-3 docbox">
-            <p class="mb-0">You may have legal rights regarding refunds, disclosures, and cooling-off periods as required by law.</p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Signature (Notice to Buyer)</label>
-            <canvas class="sig" id="sig_notice"></canvas>
-            <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_notice')">Clear</button></div>
-            <input type="hidden" name="noticeSig" id="noticeSig">
-          </div>
-
-                  <hr class="my-4">
-
-      <div class="section-title">Electronic Use Agreement <a href="/docs/electronic-use-agreement.pdf" target="_blank" class="ms-2 small">View PDF</a></div>              <div class="cardish mb-3 docbox">
-                <p class="mb-0">Students agree to follow all school technology policies, maintain equipment, and refrain from
-                  prohibited activities. Misuse may result in disciplinary action and fees for damages.</p>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Signature (Electronic Use Agreement)</label>
-                <canvas class="sig" id="sig_electronic"></canvas>
-                <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_electronic')">Clear</button></div>
-                <input type="hidden" name="electronicSig" id="electronicSig">
-              </div>
-
-              <hr class="my-4">
-
-    <div class="section-title">Contract Acceptance <a href="/docs/contract-acceptance.pdf" target="_blank" class="ms-2 small">View PDF</a></div>          <div class="cardish mb-3 docbox">
-            <p class="mb-0">By signing, you agree to the terms and conditions of enrollment and payment obligations.</p>
-          </div>
-          <div class="row g-3 align-items-end">
-            <div class="col-md-6">
-              <label class="form-label">Signature (Contract)</label>
-              <canvas class="sig" id="sig_contract"></canvas>
-              <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_contract')">Clear</button></div>
-              <input type="hidden" name="contractSig" id="contractSig">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Signature Date<span class="req">*</span></label>
-              <input type="date" name="contractSigDate" id="contractSigDate" class="form-control" value="<%= formData?.contractSigDate || '' %>" required>
-            </div>
           </div>
 
           <div class="mt-4 d-flex gap-2">
@@ -360,71 +292,6 @@
 
   <!-- ===== SCRIPTS (unchanged core behaviors, cleaned up) ===== -->
   <script>
-    const pads = {};
-
-    // Signature Pads
-    function setupPad(id) {
-      const el = document.getElementById(id);
-      const ctx = el.getContext('2d');
-      const DPR = window.devicePixelRatio || 1;
-      function resize() {
-        const r = el.getBoundingClientRect();
-        el.width = r.width * DPR; el.height = r.height * DPR;
-        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-        ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle='#000';
-      }
-      function pos(e){ const b = el.getBoundingClientRect(); const t = e.touches? e.touches[0]: e; return {x: (t.clientX-b.left), y: (t.clientY-b.top)};}
-      let drawing=false, prev=null;
-      function start(e){ drawing=true; prev=pos(e); }
-      function move(e){
-        if(!drawing) return;
-        const p=pos(e);
-        ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(p.x, p.y); ctx.stroke();
-        prev=p; e.preventDefault(); saveSignature(id);
-      }
-      function end(){ drawing=false; }
-      window.addEventListener('resize', resize);
-      el.addEventListener('mousedown', start); el.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
-      el.addEventListener('touchstart', start, {passive:false}); el.addEventListener('touchmove', move, {passive:false}); el.addEventListener('touchend', end);
-      resize();
-      pads[id] = { el, ctx };
-      restoreSignature(id);
-    }
-
-    function clearPad(id){
-      const {el,ctx}=pads[id];
-      ctx.clearRect(0,0,el.width,el.height);
-      localStorage.removeItem('sig_'+id);
-    }
-
-    function isBlank(id){
-      const {el,ctx}=pads[id];
-      const data = ctx.getImageData(0,0,el.width,el.height).data;
-      for (let i=3;i<data.length;i+=4) if (data[i]!==0) return false;
-      return true;
-    }
-
-    function capture(id){
-      if (isBlank(id)) return '';
-      return pads[id].el.toDataURL('image/png');
-    }
-
-    function saveSignature(id){
-      if (!isBlank(id)) {
-        localStorage.setItem('sig_'+id, pads[id].el.toDataURL('image/png'));
-      }
-    }
-
-    function restoreSignature(id){
-      const dataUrl = localStorage.getItem('sig_'+id);
-      if (dataUrl) {
-        const img = new Image();
-        img.onload = function(){
-          pads[id].ctx.drawImage(img, 0, 0, pads[id].el.width, pads[id].el.height);
-        };
-        img.src = dataUrl;
-      }
-    }
 
     // Inline error helpers
     function showError(selectorOrEl, msg){
@@ -458,23 +325,6 @@
       const pw2 = document.getElementById('confirmPassword');
       if ((pw.value || '').length < 8) { showError(pw, 'Password must be at least 8 characters.'); return false; }
       if (pw.value !== pw2.value) { showError(pw2, 'Passwords do not match.'); return false; }
-
-      // default signature date if missing
-      const d = document.getElementById('contractSigDate');
-      if (!d.value) d.value = new Date().toISOString().slice(0,10);
-
-      // signatures → hidden fields
-      document.getElementById('signatureDataUrl').value = capture('sig_registration');
-      document.getElementById('codeConductSig').value = capture('sig_conduct');
-      document.getElementById('cancellationSig').value = capture('sig_cancel');
-      document.getElementById('noticeSig').value = capture('sig_notice');
-         document.getElementById('electronicSig').value = capture('sig_electronic');
-      document.getElementById('contractSig').value = capture('sig_contract');
-
-      if (!document.getElementById('signatureDataUrl').value) {
-        showError('#sig_registration', 'Please sign the Registration Agreement.');
-        return false;
-      }
 
       // never persist passwords
       localStorage.removeItem('reg_password');
@@ -525,9 +375,7 @@
         pw.addEventListener('input', () => { checkLen(); checkMatch(); });
         pw2.addEventListener('input', checkMatch);
       }
-
-      // Initialize signature pads
-    ['sig_registration', 'sig_conduct', 'sig_cancel', 'sig_notice', 'sig_electronic', 'sig_contract'].forEach(setupPad);    });
+    });
   </script>
 </body>
 </html>

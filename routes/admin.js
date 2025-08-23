@@ -275,7 +275,7 @@ router.post('/students/:id/reset-password', async (req, res) => {
   }
   res.redirect(`/admin/students/${id}?reset=1`);});
 
-  router.post('/students/:id/sign-doc', async (req, res) => {
+router.post('/students/:id/sign-doc', async (req, res) => {
   const id = Number(req.params.id);
   const { docType, signatureDataUrl } = req.body;
   if (!docType || !signatureDataUrl) return res.redirect(`/admin/students/${id}`);
@@ -303,6 +303,32 @@ router.post('/students/:id/reset-password', async (req, res) => {
   res.redirect(`/admin/students/${id}`);
 });
 
+router.post('/students/:id/step2', async (req, res) => {
+  const id = Number(req.params.id);
+  const { tuitionTotal, startDate, endDate, classTime, classDays } = req.body;
+  try {
+    await userModel.updateProfile(id, {
+      program: { startDate, endDate, classTime, classDays },
+      tuition: { totalCost: tuitionTotal }
+    });
+    const student = await userModel.findById(id);
+    if (student && student.email) {
+      const link = `${req.protocol}://${req.get('host')}/login?next=${encodeURIComponent('/student/profile')}`;
+      await transporter.sendMail({
+        from: 'no-reply@mdts-apps.com',
+        to: student.email,
+        subject: 'Enrollment Details Updated',
+        text: `Hi ${student.name}, please review and sign your enrollment documents: ${link}`,
+        html: `<p>Hi ${student.name}, your enrollment details have been updated. <a href="${link}">Click here</a> to review and sign your documents.</p>`
+      });
+    }
+  } catch (e) {
+    console.error('Error in step2', e);
+  }
+  res.redirect(`/admin/students/${id}`);
+});
+
+
 router.get('/denied', async (_req, res) => {
   const users = await userModel.getAll();
   const denied = users.filter(u => u.role === 'student' && u.status === 'declined');
@@ -316,64 +342,103 @@ router.get('/students', async (_req, res) => {
   res.render('admin_accepted', { students: accepted });
 });
 
+// Marketing email constants
+const marketingTypes = ['recruitment', 'retention', 'approval', 'events', 'information'];
+const marketingPrefaces = {
+  recruitment: 'Join the MD Technical School family!',
+  retention: 'We value your continued learning with MDTS.',
+  approval: 'Congratulations on your approval!',
+  events: 'Upcoming opportunities await you at MDTS.',
+  information: 'Here is an important update from MDTS.'
+};
+
 // Marketing email form
-router.post('/marketing', mediaUpload.single('attachment'), async (req, res) => {
+router.get('/marketing', async (req, res) => {
   const students = await userModel.getByRole('student');
-  const { studentId, type, subject, imageUrl, message, ccIds, bccIds } = req.body;
-  const allowed = ['recruitment', 'retention', 'approval', 'events', 'information'];
-    const prefaces = {
-    recruitment: 'Join the MD Technical School family!',
-    retention: 'We value your continued learning with MDTS.',
-    approval: 'Congratulations on your approval!',
-    events: 'Upcoming opportunities await you at MDTS.',
-    information: 'Here is an important update from MDTS.'
-  };
+  res.render('admin_marketing', { students, user: req.session.user, sent: req.query.sent, error: null });
+});
+
+// Preview marketing email with OpenAI
+router.post('/marketing/preview', async (req, res) => {
+  const { type, message } = req.body;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Missing OpenAI API key' });
+  if (!marketingTypes.includes(type)) return res.status(400).json({ error: 'Invalid type' });
   try {
-    const student = await userModel.findById(Number(studentId));
-    if (!student || !student.email || !allowed.includes(type)) {
-      return res.status(400).render('admin_marketing', { students, user: req.session.user, sent: null, error: 'Invalid form submission.' });
-    }
+    const preface = marketingPrefaces[type] || '';
+    const prompt = `${preface}\n\n${message || ''}`;
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: `Write a professional marketing email to students using the following context:\n${prompt}` }]
+      })
+    });
+    const data = await response.json();
+    const generated = data.choices?.[0]?.message?.content?.trim() || '';
+    res.json({ message: generated });
+  } catch (e) {
+    console.error('OpenAI preview error', e);
+    res.status(500).json({ error: 'Failed to generate preview' });
+  }
+});
 
-       const ccList = Array.isArray(ccIds) ? ccIds : ccIds ? [ccIds] : [];
-    const bccList = Array.isArray(bccIds) ? bccIds : bccIds ? [bccIds] : [];
-    const ccEmails = ccList.map(id => {
-      const s = students.find(st => st.id === Number(id));
-      return s && s.email;
-    }).filter(Boolean);
-    const bccEmails = bccList.map(id => {
-      const s = students.find(st => st.id === Number(id));
-      return s && s.email;
-    }).filter(Boolean);
-
+// Send marketing email
+router.post('/marketing', async (req, res) => {
+  const students = await userModel.getByRole('student');
+  const { studentIds, type, subject, imageUrl, message } = req.body;
+  const ids = Array.isArray(studentIds) ? studentIds : [studentIds].filter(Boolean);
+  if (!ids.length || !marketingTypes.includes(type)) {
+    return res.status(400).render('admin_marketing', { students, user: req.session.user, sent: null, error: 'Invalid form submission.' });
+  }
+  try {
     const subj = (subject && subject.trim()) || `MDTS ${type.charAt(0).toUpperCase() + type.slice(1)} Update`;
-        const preface = prefaces[type] || '';
+    const preface = marketingPrefaces[type] || '';
+    let bodyText = `${preface}\n\n${message || ''}`;
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (apiKey) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: `Write a professional marketing email to students using the following context:\n${bodyText}` }]
+          })
+        });
+        const data = await response.json();
+        bodyText = data.choices?.[0]?.message?.content?.trim() || bodyText;
+      } catch (e) {
+        console.error('OpenAI error', e);
+      }
+    }
 
     const html = `
       <div style="font-family:Arial,sans-serif;text-align:center;background:#f0f8ff;padding:20px;">
         ${imageUrl ? `<img src="${imageUrl}" alt="" style="max-width:100%;height:auto;margin-bottom:15px;border-radius:8px;">` : ''}
         <h2 style="color:#ff4081;">${subj}</h2>
-                ${preface ? `<p style="font-size:1.1rem;">${preface}</p>` : ''}
-
-        <p style="font-size:1.1rem;">${message || ''}</p>
+        <p style="font-size:1.1rem;">${bodyText}</p>
       </div>
     `;
-        const text = [preface, message || ''].filter(Boolean).join('\n\n');
 
-
-    const mail = {
-      from: 'no-reply@mdts-apps.com',
-      to: student.email,
-      subject: subj,
-      html,
-      text
-    };
-    if (ccEmails.length) mail.cc = ccEmails;
-    if (bccEmails.length) mail.bcc = bccEmails;
-    if (req.file) {
-      mail.attachments = [{ filename: req.file.originalname, path: req.file.path }];
+    for (const id of ids) {
+      const student = await userModel.findById(Number(id));
+      if (!student || !student.email) continue;
+      await transporter.sendMail({
+        from: 'no-reply@mdts-apps.com',
+        to: student.email,
+        subject: subj,
+        html,
+        text: bodyText
+      });
     }
-
-    await transporter.sendMail(mail);
 
     res.redirect('/admin/marketing?sent=1');
   } catch (e) {
@@ -382,11 +447,7 @@ router.post('/marketing', mediaUpload.single('attachment'), async (req, res) => 
   }
 });
 
-// Marketing email form
-router.get('/marketing', async (req, res) => {
-  const students = await userModel.getByRole('student');
-  res.render('admin_marketing', { students, user: req.session.user, sent: req.query.sent, error: null });
-});
+
 
 
 // New class form

@@ -37,29 +37,17 @@
       <div class="alert alert-danger"><%= error %></div>
     <% } %>
     <div class="cardish mt-3">
-  <form method="post" action="/admin/marketing" enctype="multipart/form-data">        <div class="mb-3">
-          <label class="form-label">Student</label>
-          <select name="studentId" class="form-select" required>
-            <% students.forEach(function(s){ %>
-              <option value="<%= s.id %>"><%= s.name || (s.profile?.firstName + ' ' + s.profile?.lastName) %></option>
-            <% }); %>
-          </select>
-        </div>
-                <div class="mb-3">
-          <label class="form-label">CC</label>
-          <select name="ccIds" class="form-select" multiple>
-            <% students.forEach(function(s){ %>
-              <option value="<%= s.id %>"><%= s.name || (s.profile?.firstName + ' ' + s.profile?.lastName) %></option>
-            <% }); %>
-          </select>
-        </div>
+      <form id="marketingForm" method="post" action="/admin/marketing">
         <div class="mb-3">
-          <label class="form-label">BCC</label>
-          <select name="bccIds" class="form-select" multiple>
-            <% students.forEach(function(s){ %>
-              <option value="<%= s.id %>"><%= s.name || (s.profile?.firstName + ' ' + s.profile?.lastName) %></option>
+          <label class="form-label">Recipients</label>
+          <div class="list-group">
+            <% students.forEach(function(s){ const full = s.name || (s.profile?.firstName + ' ' + s.profile?.lastName); %>
+              <label class="list-group-item">
+                <input class="form-check-input me-1" type="checkbox" name="studentIds" value="<%= s.id %>">
+                <%= full %> (<%= s.email %>)
+              </label>
             <% }); %>
-          </select>
+          </div>
         </div>
         <div class="mb-3">
           <label class="form-label">Email Type</label>
@@ -79,14 +67,12 @@
           <label class="form-label">Image URL</label>
           <input type="url" name="imageUrl" class="form-control">
         </div>
-           <div class="mb-3">
-          <label class="form-label">Attachment</label>
-          <input type="file" name="attachment" class="form-control">
-        </div>
         <div class="mb-3">
           <label class="form-label">Message</label>
           <textarea name="message" class="form-control" rows="6"></textarea>
         </div>
+        <div id="preview" class="alert alert-secondary" style="display:none;"></div>
+        <button type="button" id="previewBtn" class="btn btn-secondary me-2">Preview</button>
         <button type="submit" class="btn btn-primary">Send Email</button>
       </form>
     </div>
@@ -101,6 +87,8 @@
     };
     const typeSelect = document.querySelector('select[name="type"]');
     const messageBox = document.querySelector('textarea[name="message"]');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewDiv = document.getElementById('preview');
     let touched = false;
     messageBox.addEventListener('input', () => { touched = true; });
     function updatePreface() {
@@ -110,6 +98,22 @@
     }
     typeSelect.addEventListener('change', updatePreface);
     document.addEventListener('DOMContentLoaded', updatePreface);
+
+    previewBtn.addEventListener('click', async () => {
+      const body = new URLSearchParams();
+      body.append('type', typeSelect.value);
+      body.append('message', messageBox.value);
+      const res = await fetch('/admin/marketing/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      });
+      const data = await res.json();
+      if (data.message) {
+        previewDiv.style.display = 'block';
+        previewDiv.textContent = data.message;
+      }
+    });
   </script>
 </body>
 </html>

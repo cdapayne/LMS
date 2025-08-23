@@ -53,8 +53,11 @@ function ensureStr(v) {
   return String(v ?? '');
 }
 
-router.get('/login', (req, res) => res.render('login', { error: null }));
-
+router.get('/login', (req, res) => {
+  const next = ensureStr(req.query.next);
+  const safeNext = next.startsWith('/') ? next : '';
+  res.render('login', { error: null, next: safeNext });
+});
 router.get('/forgot-password', (req, res) => {
   res.render('forgot_password', { error: null, sent: false });
 });
@@ -130,21 +133,29 @@ router.post('/reset-password', async (req, res) => {
 router.post('/login', async (req, res) => {
   const username = ensureStr(req.body.username);
   const password = ensureStr(req.body.password);
+  const redirectTo = ensureStr(req.body.next);
+  const safeRedirect = redirectTo.startsWith('/') ? redirectTo : '';
 
   const user = await userModel.findByUsername(username);
   if (!user || !userModel.verifyPassword(user, password)) {
-    return res.status(401).render('login', { error: 'Invalid credentials' });
+    return res.status(401).render('login', { error: 'Invalid credentials', next: safeRedirect });
   }
-   if (user.active === false) {
-    return res.status(403).render('login', { error: 'Account deactivated' });
+  if (user.active === false) {
+    return res.status(403).render('login', { error: 'Account deactivated', next: safeRedirect });
   }
-  req.session.user = { id: user.id, name: user.name, username: user.username, firstName: user.firstName, lastName: user.lastName };
+  req.session.user = {
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    firstName: user.firstName,
+    lastName: user.lastName
+  };
   req.session.role = user.role;
 
-  if (user.role === 'student' && (user.status === 'pending' || !user.status)) {
+  if (user.role === 'student' && (user.status === 'pending' || !user.status) && !safeRedirect) {
     return res.render('pending', { user });
   }
-  return res.redirect('/dashboard');
+  return res.redirect(safeRedirect || '/dashboard');
 });
 
 router.get('/register', async (req, res) => {
@@ -183,7 +194,6 @@ router.post('/register', (req, res) => {
       const confirmEmail = ensureStr(req.body.confirmEmail);
       const password = ensureStr(req.body.password);
  const studentId = ensureStr(req.body.studentId) || await userModel.generateStudentId();      const agree = ensureStr(req.body.agree);
-      const signatureDataUrl = ensureStr(req.body.signatureDataUrl);
       const suffix = ensureStr(req.body.suffix);
       const address = ensureStr(req.body.address);
       const city = ensureStr(req.body.city);
@@ -202,12 +212,6 @@ router.post('/register', (req, res) => {
       const selfPay = affiliateProgram === 'Self Pay';
 
       const grievanceAck = ensureStr(req.body.grievanceAck);
-      const codeConductSig = ensureStr(req.body.codeConductSig);
-      const cancellationSig = ensureStr(req.body.cancellationSig);
-      const noticeSig = ensureStr(req.body.noticeSig);
-      const contractSig = ensureStr(req.body.contractSig);
-      const contractSigDate = ensureStr(req.body.contractSigDate);
-      const electronicSig = ensureStr(req.body.electronicSig);
       const financialAid = ensureStr(req.body.financialAid);
       const referralName = ensureStr(req.body.referralName);
       const referralEmail = ensureStr(req.body.referralEmail);
@@ -221,9 +225,9 @@ router.post('/register', (req, res) => {
         });
       }
 
-      if (!agree || !signatureDataUrl) {
+       if (!agree) {
         return res.status(400).render('register', {
-          error: 'You must agree and sign the registration agreement.',
+          error: 'You must agree to the registration agreement.',
           docVersion: DOC_VERSION,
           docText: DOC_TEXT,
           formData: req.body
@@ -250,15 +254,7 @@ router.post('/register', (req, res) => {
         email,
         password,
         studentId,
-        signatureDataUrl,
-        codeConductSig,
-        cancellationSig,
-        noticeSig,
-        contractSig,
-        contractSigDate,
-        electronicSig,
         financialAid: financialAid === 'yes',
-        agreedDocVersion: DOC_VERSION,
         referralName,
         referralEmail
       });

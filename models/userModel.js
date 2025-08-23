@@ -63,14 +63,20 @@ async function generateStudentId() {
   return String(next).padStart(6, '0');
 }
 
-async function createStudent({ username, name, email, password, studentId, signatureDataUrl, agreedDocVersion,
+async function createStudent({ username, name, email, password, studentId,
   firstName, lastName, suffix, address, city, state, zip, course, affiliateProgram,
   phones, ssn, emergencyContact, admissionDate, startDate, endDate, classTime, classDays, totalHours,
-  tuition, grievanceAck, codeConductSig, cancellationSig, noticeSig, contractSig, contractSigDate,
-  electronicSig, financialAid, referralName, referralEmail }) {
+  tuition, grievanceAck, financialAid, referralName, referralEmail }) {
   const { salt, hash } = hashPassword(password);
-
   const docNow = new Date().toISOString();
+  const unsigned = { agreed: false, signedAt: null, signatureDataUrl: '' };
+  const doc = (type, version, sig) => (
+    sig
+      ? { type, version, agreed: true, signedAt: docNow, signatureDataUrl: sig }
+      : { type, version, ...unsigned }
+  );
+
+
   const profile = {
     studentId,
     firstName, lastName, suffix: suffix || '',
@@ -86,14 +92,14 @@ async function createStudent({ username, name, email, password, studentId, signa
     grievanceAcknowledged: !!grievanceAck,
     uploads: [],
     documents: [
-      { type: 'registration-agreement', version: agreedDocVersion, agreed: true, signedAt: docNow, signatureDataUrl },
-      { type: 'code-of-conduct', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: codeConductSig || '' },
-      { type: 'cancellation-policy', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: cancellationSig || '' },
-      { type: 'notice-to-buyer', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: noticeSig || '' },
-      { type: 'electronic-use-agreement', version: 'v1.0', agreed: true, signedAt: docNow, signatureDataUrl: electronicSig || '' },
-      { type: 'contract-acceptance', version: 'v1.0', agreed: true, signedAt: contractSigDate || docNow, signatureDataUrl: contractSig || '' },
-      { type: 'representatives-certification', version: 'v1.0', agreed: true, signedAt: null, signatureDataUrl: '', requiredRole: 'admin' },
-      { type: 'school-official', version: 'v1.0', agreed: true, signedAt: null, signatureDataUrl: '', requiredRole: 'admin' }
+       doc('registration-agreement', 'v1.0', ''),
+      doc('code-of-conduct', 'v1.0', ''),
+      doc('cancellation-policy', 'v1.0', ''),
+      doc('notice-to-buyer', 'v1.0', ''),
+      doc('electronic-use-agreement', 'v1.0', ''),
+      doc('contract-acceptance', 'v1.0', ''),
+      { type: 'representatives-certification', version: 'v1.0', ...unsigned, requiredRole: 'admin' },
+      { type: 'school-official', version: 'v1.0', ...unsigned, requiredRole: 'admin' }
     ]
   };
    if (referralName || referralEmail) {
@@ -114,6 +120,26 @@ async function createStudent({ username, name, email, password, studentId, signa
     status: 'pending',
     profile
   });
+}
+
+async function updateProfile(id, updates) {
+  const user = await findById(id);
+  if (!user) return null;
+  const merge = (target, src) => {
+    if (!src) return target;
+    for (const key of Object.keys(src)) {
+      const val = src[key];
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        target[key] = merge(target[key] || {}, val);
+      } else if (val !== undefined) {
+        target[key] = val;
+      }
+    }
+    return target;
+  };
+  user.profile = merge(user.profile || {}, updates);
+  await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), id]);
+  return user.profile;
 }
 
 async function signDocument(id, docType, signatureDataUrl) {
@@ -225,6 +251,7 @@ module.exports = {
     setActive,
   addUploads,
     signDocument,
+  updateProfile,
 
    updatePassword,
     setResetToken,

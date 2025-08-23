@@ -24,6 +24,20 @@ router.use((req, res, next) => {
   if (!req.session || req.session.role !== 'student') return res.status(403).send('Forbidden');
   next();
 });
+router.get('/profile', async (req, res) => {
+  const student = await userModel.findById(req.session.user.id);
+  if (!student) return res.status(404).send('Not found');
+  res.render('student_profile', { student, role: 'student' });
+});
+
+router.post('/sign-doc', async (req, res) => {
+  const { docType, signatureDataUrl } = req.body;
+  if (docType && signatureDataUrl) {
+    try { await userModel.signDocument(req.session.user.id, docType, signatureDataUrl); } catch (e) { console.error('student sign', e); }
+  }
+  res.redirect('/student/profile');
+});
+
 
 router.get('/mailbox', async (req, res) => {
   const messages = await messageModel.getMailbox(req.session.user.id);

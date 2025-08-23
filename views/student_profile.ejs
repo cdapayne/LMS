@@ -140,7 +140,7 @@
         <div class="mb-0"><strong>Emergency Contact:</strong> <%= student.profile?.emergencyContact?.name || '-' %> (<%= student.profile?.emergencyContact?.relation || '-' %>) - <%= student.profile?.emergencyContact?.phone || '-' %></div>
       </section>
 
-      <section class="cardish">
+     <section class="cardish">
         <div class="section-title">Program</div>
         <div class="mb-2"><strong>Course:</strong> <%= student.profile?.course || '-' %></div>
         <div class="mb-2"><strong>Affiliated Program:</strong> <%= student.profile?.affiliateProgram || '-' %></div>
@@ -163,6 +163,37 @@
       <div class="mb-2"><strong>Misc. Fees:</strong> $<%= student.profile?.tuition?.miscFees || '0' %></div>
       <div class="mb-0"><strong>Total Cost:</strong> $<%= student.profile?.tuition?.totalCost || '0' %></div>
     </section>
+
+    <% if (role === 'admin' && student.status === 'pending') { %>
+    <section class="cardish">
+      <div class="section-title">Step 2: Program Details</div>
+      <form method="post" action="/admin/students/<%= student.id %>/step2" class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Start Date</label>
+          <input type="date" name="startDate" class="form-control" value="<%= student.profile?.program?.startDate || '' %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">End Date</label>
+          <input type="date" name="endDate" class="form-control" value="<%= student.profile?.program?.endDate || '' %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Class Time</label>
+          <input name="classTime" class="form-control" value="<%= student.profile?.program?.classTime || '' %>">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Class Days</label>
+          <input name="classDays" class="form-control" value="<%= student.profile?.program?.classDays || '' %>">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Total Cost</label>
+          <input type="number" step="0.01" name="tuitionTotal" class="form-control" value="<%= student.profile?.tuition?.totalCost || '' %>">
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary">Save & Send Step 2</button>
+        </div>
+      </form>
+    </section>
+    <% } %>
 
     <!-- Uploaded Documents -->
     <section class="cardish">
@@ -208,7 +239,15 @@
                   <% if (d.signatureDataUrl) { %>
                     <img src="<%= d.signatureDataUrl %>" alt="Signature" style="max-width:100%;border:1px solid #ddd;background:#fff;border-radius:6px;">
                   <% } else if (role === 'admin' && d.requiredRole === 'admin') { %>
-                    <form method="post" action="/admin/students/<%= student.id %>/sign-doc" onsubmit="return captureAdmin('<%= d.type %>')">
+                    <form method="post" action="/admin/students/<%= student.id %>/sign-doc" onsubmit="return capturePad('<%= d.type %>')">
+                      <canvas class="sig" id="sig_<%= d.type %>" style="width:100%;height:160px;touch-action:none;border:1px solid #ced4da;border-radius:8px;"></canvas>
+                      <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button></div>
+                      <input type="hidden" name="docType" value="<%= d.type %>">
+                      <input type="hidden" name="signatureDataUrl" id="sigInput_<%= d.type %>">
+                      <button class="btn btn-primary btn-sm mt-2">Sign</button>
+                    </form>
+                  <% } else if (role === 'student' && !d.requiredRole) { %>
+                    <form method="post" action="/student/sign-doc" onsubmit="return capturePad('<%= d.type %>')">
                       <canvas class="sig" id="sig_<%= d.type %>" style="width:100%;height:160px;touch-action:none;border:1px solid #ced4da;border-radius:8px;"></canvas>
                       <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button></div>
                       <input type="hidden" name="docType" value="<%= d.type %>">
@@ -236,7 +275,8 @@
   </div>
 
 <% const adminDocs = docs.filter(d => !d.signatureDataUrl && d.requiredRole === 'admin'); %>
-<% if (role === 'admin' && adminDocs.length) { %>
+<% const studentDocs = docs.filter(d => !d.signatureDataUrl && !d.requiredRole); %>
+<% if ((role === 'admin' && adminDocs.length) || (role === 'student' && studentDocs.length)) { %>
 <script>
   const pads = {};
   function setupPad(id){
@@ -252,9 +292,9 @@
   }
   function clearPad(id){ const p=pads[id]; if(p) p.ctx.clearRect(0,0,p.el.width,p.el.height); }
   function capture(id){ const p=pads[id]; if(!p) return ''; return p.el.toDataURL('image/png'); }
-  function captureAdmin(type){ const id='sig_'+type; const v=capture(id); document.getElementById('sigInput_'+type).value=v; if(!v){alert('Please sign before submitting.'); return false;} return true; }
+  function capturePad(type){ const id='sig_'+type; const v=capture(id); document.getElementById('sigInput_'+type).value=v; if(!v){alert('Please sign before submitting.'); return false;} return true; }
   document.addEventListener('DOMContentLoaded', ()=>{
-    <% adminDocs.forEach(d => { %>setupPad('sig_<%= d.type %>');<% }) %>
+    <% if (role === 'admin') { adminDocs.forEach(d => { %>setupPad('sig_<%= d.type %>');<% }) } else { studentDocs.forEach(d => { %>setupPad('sig_<%= d.type %>');<% }) } %>
   });
 </script>
 <% } %>
