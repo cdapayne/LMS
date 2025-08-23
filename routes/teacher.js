@@ -43,6 +43,25 @@ router.use((req, res, next) => {
   next();
 });
 
+router.get('/profile', async (req, res) => {
+  const teacher = await userModel.findById(req.session.user.id);
+  res.render('teacher_profile', { teacher, role: 'teacher', saved: req.query.saved });
+});
+
+router.post('/profile', mediaUpload.single('photo'), async (req, res) => {
+  const id = req.session.user.id;
+  if (req.file) {
+    await userModel.updateProfile(id, {
+      photo: {
+        url: `/uploads/${req.file.filename}`,
+        originalName: req.file.originalname
+      }
+    });
+  }
+  res.redirect('/teacher/profile?saved=1');
+});
+
+
 // Dashboard with weekly schedule and announcements
 router.get('/', async (req, res) => {
   const classes = await classModel.byTeacher(req.session.user.id);
@@ -53,7 +72,7 @@ router.get('/', async (req, res) => {
   const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
   const weekly = { Monday:[], Tuesday:[], Wednesday:[], Thursday:[], Friday:[], Saturday:[], Sunday:[] };
   classes.forEach(k => (k.schedule||[]).forEach(s => {
-    if (weekly[s.day]) weekly[s.day].push({ className: k.name, time: s.time });
+    if (weekly[s.day]) weekly[s.day].push({ className: k.name, start: s.start, end: s.end });
   }));
   const announcements = await announcementModel.forTeacher(req.session.user.id);
     res.render('teacher_dashboard', {
@@ -170,6 +189,14 @@ router.post('/classes/:id/discussion', async (req, res) => {
     }
   }
   res.redirect(`/teacher/classes/${classId}#discussion`);
+});
+router.post('/classes/:id/checklist', async (req, res) => {
+  const classId = Number(req.params.id);
+  const items = Array.isArray(req.body.item) ? req.body.item : (req.body.item ? [req.body.item] : []);
+  const done = Array.isArray(req.body.done) ? req.body.done.map(Number) : (req.body.done ? [Number(req.body.done)] : []);
+  const checklist = items.map((text, idx) => ({ text, done: done.includes(idx) }));
+  await classModel.updateChecklist(classId, checklist);
+  res.redirect(`/teacher/classes/${classId}`);
 });
 
 
@@ -409,9 +436,10 @@ classes.forEach(klass => {
     let date = new Date(now);
     while (date <= threeWeeksFromNow) {
       if (date.getDay() === dayIndex) {
+        const [sh, sm] = String(s.start || '0:0').split(':').map(Number);
         events.push({
           title: klass.name + ' (Class)',
-          start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), parseInt(s.time), 0),
+          start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), sh, sm || 0),
           url: `/teacher/classes/${klass.id}` // NEW: link to teacher's class view
         });
       }

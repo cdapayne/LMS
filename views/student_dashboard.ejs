@@ -171,10 +171,11 @@
         <div class="alert alert-info m-0">You are not enrolled in any classes yet.</div>
       </div>
     <% } else { %>
-      <div id="classList" role="list">
+     <div id="classList" role="list">
+        <% function fmt(t){ if(!t) return ''; const parts=String(t).split(':'); let h=parseInt(parts[0],10), m=parts[1]||'00'; const ampm=h>=12?'PM':'AM'; h=h%12||12; return h+":"+m+" "+ampm; } %>
         <% classes.forEach(k => {
              const firstSlot = (k.schedule||[])[0];
-             const schedText = (k.schedule||[]).map(s => s.day + ' ' + s.time).join(' • ');
+             const schedText = (k.schedule||[]).map(s => s.day + ' ' + fmt(s.start) + ' - ' + fmt(s.end)).join(' • ');
         %>
           <article class="class-card"
                    role="listitem"
@@ -197,7 +198,7 @@
                     <span class="text-muted">Next session:</span>
                     <strong><%= firstSlot.day %></strong>
                     <span class="text-muted">at</span>
-                    <strong><%= firstSlot.time %></strong>
+                    <strong><%= fmt(firstSlot.start) %> – <%= fmt(firstSlot.end) %></strong>
                     <% if (firstSlot.holiday) { %><span class="badge badge-holiday ms-2">Holiday</span><% } %>
                   </div>
                 <% } %>

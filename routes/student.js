@@ -103,7 +103,16 @@ router.get('/powerpoint', (req, res) => {
 
 
 
-  router.post('/classes/:id/discussion', async (req, res) => {
+router.get('/classes/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const klass = await classModel.findClassById(id);
+  if (!klass) return res.status(404).send('Not found');
+  const teacher = await userModel.findById(klass.teacherId);
+  const discussions = await discussionModel.getByClass(id);
+  res.render('view_class', { klass, studentView: true, discussions, teacher });
+});
+
+router.post('/classes/:id/discussion', async (req, res) => {
   const classId = Number(req.params.id);
   const { message } = req.body;
   if (message && message.trim()) {
@@ -112,16 +121,11 @@ router.get('/powerpoint', (req, res) => {
     const teacher = await userModel.findById(klass.teacherId);
     if (teacher && teacher.email) {
       try {
-        const { subject, html, text } = emailTemplates.render('discussionNotification', {
-          klassName: klass.name,
-          message: message.trim()
-        });
         await transporter.sendMail({
           to: teacher.email,
           from: process.env.SMTP_USER,
-          subject,
-          html,
-          text
+          subject: `New discussion message for ${klass.name}`,
+          text: message.trim()
         });
       } catch (e) {
         console.error('Email send failed', e);
@@ -129,6 +133,12 @@ router.get('/powerpoint', (req, res) => {
     }
   }
   res.redirect(`/student/classes/${classId}#discussion`);
+});
+
+router.get('/teachers/:id', async (req, res) => {
+  const teacher = await userModel.findById(Number(req.params.id));
+  if (!teacher || teacher.role !== 'teacher') return res.status(404).send('Not found');
+  res.render('teacher_profile', { teacher, role: 'student' });
 });
 
 router.get('/classes/:id/tests/:testId', async (req, res) => {
@@ -195,14 +205,15 @@ router.get('/', async (req, res) => {
       });
     }
 
-    (klass.schedule || []).forEach(s => {
+     (klass.schedule || []).forEach(s => {
       const dayIndex = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(s.day);
       let date = new Date(now);
       while (date <= threeWeeksFromNow) {
         if (date.getDay() === dayIndex) {
-          events.push({
+        const [sh, sm] = String(s.start || '0:0').split(':').map(Number);
+        events.push({
             title: klass.name + ' (Class)',
-            start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), parseInt(s.time), 0),
+            start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), sh, sm || 0),
             url: `/student/classes/${klass.id}` // NEW: link to class page
           });
         }

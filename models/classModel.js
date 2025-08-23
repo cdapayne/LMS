@@ -2,7 +2,7 @@ const db = require('./db');
 
 function mapClass(row) {
   if (!row) return row;
- ['studentIds', 'schedule', 'lectures', 'simulations', 'assignments', 'tests', 'grades', 'attendance'].forEach(k => {    if (row[k] && typeof row[k] === 'string') {
+ ['studentIds', 'schedule', 'lectures', 'simulations', 'assignments', 'tests', 'grades', 'attendance', 'checklist'].forEach(k => {    if (row[k] && typeof row[k] === 'string') {
       try { row[k] = JSON.parse(row[k]); } catch (_) { row[k] = []; }
     } else if (!row[k]) {
       row[k] = [];
@@ -23,12 +23,12 @@ async function findClassById(id) {
   return mapClass(rows[0]);
 }
 
-async function createClass({ schoolYear, cohort, name, shortName, description, teacherId, schedule, weeks }) {
+async function createClass({ schoolYear, cohort, name, shortName, description, teacherId, schedule, weeks, startDate, endDate }) {
   const [result] = await db.query(
-       `INSERT INTO mdtslms_classes (schoolYear, cohort, name, shortName, description, teacherId, weeks, studentIds, schedule, lectures, simulations, assignments, tests, grades, attendance)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [schoolYear, cohort, name, shortName, description, teacherId, weeks || 0,
-    JSON.stringify([]), JSON.stringify(schedule || []), JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), JSON.stringify([])]  );
+       `INSERT INTO mdtslms_classes (schoolYear, cohort, name, shortName, description, teacherId, weeks, startDate, endDate, studentIds, schedule, lectures, simulations, assignments, tests, grades, attendance, checklist)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [schoolYear, cohort, name, shortName, description, teacherId, weeks || 0, startDate, endDate,
+    JSON.stringify([]), JSON.stringify(schedule || []), JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), JSON.stringify([])]  );
   return findClassById(result.insertId);
 }
 
@@ -45,10 +45,10 @@ async function duplicateClass(id) {
   const original = await findClassById(id);
   if (!original) return null;
   const [result] = await db.query(
-      `INSERT INTO mdtslms_classes (schoolYear, cohort, name, shortName, description, teacherId, weeks, studentIds, schedule, lectures, simulations, assignments, tests, grades, attendance)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [original.schoolYear, original.cohort, `${original.name} (Copy)`, original.shortName, original.description, original.teacherId, original.weeks,
-    JSON.stringify([]), JSON.stringify(original.schedule || []), JSON.stringify(original.lectures || []), JSON.stringify(original.simulations || []), JSON.stringify(original.assignments || []), JSON.stringify(original.tests || []), JSON.stringify([]), JSON.stringify([])]  );
+      `INSERT INTO mdtslms_classes (schoolYear, cohort, name, shortName, description, teacherId, weeks, startDate, endDate, studentIds, schedule, lectures, simulations, assignments, tests, grades, attendance, checklist)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [original.schoolYear, original.cohort, `${original.name} (Copy)`, original.shortName, original.description, original.teacherId, original.weeks, original.startDate, original.endDate,
+    JSON.stringify([]), JSON.stringify(original.schedule || []), JSON.stringify(original.lectures || []), JSON.stringify(original.simulations || []), JSON.stringify(original.assignments || []), JSON.stringify(original.tests || []), JSON.stringify([]), JSON.stringify([]), JSON.stringify(original.checklist || [])]  );
   return findClassById(result.insertId);
 }
 
@@ -91,6 +91,11 @@ async function addSimulation(classId, simulation) {
   klass.simulations.push(simulation);
   await db.query('UPDATE mdtslms_classes SET simulations=? WHERE id=?', [JSON.stringify(klass.simulations), classId]);
   return simulation;
+}
+
+async function updateChecklist(classId, checklist) {
+  await db.query('UPDATE mdtslms_classes SET checklist=? WHERE id=?', [JSON.stringify(checklist || []), classId]);
+  return true;
 }
 
 async function byTeacher(teacherId) {
@@ -166,10 +171,10 @@ module.exports = {
   byTeacher,
   recordAttendance,
   upsertGrade,
-    upsertAssignmentGrade,
+  upsertAssignmentGrade,
   upsertLabStatus,
-  duplicateClass
+  duplicateClass,
+  updateChecklist
 };
-
 
 

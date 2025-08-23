@@ -116,16 +116,26 @@
 
   <header class="page-head" role="banner" aria-label="Class header">
     <div class="container d-flex flex-wrap justify-content-between align-items-end gap-2">
-      <div>
-        <h1>
-          <%= klass.name %>
-          <span class="text-muted"><% if (klass.shortName) { %>(<%= klass.shortName %>)<% } %></span>
-        </h1>
-        <p class="page-meta mb-0">
-          School Year: <strong><%= klass.schoolYear %></strong>
-          &nbsp;•&nbsp; Cohort: <strong><%= klass.cohort %></strong>
-          <% if (klass.weeks) { %>&nbsp;•&nbsp; Duration: <strong><%= klass.weeks %> weeks</strong><% } %>
-        </p>
+      <div class="d-flex align-items-center gap-3">
+        <% if (teacher && teacher.profile && teacher.profile.photo) { %>
+          <img src="<%= teacher.profile.photo.url %>" alt="Teacher photo" style="width:60px;height:60px;border-radius:50%;object-fit:cover;">
+        <% } %>
+        <div>
+          <h1>
+            <%= klass.name %>
+            <span class="text-muted"><% if (klass.shortName) { %>(<%= klass.shortName %>)<% } %></span>
+          </h1>
+          <p class="page-meta mb-0">
+            School Year: <strong><%= klass.schoolYear %></strong>
+            &nbsp;•&nbsp; Cohort: <strong><%= klass.cohort %></strong>
+            <% if (klass.weeks) { %>&nbsp;•&nbsp; Duration: <strong><%= klass.weeks %> weeks</strong><% } %>
+          </p>
+          <% if (teacher) { %>
+            <p class="page-meta mb-0">
+              Instructor: <a href="/<%= studentView ? 'student/teachers/' + teacher.id : 'admin/teachers/' + teacher.id + '/edit' %>"><%= teacher.name %></a>
+            </p>
+          <% } %>
+        </div>
       </div>
 
       <% if (typeof studentView === 'undefined' || !studentView) { %>
@@ -154,10 +164,18 @@
         <% } else { %>
           <p class="mb-0 text-muted"><%= klass.description %></p>
         <% } %>
+        <% if (klass.startDate) { %>
+          <div class="mt-3 small">
+            <div><strong>First Day:</strong> <%= klass.startDate %></div>
+            <div><strong>Last Day:</strong> <%= klass.endDate %></div>
+            <div><strong>Starts in:</strong> <span id="startCountdown"></span></div>
+          </div>
+        <% } %>
       </section>
 
       <section class="cardish" aria-labelledby="schedule-title">
         <div class="section-title"><span class="dot"></span><span id="schedule-title">Schedule</span></div>
+        <% function fmtTime(t){ if(!t) return ''; const parts=String(t).split(':'); let h=parseInt(parts[0],10), m=parts[1]||'00'; const ampm=h>=12?'PM':'AM'; h=h%12||12; return h+":"+m+" "+ampm; } %>
         <% if (!((klass.schedule||[]).length)) { %>
           <div class="empty">
             <div class="fs-4 mb-1">📅</div>
@@ -168,7 +186,7 @@
           <ul class="list-plain">
             <% (klass.schedule || []).forEach(s => { %>
               <li class="mb-1">
-                <strong><%= s.day %></strong>: <%= s.time %>
+                <strong><%= s.day %></strong>: <%= fmtTime(s.start) %> – <%= fmtTime(s.end) %>
                 <% if (s.holiday) { %><span class="badge badge-holiday ms-2">Holiday</span><% } %>
               </li>
             <% }) %>
@@ -386,5 +404,20 @@
    
     <% } %>
   </main>
+    <% if (klass.startDate) { %>
+  <script>
+    (function(){
+      const el=document.getElementById('startCountdown');
+      if(!el) return;
+      const start=new Date('<%= klass.startDate %>');
+      function update(){
+        const diff=start - new Date();
+        const days=Math.ceil(diff/86400000);
+        el.textContent = days>0 ? days + ' days' : 'Started';
+      }
+      update();
+    })();
+  </script>
+  <% } %>
 </body>
 </html>

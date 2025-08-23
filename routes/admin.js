@@ -527,25 +527,29 @@ router.post('/classes', async (req, res) => {
 
     const description = (req.body.description || '').trim();
     const teacherId = Number(req.body.teacherId || 0);
-        const weeks = Number(req.body.weeks || 0);
+    const weeks = Number(req.body.weeks || 0);
+    const startDate = (req.body.startDate || '').trim();
+    const endDate = (req.body.endDate || '').trim();
 
-    if (!schoolYear || !cohort || !name || !shortName || !teacherId) {
+    if (!schoolYear || !cohort || !name || !shortName || !teacherId || !startDate || !endDate) {
       const teachers = await userModel.getByRole('teacher');
-      return res.status(400).render('create_class', { teachers, error: 'School Year, Cohort, Name, Short Name and Teacher are required.' });
+      return res.status(400).render('create_class', { teachers, error: 'School Year, Cohort, Name, Short Name, Teacher and Dates are required.' });
     }
 
-    // schedule arrays (day[], time[])
+    // schedule arrays (day[], start[], end[])
     const days = Array.isArray(req.body.day) ? req.body.day : (req.body.day ? [req.body.day] : []);
-    const times = Array.isArray(req.body.time) ? req.body.time : (req.body.time ? [req.body.time] : []);
+    const starts = Array.isArray(req.body.start) ? req.body.start : (req.body.start ? [req.body.start] : []);
+    const ends = Array.isArray(req.body.end) ? req.body.end : (req.body.end ? [req.body.end] : []);
     const schedule = [];
-    for (let i = 0; i < Math.max(days.length, times.length); i++) {
+    for (let i = 0; i < Math.max(days.length, starts.length, ends.length); i++) {
       const d = (days[i] || '').trim();
-      const t = (times[i] || '').trim();
- const h = req.body[`holiday${i}`] === 'on' || req.body[`holiday${i}`] === '1';
-      if (d && t) schedule.push({ day: d, time: t, holiday: h });    }
+      const st = (starts[i] || '').trim();
+      const en = (ends[i] || '').trim();
+      const h = req.body[`holiday${i}`] === 'on' || req.body[`holiday${i}`] === '1';
+      if (d && st && en) schedule.push({ day: d, start: st, end: en, holiday: h });
+    }
 
-        const klass = await classModel.createClass({ schoolYear, cohort, name,  weeks,shortName, description, teacherId, schedule });
-
+  const klass = await classModel.createClass({ schoolYear, cohort, name, weeks, shortName, description, teacherId, schedule, startDate, endDate });
     return res.redirect(`/admin/classes/${klass.id}`);
   } catch (e) {
     console.error(e);
@@ -672,11 +676,13 @@ router.get('/classes/:id', async (req, res) => {
   const klass = await classModel.findClassById(id);
   if (!klass) return res.status(404).send('Not found');
   const users = await userModel.getAll();
-    const students = users.filter(u => u.role === 'student' && u.status === 'approved');
- const discussions = await discussionModel.getByClass(id);
+  const students = users.filter(u => u.role === 'student' && u.status === 'approved');
+  const teacher = await userModel.findById(klass.teacherId);
+  const discussions = await discussionModel.getByClass(id);
 
   const classStudents = students.filter(s => (klass.studentIds||[]).includes(s.id));
-  res.render('view_class', { klass, students, classStudents, studentView: false, discussions });});
+  res.render('view_class', { klass, students, classStudents, studentView: false, discussions, teacher });
+});
 
 router.post('/classes/:id/lectures', mediaUpload.single('ppt'), async (req, res) => {
   const classId = Number(req.params.id);
@@ -841,10 +847,26 @@ router.post('/teachers/:id/delete', async (req, res) => {
 });
 
 // Edit teacher (placeholder)
+// Edit teacher (placeholder)
 router.get('/teachers/:id/edit', async (req, res) => {
- const teacher = (await userModel.getAll()).find(u => u.role === 'teacher' && u.id === Number(req.params.id));  if (!teacher) return res.status(404).send('Not found');
-  // For now, just send back JSON — you can later make an edit form view
-  res.json(teacher);
+  const teacher = await userModel.findById(Number(req.params.id));
+  if (!teacher || teacher.role !== 'teacher') return res.status(404).send('Not found');
+  res.render('teacher_profile', { teacher, role: 'admin', saved: req.query.saved });
+});
+
+router.post('/teachers/:id/edit', mediaUpload.single('photo'), async (req, res) => {
+  const id = Number(req.params.id);
+  const teacher = await userModel.findById(id);
+  if (!teacher || teacher.role !== 'teacher') return res.status(404).send('Not found');
+  if (req.file) {
+    await userModel.updateProfile(id, {
+      photo: {
+        url: `/uploads/${req.file.filename}`,
+        originalName: req.file.originalname
+      }
+    });
+  }
+  res.redirect(`/admin/teachers/${id}/edit?saved=1`);
 });
 
 
@@ -881,9 +903,10 @@ router.get('/events', async (req, res) => {
       let date = new Date(now);
       while (date <= threeWeeksFromNow) {
         if (date.getDay() === dayIndex) {
+          const [sh, sm] = String(s.start || '0:0').split(':').map(Number);
           events.push({
             title: klass.name + ' (Class)',
-            start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), parseInt(s.time), 0),
+            start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), sh, sm || 0),
             type: 'Class',
             className: klass.name
           });

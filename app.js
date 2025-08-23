@@ -11,7 +11,7 @@ const teacherRoutes = require('./routes/teacher');
 const paymentRoutes = require('./routes/payment');
 const preRegRoutes = require('./routes/preReg');
 const eventRoutes = require('./routes/events');
-
+const accountRoutes = require('./routes/account');
 
 
 
@@ -62,6 +62,7 @@ app.use(eventRoutes);
 
 app.use('/student', studentRoutes);
 app.use('/teacher', teacherRoutes);
+app.use(accountRoutes);
 
 const PORT = process.env.PORT || 3012;
 app.listen(PORT, () => console.log(`School LMS running on http://localhost:${PORT}`));

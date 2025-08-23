@@ -203,7 +203,7 @@
         <div class="cardish h-100">
           <div class="section-title"><span class="dot"></span><span id="my-classes-title">My Classes</span></div>
 
-          <% if (!classes || classes.length === 0) { %>
+                 <% if (!classes || classes.length === 0) { %>
             <div class="empty">
               <div class="fs-4 mb-1">📚</div>
               <div class="fw-semibold">No classes assigned yet</div>
@@ -211,6 +211,7 @@
             </div>
           <% } else { %>
             <div class="d-flex flex-column gap-2">
+              <% function fmt(t){ if(!t) return ''; const parts=String(t).split(':'); let h=parseInt(parts[0],10), m=parts[1]||'00'; const ampm=h>=12?'PM':'AM'; h=h%12||12; return h+":"+m+" "+ampm; } %>
               <% classes.forEach(k => { %>
                 <article class="class-item" aria-label="Class item">
                   <div class="flex-grow-1">
@@ -219,7 +220,7 @@
                       <% if (k?.section) { %><span class="chip"><%= k.section %></span><% } %>
                     </div>
                     <div class="class-meta">
-                      <% const sched = (k.schedule||[]).map(s => (s.day||'') + ' ' + (s.time||'')); %>
+                      <% const sched = (k.schedule||[]).map(s => (s.day||'') + ' ' + fmt(s.start) + ' - ' + fmt(s.end)); %>
                       <%= sched.length ? sched.join(' • ') : 'No schedule provided' %>
                     </div>
                   </div>
@@ -245,14 +246,7 @@
       <section class="col-12 col-lg-6" aria-labelledby="weekly-schedule-title">
         <div class="cardish h-100">
           <div class="section-title"><span class="dot"></span><span id="weekly-schedule-title">Weekly Schedule</span></div>
-          <div id="calendar" aria-label="Weekly calendar"></div>
-        </div>
-      </section>
-    </div>
-        <!-- <div class="row g-3 mt-1">
-      <div class="col-12 col-md-6">
-        <div class="cardish">
-          <div class="chart-title">Student Status</div>
+@@ -256,89 +257,76 @@
           <div id="t-chart-student-status" class="chart"></div>
         </div>
       </div>
@@ -278,19 +272,9 @@
   </main>
 
   <script>
-    // Calendar build from schedules like: { day: "Monday", time: "09:00 AM - 10:30 AM" }
+    // Calendar build from schedules like: { day: "Monday", start: "09:00", end: "10:30" }
     (function initCalendar(){
       const dayToIndex = { Sunday:0, Monday:1, Tuesday:2, Wednesday:3, Thursday:4, Friday:5, Saturday:6 };
-
-      function parseTime12h(str){
-        if(!str) return null;
-        const m = str.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-        if(!m) return null;
-        let h = parseInt(m[1],10), min = parseInt(m[2],10), ampm = m[3].toUpperCase();
-        if (ampm === 'PM' && h !== 12) h += 12;
-        if (ampm === 'AM' && h === 12) h = 0;
-        return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
-      }
 
       function dateForWeekday(weekdayIndex){
         const now = new Date();
@@ -306,22 +290,18 @@
 
       classes.forEach(k => {
         (k.schedule || []).forEach(s => {
-          const [startStr, endStr] = String(s.time || '').split('-').map(x => x?.trim());
-          const startTime = parseTime12h(startStr);
-          const endTime   = parseTime12h(endStr);
           const idx = dayToIndex[s.day];
-          if (!startTime || !endTime || typeof idx !== 'number') return;
+          if (typeof idx !== 'number' || !s.start || !s.end) return;
 
           const base = dateForWeekday(idx);
-          const [sh, sm] = startTime.split(':').map(Number);
-          const [eh, em] = endTime.split(':').map(Number);
-          const start = new Date(base); start.setHours(sh, sm, 0, 0);
-          const end   = new Date(base); end.setHours(eh, em, 0, 0);
+          const [sh, sm] = String(s.start).split(':').map(Number);
+          const [eh, em] = String(s.end).split(':').map(Number);
+          const start = new Date(base); start.setHours(sh, sm||0, 0, 0);
+          const end   = new Date(base); end.setHours(eh, em||0, 0, 0);
 
           events.push({ title: k.name, start, end, url: `/teacher/classes/${k.id}` });
         });
       });
-
       const calendarEl = document.getElementById('calendar');
       if (!calendarEl) return;
 

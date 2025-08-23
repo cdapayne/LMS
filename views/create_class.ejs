@@ -122,6 +122,17 @@
           </div>
         </div>
 
+          <div class="two-col">
+          <div class="mb-3">
+            <label class="form-label">First Day of Class</label>
+            <input type="date" name="startDate" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Last Day of Class</label>
+            <input type="date" name="endDate" class="form-control" required>
+          </div>
+        </div>
+
         <!-- Schedule -->
         <div class="section-title mt-2">Schedule</div>
         <p class="hint mb-2">Add the meeting day and time window. You can leave rows blank.</p>
@@ -137,9 +148,13 @@
                   <% dayOpts.forEach(d => { %><option><%= d %></option><% }) %>
                 </select>
               </div>
-              <div class="col-md-6">
-                <label class="form-label mb-1">Time</label>
-                <input name="time" class="form-control" placeholder="e.g., 09:00 AM – 10:30 AM">
+             <div class="col-md-3">
+                <label class="form-label mb-1">Start</label>
+                <input type="time" name="start" class="form-control">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label mb-1">End</label>
+                <input type="time" name="end" class="form-control">
               </div>
               <div class="col-md-2">
                 <div class="form-check mt-4 pt-1">
