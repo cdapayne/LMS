@@ -1,8 +1,10 @@
 const db = require('./db');
 
+const TEST_TABLE = 'LMSTest5';
+
+
 async function getQuestionsByTest(testName) {
-  const [rows] = await db.query('SELECT * FROM LMSTest5 WHERE Test = ?', [testName]);
-  return rows.map(r => {
+  const [rows] = await db.query(`SELECT * FROM ${TEST_TABLE} WHERE Test = ?`, [testName]);  return rows.map(r => {
     const options = [r.OptionA, r.OptionB, r.OptionC, r.OptionD, r.OptionE, r.OptionF, r.OptionG].filter(Boolean);
     let answerIndex = parseInt(r.Answer, 10);
     if (Number.isNaN(answerIndex)) {
@@ -26,7 +28,7 @@ async function getQuestionsByTest(testName) {
 }
 
 async function replaceTestQuestions(testName, questions) {
-  await db.query('DELETE FROM LMSTest5 WHERE Test = ?', [testName]);
+  await db.query(`DELETE FROM ${TEST_TABLE} WHERE Test = ?`, [testName]);
   for (const q of questions) {
     const opts = q.options || [];
     const correctAns =
@@ -34,8 +36,7 @@ async function replaceTestQuestions(testName, questions) {
         ? opts[q.answer] || q.answerText || ''
         : q.answer || q.answerText || '';
     await db.query(
-      'INSERT INTO LMSTest5 (Question, Answer, Explanation, Picture, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG, Test, `Content Type`, Title, `Item Type`, Path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-      [
+      `INSERT INTO ${TEST_TABLE} (Question, Answer, Explanation, Picture, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG, Test, \`Content Type\`, Title, \`Item Type\`, Path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,      [
         q.question || '',
         correctAns,
         q.explanation || '',
@@ -65,8 +66,7 @@ async function insertQuestions(questions) {
         ? opts[q.answer] || q.answerText || ''
         : q.answer || q.answerText || '';
     await db.query(
-      'INSERT INTO LMSTest5 (Question, Answer, Explanation, Picture, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG, Test, `Content Type`, Title, `Item Type`, Path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-      [
+     `INSERT INTO ${TEST_TABLE} (Question, Answer, Explanation, Picture, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG, Test, \`Content Type\`, Title, \`Item Type\`, Path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,      [
         q.question || '',
         correctAns,
         q.explanation || '',

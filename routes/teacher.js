@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-
 const classModel = require('../models/classModel');
 const userModel = require('../models/userModel');
+const db = require('../models/db');
 const { generateQuestions } = require('../utils/questionGenerator');
 const announcementModel = require('../models/announcementModel');
 const discussionModel = require('../models/discussionModel');
@@ -319,40 +319,126 @@ router.post('/classes/:id/tests/generate', async (req, res) => {
   const { title, prompt, timeLimit } = req.body;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return res.status(500).send('Missing OpenAI API key');
+
   try {
+    // 1) Call OpenAI – ask for JSON **only**
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: `Create a JSON array of questions for ${prompt}. Each item should contain fields: Question, Answer, Explanation, Picture, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG, Test, Content Type, Title, Item Type, Path.` }]
+        model: 'gpt-3.5-turbo', // swap to a current model in your env if needed
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a data generator. Respond with ONLY a JSON array, no prose, no code fences.'
+          },
+          {
+            role: 'user',
+            content:
+              `Create a JSON array of questions for: ${prompt}.
+Each array item must be an object with the EXACT keys:
+"Question","Answer","Explanation","Picture",
+"OptionA","OptionB","OptionC","OptionD","OptionE","OptionF","OptionG",
+"Test","Content Type","Title","Item Type","Path".
+Do not include any extra keys. Do not include backticks or code fences.`
+          }
+        ],
+        temperature: 0.2
       })
     });
+
     const data = await response.json();
-    let items = [];
-    try { items = JSON.parse(data.choices[0].message.content); } catch (_) { items = []; }
-      const questions = items.map(q => ({
-        question: q.Question,
-        answer: q.Answer,
-        explanation: q.Explanation,
-        picture: q.Picture,
-        options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD, q.OptionE, q.OptionF, q.OptionG].filter(Boolean),
-        test: q.Test,
-        contentType: q['Content Type'],
-        title: q.Title,
-        itemType: q['Item Type'],
-        path: q.Path
-      }));
-      const testTitle = title || 'AI Generated Test';
-  questions.forEach(q => { if (!q.test) q.test = testTitle; });
-      await testModel.insertQuestions(questions);      await classModel.addTest(classId, { title: testTitle, timeLimit: Number(timeLimit) || 90 });
-    } catch (e) {
-      console.error('OpenAI error', e);
+    if (!response.ok) {
+      console.error('OpenAI error payload:', data);
+      return res.status(502).send('AI generation failed');
     }
-  res.redirect(`/teacher/classes/${classId}#tests`);
+
+    let raw = data?.choices?.[0]?.message?.content || '';
+    // 2) Strip code fences if the model still included them
+    raw = raw.trim();
+    raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim();
+
+    // 3) Parse and validate
+    let items;
+    try {
+      items = JSON.parse(raw);
+    } catch (e) {
+      console.error('JSON parse error. Raw content:', raw);
+      items = [];
+    }
+    if (!Array.isArray(items)) {
+      console.error('Model did not return an array. Content:', raw);
+      items = [];
+    }
+
+    const testTitle = title || 'AI Generated Test';
+
+    // 4) Prepare SQL and insert
+    const sql = `
+      INSERT INTO mdtsapps_myclass.LMSTest5
+      (Question, Answer, Explanation, Picture,
+       OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG,
+       Test, \`Content Type\`, Title, \`Item Type\`, Path)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `;
+
+    // If you're using mysql2/promise:
+    // const [stmt] = await db.prepare(sql);  // if you use prepare()
+    // We'll just execute per-row here:
+    let inserted = 0;
+    for (const obj of items) {
+      // 5) Defensive access (normalize keys in case of casing drift)
+      const get = (k) => obj?.[k] ?? '';
+
+      const values = [
+        get('Question'),
+        get('Answer'),
+        get('Explanation'),
+        get('Picture'),
+        get('OptionA'),
+        get('OptionB'),
+        get('OptionC'),
+        get('OptionD'),
+        get('OptionE'),
+        get('OptionF'),
+        get('OptionG'),
+        get('Test') || testTitle,
+        get('Content Type'),
+        get('Title'),
+        get('Item Type'),
+        get('Path')
+      ];
+
+      try {
+        // mysql2/promise:
+        // await db.execute(sql, values);
+        await db.query(sql, values); // works if your helper wires to execute internally
+        inserted++;
+      } catch (dbErr) {
+        console.error('DB insert error for values:', values, dbErr);
+      }
+    }
+
+    // 6) Record the test on the class regardless of per-row failures
+    try {
+      await classModel.addTest(classId, {
+        title: testTitle,
+        timeLimit: Number(timeLimit) || 90
+      });
+    } catch (e) {
+      console.error('classModel.addTest failed:', e);
+    }
+
+    console.log(`Inserted ${inserted} question rows into LMSTest5.`);
+    res.redirect(`/teacher/classes/${classId}#tests`);
+  } catch (e) {
+    console.error('Route error', e);
+    res.status(500).send('Unexpected error');
+  }
 });
 // Grade submission (upsert)
 router.post('/classes/:id/grades', async (req, res) => {
