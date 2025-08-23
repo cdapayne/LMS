@@ -44,4 +44,31 @@ async function replaceTestQuestions(testName, questions) {
   }
 }
 
-module.exports = { getQuestionsByTest, replaceTestQuestions };
+async function insertQuestions(questions) {
+  for (const q of questions) {
+    const opts = q.options || [];
+    await db.query(
+      'INSERT INTO LMSTest5 (Question, Answer, Explanation, Picture, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG, Test, `Content Type`, Title, `Item Type`, Path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [
+        q.question || '',
+        q.answer || '',
+        q.explanation || '',
+        q.picture || '',
+        opts[0] || '',
+        opts[1] || '',
+        opts[2] || '',
+        opts[3] || '',
+        opts[4] || '',
+        opts[5] || '',
+        opts[6] || '',
+        q.test || '',
+        q.contentType || 'multiple-choice',
+        q.title || '',
+        q.itemType || 'Question',
+        q.path || ''
+      ]
+    );
+  }
+}
+
+module.exports = { getQuestionsByTest, replaceTestQuestions, insertQuestions };

@@ -10,43 +10,25 @@
   <div class="container py-4">
     <h2><%= test.title %></h2>
     <p>Class: <%= klass.name %></p>
-        <div id="timer" class="mb-3">Time Left: <span id="time-left"></span></div>
-    <form method="post" action="/student/classes/<%= klass.id %>/tests/<%= test.id %>">
-      <% test.questions.forEach((q, i) => { %>
-        <div class="mb-3">
-              <% if (q.picture) { %>
-            <img src="<%= q.picture %>" alt="Question Image" class="img-fluid d-block mb-2">
-          <% } %>
-          <strong>Q<%= i+1 %>:</strong> <%= q.question %>
-          <div class="ms-3">
-            <% q.options.forEach((opt, j) => { %>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="q_<%= i %>" value="<%= j %>" required id="q_<%= i %>_<%= j %>">
-                <label class="form-check-label" for="q_<%= i %>_<%= j %>"><%= opt %></label>
-              </div>
-            <% }) %>
-          </div>
-        </div>
-      <% }) %>
-      <button class="btn btn-primary">Submit</button>
-    </form>
+    <div class="mb-2">Current Grade: <span id="grade">0%</span></div>
+    <div id="timer" class="mb-3">Time Left: <span id="time"></span></div>
+    <div id="question-block">
+      <div id="question-number" class="mb-2"></div>
+      <img id="question-image" src="" alt="Question Image" class="img-fluid mb-2" style="display:none;">
+      <p id="question-text" class="lead"></p>
+      <form id="question-form">
+        <div id="answers-container"></div>
+        <button type="submit" class="btn btn-primary mt-3">Submit</button>
+      </form>
+    </div>
+    <form id="final-form" method="post" action="/student/classes/<%= klass.id %>/tests/<%= test.id %>"></form>
   </div>
-    <script>
-    const totalSeconds = (<%= test.timeLimit || 90 %>) * <%= test.questions.length %>;
-    let remaining = totalSeconds;
-    const display = document.getElementById('time-left');
-    function updateTimer() {
-      const minutes = Math.floor(remaining / 60);
-      const seconds = remaining % 60;
-      display.textContent = `${minutes}:${seconds.toString().padStart(2,'0')}`;
-      if (remaining <= 0) {
-        document.querySelector('form').submit();
-      } else {
-        remaining--;
-        setTimeout(updateTimer, 1000);
-      }
-    }
-    updateTimer();
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    window.testQuestions = <%- JSON.stringify(test.questions) %>;
+    window.timePerQuestion = <%= test.timeLimit || 90 %>;
   </script>
+  <script src="/js/takeTest.js"></script>
 </body>
 </html>
