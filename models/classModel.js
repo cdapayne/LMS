@@ -127,7 +127,20 @@ async function upsertItemGrade(classId, key, itemId, studentId, extra) {
 }
 
 async function recordGrade(classId, testId, studentId, score) {
-  return upsertItemGrade(classId, 'testId', testId, studentId, { score });
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  klass.grades = klass.grades || [];
+  const now = new Date().toISOString();
+  const existing = klass.grades.find(g => g.testId === testId && g.studentId === studentId);
+  if (existing) {
+    existing.score = score;
+    existing.attempt = (existing.attempt || 0) + 1;
+    existing.gradedAt = now;
+  } else {
+    klass.grades.push({ classId, studentId, testId, score, attempt: 1, gradedAt: now });
+  }
+  await db.query('UPDATE mdtslms_classes SET grades=? WHERE id=?', [JSON.stringify(klass.grades), classId]);
+  return true;
 }
 
 

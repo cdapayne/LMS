@@ -11,6 +11,12 @@
     <h2>Test Results</h2>
     <p>Class: <strong><%= klass.name %></strong></p>
     <p>You scored: <strong><%= score %>%</strong></p>
+    <div class="border rounded p-5 text-center my-4">
+      <h3>Certificate of Completion</h3>
+      <p>This certifies that</p>
+      <h4><%= student.name %></h4>
+      <p>has completed <strong><%= test.title %></strong> with a score of <strong><%= score %>%</strong>.</p>
+    </div>
     <a class="btn btn-link" href="/student">Back to classes</a>
   </div>
 </body>

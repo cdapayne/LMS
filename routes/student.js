@@ -150,7 +150,10 @@ router.get('/classes/:id/tests/:testId', async (req, res) => {
   const test = (klass.tests || []).find(t => t.id === testId);
   if (!test) return res.status(404).send('Test not found');
   test.questions = await testModel.getQuestionsByTest(test.title);
-  res.render('take_test', { klass, test });
+  const existing = (klass.grades || []).find(g => g.testId === testId && g.studentId === req.session.user.id);
+  const attempts = existing ? existing.attempt || 0 : 0;
+  if (attempts >= 5) return res.status(403).send('No attempts remaining');
+  res.render('take_test', { klass, test, attempts });
 });
 
 // study helper for custom material
@@ -353,7 +356,7 @@ router.post('/classes/:id/tests/:testId', async (req, res) => {
     if (!Number.isNaN(chosen) && chosen === correct) score++;  });
   const pct = Math.round((score / test.questions.length) * 100);
   await classModel.recordGrade(id, testId, req.session.user.id, pct);
-  res.render('test_result', { klass, test, score: pct });
+  res.render('test_result', { klass, test, score: pct, student: req.session.user });
 });
 
 module.exports = router;

@@ -17,8 +17,7 @@
       <img id="question-image" src="" alt="Question Image" class="img-fluid mb-2" style="display:none;">
       <p id="question-text" class="lead"></p>
       <form id="question-form">
-        <div id="answers-container"></div>
-        <button type="submit" class="btn btn-primary mt-3">Submit</button>
+        <div id="answers-container" class="list-group"></div>
       </form>
     </div>
     <form id="final-form" method="post" action="/student/classes/<%= klass.id %>/tests/<%= test.id %>"></form>
@@ -28,6 +27,8 @@
   <script>
     window.testQuestions = <%- JSON.stringify(test.questions) %>;
     window.timePerQuestion = <%= test.timeLimit || 90 %>;
+    window.attempts = <%= attempts %>;
+    window.testId = <%= test.id %>;
   </script>
   <script src="/js/taketest.js"></script>
 </body>
