@@ -100,9 +100,9 @@
   </div>
 
   <div class="container pb-4">
-      <% if (reset) { %>
-           <div class="alert alert-success text-center">Password reset email sent.</div>
-    <% } %>
+    <% if (typeof reset !== 'undefined' && reset) { %>
+  <div class="alert alert-success text-center">Password reset email sent.</div>
+<% } %>
     <!-- Key facts -->
     <div class="cardish">
       <div class="row g-3">

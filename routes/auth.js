@@ -130,6 +130,27 @@ router.post('/reset-password', async (req, res) => {
   return res.render('reset_password', { error: null, success: true, token: null });
 });
 
+router.get('/step2', async (req, res) => {
+  const token = ensureStr(req.query.token);
+  if (!token) {
+    return res.status(400).render('login', { error: 'Invalid or expired link', next: '' });
+  }
+  const user = await userModel.findByStep2Token(token);
+  if (!user) {
+    return res.status(400).render('login', { error: 'Invalid or expired link', next: '' });
+  }
+  req.session.user = {
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    firstName: user.firstName,
+    lastName: user.lastName
+  };
+  req.session.role = user.role;
+  await userModel.clearStep2Token(user.id);
+  return res.redirect('/student/profile');
+});
+
 router.post('/login', async (req, res) => {
   const username = ensureStr(req.body.username);
   const password = ensureStr(req.body.password);

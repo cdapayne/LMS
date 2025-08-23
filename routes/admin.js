@@ -313,13 +313,16 @@ router.post('/students/:id/step2', async (req, res) => {
     });
     const student = await userModel.findById(id);
     if (student && student.email) {
-      const link = `${req.protocol}://${req.get('host')}/login?next=${encodeURIComponent('/student/profile')}`;
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = Date.now() + 1000 * 60 * 60 * 24;
+      await userModel.setStep2Token(id, token, expires);
+      const link = `${req.protocol}://${req.get('host')}/step2?token=${token}`;
       await transporter.sendMail({
         from: 'no-reply@mdts-apps.com',
         to: student.email,
         subject: 'Enrollment Details Updated',
         text: `Hi ${student.name}, please review and sign your enrollment documents: ${link}`,
-        html: `<p>Hi ${student.name}, your enrollment details have been updated. <a href="${link}">Click here</a> to review and sign your documents.</p>`
+        html: `<p>Hi ${student.name}, your enrollment details have been updated. <a href="${link}">Click here</a> to finish your registration.</p>`
       });
     }
   } catch (e) {

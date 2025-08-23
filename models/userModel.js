@@ -204,6 +204,38 @@ async function clearResetToken(id) {
   return true;
 }
 
+async function setStep2Token(id, token, expires) {
+  const user = await findById(id);
+  if (!user) return false;
+  user.profile = user.profile || {};
+  user.profile.step2Token = { token, expires };
+  await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), id]);
+  return true;
+}
+
+async function findByStep2Token(token) {
+  const [rows] = await db.query('SELECT * FROM mdtslms_users');
+  for (const row of rows) {
+    const user = mapRow(row);
+    if (user.profile && user.profile.step2Token && user.profile.step2Token.token === token) {
+      if (user.profile.step2Token.expires && user.profile.step2Token.expires < Date.now()) {
+        return null;
+      }
+      return user;
+    }
+  }
+  return null;
+}
+
+async function clearStep2Token(id) {
+  const user = await findById(id);
+  if (!user) return false;
+  if (user.profile && user.profile.step2Token) {
+    delete user.profile.step2Token;
+    await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), id]);
+  }
+  return true;
+}
 
 async function addUploads(id, uploads) {
  const user = await findById(id);
@@ -253,10 +285,13 @@ module.exports = {
     signDocument,
   updateProfile,
 
-   updatePassword,
+  updatePassword,
     setResetToken,
   findByResetToken,
   clearResetToken,
+  setStep2Token,
+  findByStep2Token,
+  clearStep2Token,
   getAll,
   getByRole,
   deleteById
