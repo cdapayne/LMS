@@ -2,29 +2,42 @@ const db = require('./db');
 
 async function getQuestionsByTest(testName) {
   const [rows] = await db.query('SELECT * FROM LMSTest5 WHERE Test = ?', [testName]);
-  return rows.map(r => ({
-    question: r.Question,
-    answer: r.Answer,
-    explanation: r.Explanation,
-    picture: r.Picture,
-    options: [r.OptionA, r.OptionB, r.OptionC, r.OptionD, r.OptionE, r.OptionF, r.OptionG].filter(Boolean),
-    test: r.Test,
-    contentType: r['Content Type'],
-    title: r.Title,
-    itemType: r['Item Type'],
-    path: r.Path
-  }));
+  return rows.map(r => {
+    const options = [r.OptionA, r.OptionB, r.OptionC, r.OptionD, r.OptionE, r.OptionF, r.OptionG].filter(Boolean);
+    let answerIndex = parseInt(r.Answer, 10);
+    if (Number.isNaN(answerIndex)) {
+      answerIndex = options.findIndex(opt => opt === r.Answer);
+    }
+    const answerText = options[answerIndex] || r.Answer;
+    return {
+      question: r.Question,
+      answer: answerIndex,
+      answerText,
+      explanation: r.Explanation,
+      picture: r.Picture,
+      options,
+      test: r.Test,
+      contentType: r['Content Type'],
+      title: r.Title,
+      itemType: r['Item Type'],
+      path: r.Path
+    };
+  });
 }
 
 async function replaceTestQuestions(testName, questions) {
   await db.query('DELETE FROM LMSTest5 WHERE Test = ?', [testName]);
   for (const q of questions) {
     const opts = q.options || [];
+    const correctAns =
+      typeof q.answer === 'number'
+        ? opts[q.answer] || q.answerText || ''
+        : q.answer || q.answerText || '';
     await db.query(
       'INSERT INTO LMSTest5 (Question, Answer, Explanation, Picture, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG, Test, `Content Type`, Title, `Item Type`, Path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       [
         q.question || '',
-        q.answer || '',
+        correctAns,
         q.explanation || '',
         q.picture || '',
         opts[0] || '',
@@ -47,11 +60,15 @@ async function replaceTestQuestions(testName, questions) {
 async function insertQuestions(questions) {
   for (const q of questions) {
     const opts = q.options || [];
+    const correctAns =
+      typeof q.answer === 'number'
+        ? opts[q.answer] || q.answerText || ''
+        : q.answer || q.answerText || '';
     await db.query(
       'INSERT INTO LMSTest5 (Question, Answer, Explanation, Picture, OptionA, OptionB, OptionC, OptionD, OptionE, OptionF, OptionG, Test, `Content Type`, Title, `Item Type`, Path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       [
         q.question || '',
-        q.answer || '',
+        correctAns,
         q.explanation || '',
         q.picture || '',
         opts[0] || '',
@@ -70,5 +87,6 @@ async function insertQuestions(questions) {
     );
   }
 }
+
 
 module.exports = { getQuestionsByTest, replaceTestQuestions, insertQuestions };

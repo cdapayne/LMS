@@ -316,7 +316,7 @@ router.post('/classes/:id/tests/:testId/study', async (req, res) => {
   const total = test.questions.length;
   const question = test.questions[progress.index];
   const chosen = Number(req.body.choice);
-  const correct = question.answer === chosen;
+  const correct = Number(question.answer) === chosen;
   if (correct) progress.correct++;
   progress.index++;
   const totalSeconds = (test.timeLimit || 90) * total;
@@ -349,8 +349,8 @@ router.post('/classes/:id/tests/:testId', async (req, res) => {
   let score = 0;
   test.questions.forEach((q, i) => {
     const chosen = Number(req.body[`q_${i}`]);
-    if (chosen === q.answer) score++;
-  });
+   const correct = Number(q.answer);
+    if (!Number.isNaN(chosen) && chosen === correct) score++;  });
   const pct = Math.round((score / test.questions.length) * 100);
   await classModel.recordGrade(id, testId, req.session.user.id, pct);
   res.render('test_result', { klass, test, score: pct });
