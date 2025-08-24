@@ -12,7 +12,7 @@ const rsvpModel = require('../models/rsvpModel');
 const emailTemplates = require('../utils/emailTemplates');
 const announcementModel = require('../models/announcementModel');
 const testModel = require('../models/testModel');
-const jobService = require('../utils/jobService');
+const dripCampaign = require('../utils/dripCampaign');
 
 const multer = require('multer');
 const crypto = require('crypto');
@@ -105,14 +105,19 @@ router.post('/email-templates/ai', async (req, res) => {
   }
 });
 
-router.get('/jobs', async (req, res) => {
-  const query = req.query.q || '';
-  const jobs = await jobService.fetchJobs(query);
-  res.render('admin_jobs', {
+router.get('/drip-campaigns', (req, res) => {
+  const campaigns = dripCampaign.loadCampaigns();
+  res.render('admin_drip_campaigns', {
     user: req.session.user,
-    jobs,
-    query
+    campaigns,
+    created: req.query.created
   });
+});
+
+router.post('/drip-campaigns', (req, res) => {
+  const { email, phone } = req.body;
+  if (email) dripCampaign.addCampaign({ email, phone });
+  res.redirect('/admin/drip-campaigns?created=1');
 });
 
 router.get('/', async (req, res) => {
