@@ -259,6 +259,16 @@ async function addUploads(id, uploads) {
   return user;
 }
 
+async function addLinks(id, links) {
+  const user = await findById(id);
+  if (!user) return null;
+  user.profile = user.profile || {};
+  user.profile.links = user.profile.links || [];
+  user.profile.links.push(...links);
+  await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), id]);
+  return user;
+}
+
 async function setStatus(id, status) {
   const finishedAt = (status === 'approved' || status === 'declined') ? new Date().toISOString() : null;
   await db.query('UPDATE mdtslms_users SET status=?, finishedAt=? WHERE id=?', [status, finishedAt, id]);
@@ -294,6 +304,7 @@ module.exports = {
   setStatus,
     setActive,
   addUploads,
+  addLinks,
     signDocument,
         markApplicationComplete,
 

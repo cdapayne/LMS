@@ -194,6 +194,22 @@
         <% } %>
       </section>
     </div>
+    <% if (studentView && teacher && teacher.profile && (teacher.profile.links || []).length) { %>
+      <section class="cardish mb-3" aria-labelledby="links-title">
+        <div class="section-title"><span class="dot"></span><span id="links-title">Links</span></div>
+        <div class="d-flex flex-wrap">
+          <% teacher.profile.links.forEach(l => { %>
+            <a href="<%= l.url %>" target="_blank" class="m-2" style="width:120px;height:120px;border-radius:8px;overflow:hidden;display:block;">
+              <% if (l.image && l.image.url) { %>
+                <img src="<%= l.image.url %>" alt="Link" style="width:100%;height:100%;object-fit:cover;">
+              <% } else { %>
+                <div class="border d-flex align-items-center justify-content-center h-100 w-100 text-muted">Link</div>
+              <% } %>
+            </a>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
 
    <!-- Lectures & Tests -->
     <div class="two-col">

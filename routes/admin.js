@@ -940,6 +940,22 @@ router.post('/teachers/:id/edit', mediaUpload.single('photo'), async (req, res) 
   res.redirect(`/admin/teachers/${id}/edit?saved=1`);
 });
 
+router.post('/teachers/:id/link', mediaUpload.single('image'), async (req, res) => {
+  const id = Number(req.params.id);
+  const teacher = await userModel.findById(id);
+  if (!teacher || teacher.role !== 'teacher') return res.status(404).send('Not found');
+  const { url } = req.body;
+  if (url) {
+    const link = { url };
+    if (req.file) {
+      link.image = { url: `/uploads/${req.file.filename}`, originalName: req.file.originalname };
+    }
+    try { await userModel.addLinks(id, [link]); }
+    catch (e) { console.error('add link', e); }
+  }
+  res.redirect(`/admin/teachers/${id}/edit?saved=1`);
+});
+
 
 router.get('/reports', async (_req, res) => {
 const classes = await classModel.getAllClasses();
