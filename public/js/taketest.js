@@ -107,6 +107,7 @@
   }
 
   window.addEventListener('load', function(){
+    this.alert("hwo)");
     loadProgress();
     Swal.fire({
       title: 'Start Test',
@@ -117,6 +118,9 @@
         loadQuestion(current);
         updateGrade();
         tick();
+      }
+      else{
+        this.alert("no questions found");
       }
     });
   });

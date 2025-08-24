@@ -1,0 +1,32 @@
+{
+  "courses": [
+    "Jr Network Engineer",
+    "Helpdesk",
+    "CCNA",
+    "RMF",
+    "ITIL 4 Foundations",
+    "CEH",
+    "CND",
+    "Security+",
+    "CASP+",
+    "CHFI",
+    "Internship",
+    "Other"
+  ],
+  "affiliatePrograms": [
+    "Airforce",
+    "Army",
+    "College Student",
+    "Coastguard",
+    "DARS",
+    "Corporation",
+    "MYCAA",
+    "Navy",
+    "Other",
+    "Post 911",
+    "Self Pay",
+    "VR&E",
+    "WIOA",
+    "WIOA Veteran"
+  ]
+}

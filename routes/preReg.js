@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const emailTemplates = require('../utils/emailTemplates');
+const dropdowns = require('../utils/dropdownStore');
 
 
 const transporter = nodemailer.createTransport({
@@ -247,8 +248,8 @@ doc.fillColor('black');
 
 
 router.get('/pre-register', (_req, res) => {
-  res.render('pre_register', { error: null, success: false, formData: {} });
-});
+const dd = dropdowns.getAll();
+  res.render('pre_register', { error: null, success: false, formData: {}, courses: dd.courses, affiliatePrograms: dd.affiliatePrograms });});
 
 router.post('/pre-register', async (req, res) => {
 
@@ -300,12 +301,15 @@ router.post('/pre-register', async (req, res) => {
     (serving === 'yes' && !branch) ||
     consent !== 'on'
   ) {
+  const dd = dropdowns.getAll();
     return res
       .status(400)
       .render('pre_register', {
         error: 'All required fields must be filled and consent given.',
         success: false,
-        formData
+        formData,
+        courses: dd.courses,
+        affiliatePrograms: dd.affiliatePrograms
       });
   }
 
@@ -376,15 +380,19 @@ await transporter.sendMail({
       return res.redirect('/register');
     }
 
-    res.render('pre_register', { error: null, success: true, formData: {} });
+     const dd = dropdowns.getAll();
+    res.render('pre_register', { error: null, success: true, formData: {}, courses: dd.courses, affiliatePrograms: dd.affiliatePrograms });
   } catch (e) {
     console.error(e);
+    const dd = dropdowns.getAll();
     res
       .status(500)
       .render('pre_register', {
         error: 'Could not submit pre-registration.',
         success: false,
-        formData
+        formData,
+        courses: dd.courses,
+        affiliatePrograms: dd.affiliatePrograms
       });
   }
 });

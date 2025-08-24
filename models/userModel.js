@@ -154,7 +154,14 @@ async function signDocument(id, docType, signatureDataUrl) {
   await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), id]);
   return user;
 }
-
+async function markApplicationComplete(id) {
+  const user = await findById(id);
+  if (!user) return null;
+  user.profile = user.profile || {};
+  user.profile.applicationCompleted = new Date().toISOString();
+  await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), id]);
+  return user;
+}
 async function setActive(id, active) {
   await db.query('UPDATE mdtslms_users SET active=? WHERE id=?', [active ? 1 : 0, id]);
   return findById(id);
@@ -283,6 +290,8 @@ module.exports = {
     setActive,
   addUploads,
     signDocument,
+        markApplicationComplete,
+
   updateProfile,
 
   updatePassword,

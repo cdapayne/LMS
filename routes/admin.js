@@ -12,12 +12,29 @@ const rsvpModel = require('../models/rsvpModel');
 const emailTemplates = require('../utils/emailTemplates');
 const announcementModel = require('../models/announcementModel');
 const testModel = require('../models/testModel');
+const dripCampaign = require('../utils/dripCampaign');
+const dropdowns = require('../utils/dropdownStore');
 
 const multer = require('multer');
 const crypto = require('crypto');
 const path = require('path');
 
 const upload = multer();
+
+const fs = require('fs');
+
+const CONFIG_PATH = path.join(__dirname, '..', 'data', 'signature-docs.json');
+let signatureDocsConfig = {};
+
+function loadSignatureDocsConfig() {
+  try {
+    signatureDocsConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  } catch (err) {
+    console.error('Failed to load signature-docs.json:', err.message);
+    signatureDocsConfig = {};
+  }
+}
+loadSignatureDocsConfig();
 
 // Storage for test media uploads
 const mediaStorage = multer.diskStorage({
@@ -28,10 +45,8 @@ const mediaStorage = multer.diskStorage({
     cb(null, Date.now() + '-' + file.originalname);
   }
 });
-const mediaUpload = multer({ storage: mediaStorage });
-
+const mediaUpload = multer({ storage: mediaStorage });  
 const nodemailer = require('nodemailer');
-
 const transporter = nodemailer.createTransport({
   host: 'mdts-apps.com',
   port: 465,
@@ -58,6 +73,24 @@ router.get('/chart/meta', async (_req, res) => {
     out[name] = cols.map(c => c.Field);
   }
   res.json({ tables: out });
+});
+
+// ----- dropdown options -----
+router.get('/dropdowns', (req, res) => {
+  const data = dropdowns.getAll();
+  res.render('admin_dropdowns', { user: req.session.user, dropdowns: data, saved: req.query.saved });
+});
+
+router.post('/dropdowns/add', (req, res) => {
+  const { type, value } = req.body;
+  dropdowns.add(type, value && value.trim());
+  res.redirect('/admin/dropdowns?saved=1');
+});
+
+router.post('/dropdowns/delete', (req, res) => {
+  const { type, value } = req.body;
+  dropdowns.remove(type, value);
+  res.redirect('/admin/dropdowns?saved=1');
 });
 
 router.get('/email-templates', (req, res) => {
@@ -102,6 +135,21 @@ router.post('/email-templates/ai', async (req, res) => {
     console.error('AI error', e);
     res.status(500).json({ error: 'AI request failed' });
   }
+});
+
+router.get('/drip-campaigns', (req, res) => {
+  const campaigns = dripCampaign.loadCampaigns();
+  res.render('admin_drip_campaigns', {
+    user: req.session.user,
+    campaigns,
+    created: req.query.created
+  });
+});
+
+router.post('/drip-campaigns', (req, res) => {
+  const { email, phone } = req.body;
+  if (email) dripCampaign.addCampaign({ email, phone });
+  res.redirect('/admin/drip-campaigns?created=1');
 });
 
 router.get('/', async (req, res) => {
@@ -283,7 +331,7 @@ router.post('/decline/:id', async (req, res) => {
 router.get('/students/:id', async (req, res) => {
   const student = await userModel.findById(Number(req.params.id));
   if (!student) return res.status(404).send('Not found');
-res.render('student_profile', { student, role: 'admin', reset: req.query.reset });
+res.render('student_profile', { student, role: 'admin', reset: req.query.reset,signatureDocsConfig });
 });
 
 router.post('/students/:id/reset-password', async (req, res) => {

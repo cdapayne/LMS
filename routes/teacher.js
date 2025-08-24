@@ -15,6 +15,20 @@ const path = require('path');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
+const CONFIG_PATH = path.join(__dirname, '..', 'data', 'signature-docs.json');
+let signatureDocsConfig = {};
+
+function loadSignatureDocsConfig() {
+  try {
+    signatureDocsConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  } catch (err) {
+    console.error('Failed to load signature-docs.json:', err.message);
+    signatureDocsConfig = {};
+  }
+}
+loadSignatureDocsConfig();
+
+
 const transporter = nodemailer.createTransport({
   host: 'mdts-apps.com',
   port: 465,
@@ -486,8 +500,7 @@ router.post('/classes/:id/grades', async (req, res) => {
 router.get('/students/:id', async (req, res) => {
   const student = await userModel.findById(Number(req.params.id));
   if (!student) return res.status(404).send('Not found');
-  res.render('student_profile', { student, role: 'teacher', reset: req.query.reset });
-});
+res.render('student_profile', { student, role: 'teacher', reset: req.query.reset, signatureDocsConfig });});
 
 router.post('/students/:id/reset-password', async (req, res) => {
   const id = Number(req.params.id);

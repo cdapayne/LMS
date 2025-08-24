@@ -11,6 +11,22 @@ const userModel = require('../models/userModel');
 const nodemailer = require('nodemailer');
 const messageModel = require('../models/messageModel');
 const emailTemplates = require('../utils/emailTemplates');
+const multer = require('multer');
+const path = require('path');
+
+const fs = require('fs');
+const CONFIG_PATH = path.join(__dirname, '..', 'data', 'signature-docs.json');
+
+let signatureDocsConfig = {};
+function loadSignatureDocsConfig() {
+  try {
+    signatureDocsConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  } catch (err) {
+    console.error('Failed to load signature-docs.json:', err.message);
+    signatureDocsConfig = {};
+  }
+}
+loadSignatureDocsConfig();
 
 const transporter = nodemailer.createTransport({
   host: 'mdts-apps.com',
@@ -22,6 +38,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+
 router.use((req, res, next) => {
   if (!req.session || req.session.role !== 'student') return res.status(403).send('Forbidden');
   next();
@@ -29,13 +46,76 @@ router.use((req, res, next) => {
 router.get('/profile', async (req, res) => {
   const student = await userModel.findById(req.session.user.id);
   if (!student) return res.status(404).send('Not found');
-  res.render('student_profile', { student, role: 'student' });
+  res.render('student_profile', { student, role: 'student', signatureDocsConfig });
 });
+
+router.post('/profile/complete', (req, res) => {
+  upload(req, res, async (err) => {
+    const student = await userModel.findById(req.session.user.id);
+    if (!student) return res.status(404).send('Not found');
+    if (err) return res.status(400).render('student_profile', { student, role: 'student', step2Error: err.message,  signatureDocsConfig   });
+    const { emergencyName, emergencyRelation, emergencyPhone, agree, grievanceAck } = req.body;
+    if (!agree) {
+      return res.status(400).render('student_profile', { student, role: 'student', step2Error: 'You must agree to the registration agreement.',signatureDocsConfig });
+    }
+    try {
+      const docs = (student.profile && student.profile.documents) || [];
+      const reg = docs.find(d => d.type === 'registration-agreement');
+      if (reg) reg.agreed = true;
+      await userModel.updateProfile(student.id, {
+        emergencyContact: { name: emergencyName, relation: emergencyRelation, phone: emergencyPhone },
+        grievanceAcknowledged: !!grievanceAck,
+        documents: docs
+      });
+      if (req.files) {
+        const collected = [];
+        if (Array.isArray(req.files.gedDoc)) collected.push(...req.files.gedDoc);
+        if (Array.isArray(req.files.govIdDoc)) collected.push(...req.files.govIdDoc);
+        if (collected.length) {
+          const uploads = collected.map(f => ({
+            originalName: f.originalname,
+            mimeType: f.mimetype,
+            size: f.size,
+            url: `/uploads/${f.filename}`
+          }));
+          await userModel.addUploads(student.id, uploads);
+        }
+      }
+      res.redirect('/student/profile');
+    } catch (e) {
+      console.error('student complete', e);
+      res.status(500).render('student_profile', { student, role: 'student', step2Error: 'Failed to update profile.' });
+    }
+  });
+});
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+  }),
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+    if (allowed.includes(path.extname(file.originalname).toLowerCase())) cb(null, true);
+    else cb(new Error('Invalid file type'));
+  }
+}).fields([
+  { name: 'gedDoc', maxCount: 1 },
+  { name: 'govIdDoc', maxCount: 1 }
+]);
 
 router.post('/sign-doc', async (req, res) => {
   const { docType, signatureDataUrl } = req.body;
   if (docType && signatureDataUrl) {
-    try { await userModel.signDocument(req.session.user.id, docType, signatureDataUrl); } catch (e) { console.error('student sign', e); }
+    try {
+      const user = await userModel.signDocument(req.session.user.id, docType, signatureDataUrl);
+      const docs = (user.profile && user.profile.documents) || [];
+      const pending = docs.filter(d => !d.requiredRole && !d.signatureDataUrl);
+      if (!pending.length) {
+        try { await userModel.markApplicationComplete(req.session.user.id); } catch (err) { console.error('complete mark', err); }
+      }
+    } catch (e) { console.error('student sign', e); }
   }
   res.redirect('/student/profile');
 });

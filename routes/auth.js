@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
 const emailTemplates = require('../utils/emailTemplates');
+const dropdowns = require('../utils/dropdownStore');
 
 
 const userModel = require('../models/userModel');
@@ -28,7 +29,10 @@ const upload = multer({
       cb(new Error('Invalid file type'));
     }
   }
-}).array('docs', 2); // max 2 files
+}).fields([
+  { name: 'gedDoc', maxCount: 1 },
+  { name: 'govIdDoc', maxCount: 1 }
+]);
 
 // Email transporter
 const transporter = nodemailer.createTransport({
@@ -184,33 +188,39 @@ router.get('/register', async (req, res) => {
     console.error('Error generating student ID', e);
     formData.studentId = '';
   }
+  const dd = dropdowns.getAll();
   res.render('register', {
     error: null,
     docVersion: DOC_VERSION,
     docText: DOC_TEXT,
-    formData
+    formData,
+    courses: dd.courses,
+    affiliatePrograms: dd.affiliatePrograms
   });
 });
 
 router.post('/register', (req, res) => {
   upload(req, res, async (err) => {
+     const dd = dropdowns.getAll();
     if (err) {
       return res.status(400).render('register', {
         error: err.message,
         docVersion: DOC_VERSION,
         docText: DOC_TEXT,
-        formData: req.body
+        formData: req.body,
+        courses: dd.courses,
+        affiliatePrograms: dd.affiliatePrograms
       });
     }
 
-     try {
+    try {
       const firstName = ensureStr(req.body.firstName);
       const lastName = ensureStr(req.body.lastName);
       const username = ensureStr(req.body.username) || `${firstName}${lastName}`.replace(/\s+/g, '');
       const email = ensureStr(req.body.email);
       const confirmEmail = ensureStr(req.body.confirmEmail);
       const password = ensureStr(req.body.password);
- const studentId = ensureStr(req.body.studentId) || await userModel.generateStudentId();      const agree = ensureStr(req.body.agree);
+ const studentId = ensureStr(req.body.studentId) || await userModel.generateStudentId();
       const suffix = ensureStr(req.body.suffix);
       const address = ensureStr(req.body.address);
       const city = ensureStr(req.body.city);
@@ -221,37 +231,26 @@ router.post('/register', (req, res) => {
       const phoneHome = ensureStr(req.body.phoneHome);
       const phoneCell = ensureStr(req.body.phoneCell);
       const phoneWork = ensureStr(req.body.phoneWork);
-      const ssn = ensureStr(req.body.ssn);
-      const emergencyName = ensureStr(req.body.emergencyName);
-      const emergencyRelation = ensureStr(req.body.emergencyRelation);
-      const emergencyPhone = ensureStr(req.body.emergencyPhone);
    
       const selfPay = affiliateProgram === 'Self Pay';
 
-      const grievanceAck = ensureStr(req.body.grievanceAck);
       const financialAid = ensureStr(req.body.financialAid);
       const referralName = ensureStr(req.body.referralName);
       const referralEmail = ensureStr(req.body.referralEmail);
+
 
       if (email !== confirmEmail) {
         return res.status(400).render('register', {
           error: 'Emails do not match.',
           docVersion: DOC_VERSION,
           docText: DOC_TEXT,
-          formData: req.body
+          formData: req.body,
+          courses: dd.courses,
+          affiliatePrograms: dd.affiliatePrograms
         });
       }
 
-       if (!agree) {
-        return res.status(400).render('register', {
-          error: 'You must agree to the registration agreement.',
-          docVersion: DOC_VERSION,
-          docText: DOC_TEXT,
-          formData: req.body
-        });
-      }
-
-      const user = await userModel.createStudent({
+        const user = await userModel.createStudent({
         username,
         firstName,
         lastName,
@@ -263,10 +262,9 @@ router.post('/register', (req, res) => {
         course,
         affiliateProgram,
         phones: { home: phoneHome, cell: phoneCell, work: phoneWork },
-        ssn,
-        emergencyContact: { name: emergencyName, relation: emergencyRelation, phone: emergencyPhone },
-     
-        grievanceAck,
+        ssn: '',
+        emergencyContact: {},
+        grievanceAck: false,
         name: `${firstName} ${lastName}`.trim(),
         email,
         password,
@@ -275,14 +273,19 @@ router.post('/register', (req, res) => {
         referralName,
         referralEmail
       });
-        if (req.files && req.files.length) {
-        const uploads = req.files.map(f => ({
-          originalName: f.originalname,
-          mimeType: f.mimetype,
-          size: f.size,
-          url: `/uploads/${f.filename}`
-        }));
-        await userModel.addUploads(user.id, uploads);
+     if (req.files) {
+        const collected = [];
+        if (Array.isArray(req.files.gedDoc)) collected.push(...req.files.gedDoc);
+        if (Array.isArray(req.files.govIdDoc)) collected.push(...req.files.govIdDoc);
+        if (collected.length) {
+          const uploads = collected.map(f => ({
+            originalName: f.originalname,
+            mimeType: f.mimetype,
+            size: f.size,
+            url: `/uploads/${f.filename}`
+          }));
+          await userModel.addUploads(user.id, uploads);
+        }
       }
 
       const { subject, html, text } = emailTemplates.render('registrationSubmitted', { firstName, username });
@@ -300,7 +303,9 @@ router.post('/register', (req, res) => {
         error: 'Registration failed. Please try again.',
         docVersion: DOC_VERSION,
         docText: DOC_TEXT,
-        formData: req.body
+        formData: req.body,
+        courses: dd.courses,
+        affiliatePrograms: dd.affiliatePrograms
       });
     }
   });
