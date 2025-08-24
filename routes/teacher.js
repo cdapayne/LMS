@@ -255,31 +255,28 @@ router.post('/classes/:id/tests', async (req, res) => {
   res.redirect(`/teacher/classes/${classId}`);
 });
 
-router.post('/classes/:id/lectures', mediaUpload.single('ppt'), async (req, res) => {
+router.post('/classes/:id/lectures', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, url, isPowerPoint } = req.body;
-  let finalUrl = url && url.trim();
-  if (isPowerPoint && req.file) {
-    finalUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  }
+  const { title, url } = req.body;
+  const finalUrl = url && url.trim();
   if (title && finalUrl) {
     await classModel.addLecture(classId, {
       title: title.trim(),
-      url: finalUrl,
-      isPowerPoint: !!isPowerPoint
+      url: finalUrl
     });
   }
-  res.redirect(`/teacher/classes/${classId}#lectures`);
+    res.redirect(`/teacher/classes/${classId}#lectures`);
 });
 
 router.post('/classes/:id/assignments', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, url } = req.body;
+  const { title, url, date } = req.body;
   if (title && url) {
-    await classModel.addAssignment(classId, { title: title.trim(), url: url.trim() });
+    await classModel.addAssignment(classId, { title: title.trim(), url: url.trim(), date });
   }
   res.redirect(`/teacher/classes/${classId}#assignments`);
 });
+
 
 router.post('/classes/:id/simulations', async (req, res) => {
   const classId = Number(req.params.id);
@@ -618,34 +615,31 @@ router.get('/reports', async (req, res) => {
 router.get('/classes/:id/tests/:testId/preview', async (req, res) => {
   const classId = Number(req.params.id);
   const testId = Number(req.params.testId);
+  console.log('Teacher preview test', { classId, testId, userId: req.session.user.id });
   const klass = await classModel.findClassById(classId);
-  if (!klass) return res.status(404).send('Not found');
+  if (!klass) {
+    console.log('Class not found', classId);
+    return res.status(404).send('Not found');
+  }
   const test = (klass.tests || []).find(t => t.id === testId);
-  if (!test) return res.status(404).send('Test not found');
+  if (!test) {
+    console.log('Test not found', { classId, testId });
+    return res.status(404).send('Test not found');
+  }
+  test.questions = await testModel.getQuestionsByTest(test.title);
   res.render('take_test', {
     klass,
     test,
     attempts: 0,
     user: req.session.user,
-    action: `/teacher/classes/${classId}/tests/${testId}/preview`,
-    questionsUrl: `/teacher/classes/${classId}/tests/${testId}/questions`
+    action: `/teacher/classes/${classId}/tests/${testId}/preview`
   });
-});
-
-router.get('/classes/:id/tests/:testId/questions', async (req, res) => {
-  const classId = Number(req.params.id);
-  const testId = Number(req.params.testId);
-  const klass = await classModel.findClassById(classId);
-  if (!klass) return res.status(404).json({ error: 'Not found' });
-  const test = (klass.tests || []).find(t => t.id === testId);
-  if (!test) return res.status(404).json({ error: 'Test not found' });
-  const questions = await testModel.getQuestionsByTest(test.title);
-  res.json(questions);
 });
 
 router.post('/classes/:id/tests/:testId/preview', async (req, res) => {
   const classId = Number(req.params.id);
   const testId = Number(req.params.testId);
+  console.log('Teacher submit preview', { classId, testId, userId: req.session.user.id });
   const klass = await classModel.findClassById(classId);
   if (!klass) return res.status(404).send('Not found');
   const test = (klass.tests || []).find(t => t.id === testId);
@@ -658,6 +652,7 @@ router.post('/classes/:id/tests/:testId/preview', async (req, res) => {
     if (!Number.isNaN(chosen) && chosen === correct) score++;
   });
   const pct = Math.round((score / test.questions.length) * 100);
+  console.log('Preview score', { classId, testId, userId: req.session.user.id, score: pct });
   res.render('test_result', { klass, test, score: pct, student: req.session.user, user: req.session.user });
 });
 

@@ -4,8 +4,10 @@ const TEST_TABLE = 'LMSTest5';
 
 
 async function getQuestionsByTest(testName) {
-  const [rows] = await db.query(`SELECT * FROM ${TEST_TABLE} WHERE Test = ?`, [testName]);  return rows.map(r => {
+    console.log(testName);
+  const [rows] = await db.query(`SELECT * FROM ${TEST_TABLE} WHERE Test = ?`, testName);  return rows.map(r => {
     const options = [r.OptionA, r.OptionB, r.OptionC, r.OptionD, r.OptionE, r.OptionF, r.OptionG].filter(Boolean);
+    console.log(rows);
     let answerIndex = parseInt(r.Answer, 10);
     if (Number.isNaN(answerIndex)) {
       answerIndex = options.findIndex(opt => opt === r.Answer);
@@ -28,6 +30,7 @@ async function getQuestionsByTest(testName) {
 }
 
 async function replaceTestQuestions(testName, questions) {
+     console.log("inert 2");
   await db.query(`DELETE FROM ${TEST_TABLE} WHERE Test = ?`, [testName]);
   for (const q of questions) {
     const opts = q.options || [];
@@ -48,7 +51,7 @@ async function replaceTestQuestions(testName, questions) {
         opts[4] || '',
         opts[5] || '',
         opts[6] || '',
-        testName,
+        q.title,
         q.contentType || 'multiple-choice',
         q.title || '',
         q.itemType || 'Question',
@@ -59,6 +62,7 @@ async function replaceTestQuestions(testName, questions) {
 }
 
 async function insertQuestions(questions) {
+    console.log("inert 1");
   for (const q of questions) {
     const opts = q.options || [];
     const correctAns =
@@ -78,7 +82,7 @@ async function insertQuestions(questions) {
         opts[4] || '',
         opts[5] || '',
         opts[6] || '',
-        q.test || '',
+        q.title || '',
         q.contentType || 'multiple-choice',
         q.title || '',
         q.itemType || 'Question',

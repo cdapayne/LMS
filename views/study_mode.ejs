@@ -13,9 +13,16 @@
       border-radius:4px;
       margin-bottom:10px;
       cursor:pointer;
+            transition:transform .1s;
+
     }
     .option-label.correct { background:#198754; }
     .option-label.wrong { background:#dc3545; }
+      input:checked + .option-label:not(.disabled){
+      background:#198754;
+      transform:scale(1.05);
+      box-shadow:0 0 0 4px rgba(25,135,84,.25);
+    }
     .study-controls {
       background:#76c043;
       border-radius:50px;
