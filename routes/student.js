@@ -192,7 +192,21 @@ router.get('/classes/:id', async (req, res) => {
   if (!klass) return res.status(404).send('Not found');
   const teacher = await userModel.findById(klass.teacherId);
   const discussions = await discussionModel.getByClass(id);
-  res.render('view_class', { klass, studentView: true, discussions, teacher });
+  const testGrades = {};
+  const assignmentGrades = {};
+  if (klass.grades && req.session.user) {
+    klass.grades
+      .filter(g => g.studentId === req.session.user.id)
+      .forEach(g => {
+        if (g.testId) {
+          testGrades[g.testId] = Math.max(testGrades[g.testId] || 0, g.score || 0);
+        }
+        if (g.assignmentId) {
+          assignmentGrades[g.assignmentId] = Math.max(assignmentGrades[g.assignmentId] || 0, g.score || 0);
+        }
+      });
+  }
+  res.render('view_class', { klass, studentView: true, discussions, teacher, testGrades, assignmentGrades });
 });
 
 router.post('/classes/:id/discussion', async (req, res) => {
@@ -378,7 +392,7 @@ router.get('/classes/:id/tests/:testId/study', async (req, res) => {
   if (progress.index >= total) {
     const score = Math.round((progress.correct / total) * 100);
     delete req.session.study[testId];
-    return res.render('test_result', { klass, test, score });
+    return res.render('test_result', { klass, test, score, student: req.session.user, user: req.session.user });
   }
 
   const question = test.questions[progress.index];

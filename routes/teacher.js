@@ -255,31 +255,28 @@ router.post('/classes/:id/tests', async (req, res) => {
   res.redirect(`/teacher/classes/${classId}`);
 });
 
-router.post('/classes/:id/lectures', mediaUpload.single('ppt'), async (req, res) => {
+router.post('/classes/:id/lectures', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, url, isPowerPoint } = req.body;
-  let finalUrl = url && url.trim();
-  if (isPowerPoint && req.file) {
-    finalUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  }
+  const { title, url } = req.body;
+  const finalUrl = url && url.trim();
   if (title && finalUrl) {
     await classModel.addLecture(classId, {
       title: title.trim(),
-      url: finalUrl,
-      isPowerPoint: !!isPowerPoint
+      url: finalUrl
     });
   }
-  res.redirect(`/teacher/classes/${classId}#lectures`);
+    res.redirect(`/teacher/classes/${classId}#lectures`);
 });
 
 router.post('/classes/:id/assignments', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, url } = req.body;
+  const { title, url, date } = req.body;
   if (title && url) {
-    await classModel.addAssignment(classId, { title: title.trim(), url: url.trim() });
+    await classModel.addAssignment(classId, { title: title.trim(), url: url.trim(), date });
   }
   res.redirect(`/teacher/classes/${classId}#assignments`);
 });
+
 
 router.post('/classes/:id/simulations', async (req, res) => {
   const classId = Number(req.params.id);
