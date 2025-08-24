@@ -408,8 +408,7 @@ router.post('/students/:id/step2', async (req, res) => {
     });
 
     if (!(tuitionFilled && programFilled && adminDocsSigned)) {
-      return res.render('student_profile', { student, role: 'admin', reset: false, error: 'All tuition and program fields must be completed and required admin documents signed before sending Step 2.' });
-    }
+return res.render('student_profile', { student, role: 'admin', reset: false, error: 'All tuition and program fields must be completed and required admin documents signed before sending Step 2.', signatureDocsConfig });    }
 
     if (student && student.email) {
       const token = crypto.randomBytes(32).toString('hex');
