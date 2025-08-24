@@ -390,11 +390,29 @@ router.post('/students/:id/sign-doc', async (req, res) => {
 
 router.post('/students/:id/step2', async (req, res) => {
   const id = Number(req.params.id);
-  const { tuitionTotal, startDate, endDate, classTime, classDays } = req.body;
+  const {
+    startDate,
+    endDate,
+    classTime,
+    classDays,
+    tuitionTuition,
+    tuitionRegistrationFee,
+    tuitionBooks,
+    tuitionEquipment,
+    tuitionMiscFees,
+    tuitionTotal
+  } = req.body;
   try {
     await userModel.updateProfile(id, {
       program: { startDate, endDate, classTime, classDays },
-      tuition: { totalCost: tuitionTotal }
+      tuition: {
+        tuition: tuitionTuition,
+        registrationFee: tuitionRegistrationFee,
+        books: tuitionBooks,
+        equipment: tuitionEquipment,
+        miscFees: tuitionMiscFees,
+        totalCost: tuitionTotal
+      }
     });
     const student = await userModel.findById(id);
     if (student && student.email) {
