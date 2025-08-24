@@ -290,7 +290,7 @@
         <% } else { %>
           <ul class="list-plain">
             <% (klass.tests || []).forEach(t => { %>
-              <li class="mb-1"><%= t.title %></li>
+              <li class="mb-1"><%= t.title %> <a class="btn btn-sm btn-outline-primary ms-2" href="/teacher/classes/<%= klass.id %>/tests/<%= t.id %>/preview">Preview</a></li>
             <% }) %>
           </ul>
         <% } %>

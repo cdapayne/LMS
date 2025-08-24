@@ -107,7 +107,7 @@
   }
 
   window.addEventListener('load', function(){
-    this.alert("hwo)");
+    // load any saved progress
     loadProgress();
     Swal.fire({
       title: 'Start Test',
@@ -120,7 +120,7 @@
         tick();
       }
       else{
-        this.alert("no questions found");
+        alert('No questions found');
       }
     });
   });

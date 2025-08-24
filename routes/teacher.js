@@ -614,4 +614,34 @@ router.get('/reports', async (req, res) => {
   res.render('reports', { report, scope: 'teacher' });
 });
 
+// Preview test routes
+router.get('/classes/:id/tests/:testId/preview', async (req, res) => {
+  const classId = Number(req.params.id);
+  const testId = Number(req.params.testId);
+  const klass = await classModel.findClassById(classId);
+  if (!klass) return res.status(404).send('Not found');
+  const test = (klass.tests || []).find(t => t.id === testId);
+  if (!test) return res.status(404).send('Test not found');
+  test.questions = await testModel.getQuestionsByTest(test.title);
+  res.render('take_test', { klass, test, attempts: 0, user: req.session.user, action: `/teacher/classes/${classId}/tests/${testId}/preview` });
+});
+
+router.post('/classes/:id/tests/:testId/preview', async (req, res) => {
+  const classId = Number(req.params.id);
+  const testId = Number(req.params.testId);
+  const klass = await classModel.findClassById(classId);
+  if (!klass) return res.status(404).send('Not found');
+  const test = (klass.tests || []).find(t => t.id === testId);
+  if (!test) return res.status(404).send('Test not found');
+  test.questions = await testModel.getQuestionsByTest(test.title);
+  let score = 0;
+  test.questions.forEach((q, i) => {
+    const chosen = Number(req.body[`q_${i}`]);
+    const correct = Number(q.answer);
+    if (!Number.isNaN(chosen) && chosen === correct) score++;
+  });
+  const pct = Math.round((score / test.questions.length) * 100);
+  res.render('test_result', { klass, test, score: pct, student: req.session.user, user: req.session.user });
+});
+
 module.exports = router;
