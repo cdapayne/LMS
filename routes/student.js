@@ -235,7 +235,7 @@ router.get('/classes/:id/tests/:testId', async (req, res) => {
   const existing = (klass.grades || []).find(g => g.testId === testId && g.studentId === req.session.user.id);
   const attempts = existing ? existing.attempt || 0 : 0;
   if (attempts >= 5) return res.status(403).send('No attempts remaining');
-  res.render('take_test', { klass, test, attempts });
+  res.render('take_test', { klass, test, attempts, user: req.session.user, action: `/student/classes/${id}/tests/${testId}` });
 });
 
 // study helper for custom material
@@ -438,7 +438,7 @@ router.post('/classes/:id/tests/:testId', async (req, res) => {
     if (!Number.isNaN(chosen) && chosen === correct) score++;  });
   const pct = Math.round((score / test.questions.length) * 100);
   await classModel.recordGrade(id, testId, req.session.user.id, pct);
-  res.render('test_result', { klass, test, score: pct, student: req.session.user });
+  res.render('test_result', { klass, test, score: pct, student: req.session.user, user: req.session.user });
 });
 
 module.exports = router;

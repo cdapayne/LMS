@@ -297,7 +297,7 @@
                     <a class="btn btn-sm btn-outline-primary" href="/student/classes/<%= klass.id %>/tests/<%= t.id %>/study">Study</a>
                   </div>                </li>
               <% } else { %>
-                <li class="mb-1"><%= t.title %></li>
+                <li class="mb-1"><%= t.title %> <a class="btn btn-sm btn-outline-primary ms-2" href="/admin/classes/<%= klass.id %>/tests/<%= t.id %>/preview">Preview</a></li>
               <% } %>
             <% }) %>
           </ul>
