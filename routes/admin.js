@@ -12,6 +12,7 @@ const rsvpModel = require('../models/rsvpModel');
 const emailTemplates = require('../utils/emailTemplates');
 const announcementModel = require('../models/announcementModel');
 const testModel = require('../models/testModel');
+const admissionsWorkflow = require('../utils/admissionsWorkflow');
 
 const multer = require('multer');
 const crypto = require('crypto');
@@ -986,6 +987,12 @@ router.post('/reports/custom', async (req, res) => {
   }
   const [rows] = await db.query(sql, params);
   res.render('custom_report', { tables: tableNames, columns: colNames, results: rows, selected: { table, columns: selectedCols, filterCol, operator, value } });
+});
+
+router.get('/admissions/workflow', async (req, res) => {
+  const preregs = await preRegModel.getAll();
+  preregs.forEach(p => admissionsWorkflow.enqueueApplicant({ id: p.id, name: p.name, email: p.email }));
+  res.render('admin_workflow', { user: req.session.user, count: preregs.length });
 });
 
 

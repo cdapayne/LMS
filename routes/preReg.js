@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const emailTemplates = require('../utils/emailTemplates');
+const admissionsWorkflow = require('../utils/admissionsWorkflow');
 
 
 const transporter = nodemailer.createTransport({
@@ -310,7 +311,7 @@ router.post('/pre-register', async (req, res) => {
   }
 
   try {
-    await preRegModel.create({
+    const { id } = await preRegModel.create({
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
@@ -326,6 +327,8 @@ router.post('/pre-register', async (req, res) => {
       referralEmail: (referralEmail || '').trim() || null,
       consent: true
     });
+
+    admissionsWorkflow.enqueueApplicant({ id, name: name.trim(), email: email.trim() });
 
 const invoiceNumber = generateRandomInvoiceNumber();
 const priceValue = getPriceValue(course.trim());

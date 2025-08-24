@@ -13,6 +13,9 @@ const preRegRoutes = require('./routes/preReg');
 const eventRoutes = require('./routes/events');
 const accountRoutes = require('./routes/account');
 
+// Initialize admissions workflow queue
+require('./utils/admissionsWorkflow');
+
 
 
 const app = express();
