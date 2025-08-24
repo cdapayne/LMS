@@ -12,6 +12,7 @@ const rsvpModel = require('../models/rsvpModel');
 const emailTemplates = require('../utils/emailTemplates');
 const announcementModel = require('../models/announcementModel');
 const testModel = require('../models/testModel');
+const jobService = require('../utils/jobService');
 
 const multer = require('multer');
 const crypto = require('crypto');
@@ -102,6 +103,16 @@ router.post('/email-templates/ai', async (req, res) => {
     console.error('AI error', e);
     res.status(500).json({ error: 'AI request failed' });
   }
+});
+
+router.get('/jobs', async (req, res) => {
+  const query = req.query.q || '';
+  const jobs = await jobService.fetchJobs(query);
+  res.render('admin_jobs', {
+    user: req.session.user,
+    jobs,
+    query
+  });
 });
 
 router.get('/', async (req, res) => {
