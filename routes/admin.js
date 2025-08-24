@@ -29,8 +29,7 @@ const mediaStorage = multer.diskStorage({
     cb(null, Date.now() + '-' + file.originalname);
   }
 });
-const mediaUpload = multer({ storage: mediaStorage });
-
+const mediaUpload = multer({ storage: mediaStorage });  
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
