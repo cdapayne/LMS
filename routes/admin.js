@@ -12,6 +12,8 @@ const rsvpModel = require('../models/rsvpModel');
 const emailTemplates = require('../utils/emailTemplates');
 const announcementModel = require('../models/announcementModel');
 const testModel = require('../models/testModel');
+const ipedsReport = require('../utils/ipedsReport');
+const auditLog = require('../models/auditLogModel');
 
 const multer = require('multer');
 const crypto = require('crypto');
@@ -891,6 +893,21 @@ const classes = await classModel.getAllClasses();
     grades: (k.grades || []).length
   }));
   res.render('reports', { report, scope: 'admin' });
+});
+
+router.get('/reports/ipeds', async (req, res) => {
+  const report = await ipedsReport.generate();
+  const format = req.query.format;
+  await auditLog.record(req.session.user.id, 'ipeds-report', { format: format || 'html' });
+  if (format === 'csv') {
+    res.setHeader('Content-Type', 'text/csv');
+    res.attachment('ipeds_report.csv');
+    return res.send(ipedsReport.toCsv(report));
+  }
+  if (format === 'json') {
+    return res.json(report);
+  }
+  res.render('ipeds_report', { report, user: req.session.user });
 });
 
 // Events dashboard for analytics
