@@ -21,6 +21,21 @@ const path = require('path');
 
 const upload = multer();
 
+const fs = require('fs');
+
+const CONFIG_PATH = path.join(__dirname, '..', 'data', 'signature-docs.json');
+let signatureDocsConfig = {};
+
+function loadSignatureDocsConfig() {
+  try {
+    signatureDocsConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  } catch (err) {
+    console.error('Failed to load signature-docs.json:', err.message);
+    signatureDocsConfig = {};
+  }
+}
+loadSignatureDocsConfig();
+
 // Storage for test media uploads
 const mediaStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -316,7 +331,7 @@ router.post('/decline/:id', async (req, res) => {
 router.get('/students/:id', async (req, res) => {
   const student = await userModel.findById(Number(req.params.id));
   if (!student) return res.status(404).send('Not found');
-res.render('student_profile', { student, role: 'admin', reset: req.query.reset });
+res.render('student_profile', { student, role: 'admin', reset: req.query.reset,signatureDocsConfig });
 });
 
 router.post('/students/:id/reset-password', async (req, res) => {

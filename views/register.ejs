@@ -100,8 +100,7 @@
           <div class="alert alert-danger mb-4"><%= error %></div>
         <% } %>
 
-        <form method="post" action="/register" enctype="multipart/form-data" onsubmit="return captureAll()">
-           <div id="step1"></div>
+             <form method="post" action="/register" onsubmit="return captureAll()">
           <!-- Personal Information -->
           <div class="section-title">Personal Information</div>
           <div class="row g-3">
@@ -235,73 +234,10 @@
                   <input name="phoneWork" class="form-control" value="<%= formData?.phoneWork || '' %>">
                 </div>
              
+          
+
           <div class="mt-4 d-flex gap-2">
-            <button type="button" class="btn btn-primary" id="toStep2">Next</button>
-          </div>
-
-          </div> <!-- end step1 -->
-
-          <div id="step2" class="d-none">
-
-          <div class="section-title mt-4">Additional Information</div>
-          <div class="row g-3 mt-1">
-            <div class="col-md-4">
-              <label class="form-label">Social Security #</label>
-              <div class="input-group">
-                <input type="password" name="ssn" id="ssn" class="form-control" value="<%= formData?.ssn || '' %>">
-                <button type="button" class="btn btn-outline-secondary" id="toggleSsn">Show</button>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Emergency Contact</label>
-              <input name="emergencyName" class="form-control" value="<%= formData?.emergencyName || '' %>">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Relationship</label>
-              <input name="emergencyRelation" class="form-control" value="<%= formData?.emergencyRelation || '' %>">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Emergency Phone</label>
-              <input name="emergencyPhone" class="form-control" value="<%= formData?.emergencyPhone || '' %>">
-            </div>
-          </div>
-
-          <hr class="my-4">
-
-          <!-- Upload Documents -->
-          <div class="section-title">Upload Documents</div>
-          <p class="text-muted mb-2">Please upload a GED, HS Diploma or College Degree and a Government Issued ID.</p>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">GED / HS Diploma / College Degree</label>
-              <input type="file" name="gedDoc" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Government Issued ID</label>
-              <input type="file" name="govIdDoc" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-            </div>
-          </div>
-
-          <hr class="my-4">
-
-          <!-- Agreements -->
-<div class="section-title">Registration Agreement <a href="/docs/course-curriculm.pdf" target="_blank" class="ms-2 small">View PDF</a> <span class="text-muted">(version <%= docVersion %>)</span></div>
-          <div class="cardish mb-3 docbox"><p class="mb-0"><%= docText %></p></div>
-
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" value="yes" id="agree" name="agree" <%= formData?.agree ? 'checked' : '' %> required>
-            <label class="form-check-label" for="agree">I have read and agree to the registration agreement.</label>
-          </div>
-
-               <div class="section-title">Grievance Acknowledgement <a href="/docs/grievance-acknowledgement.pdf" target="_blank" class="ms-2 small">View PDF</a></div>
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="grievanceAck" name="grievanceAck" <%= formData?.grievanceAck ? 'checked' : '' %>>
-            <label class="form-check-label" for="grievanceAck">I acknowledge I have received the grievance process information.</label>
-          </div>
-
-            <div class="mt-4 d-flex gap-2">
             <button class="btn btn-primary">Submit Registration</button>
-            <button type="button" class="btn btn-secondary" id="backTo1">Back</button>
             <a href="/login" class="btn btn-link">Back to login</a>
           </div>
 

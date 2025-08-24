@@ -5,7 +5,6 @@
   <title>Student Profile – MD Technical School</title>
   <link rel="icon" href="<%= branding?.favicon %>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
   <style>
     :root{
       --primary-color: dodgerblue;
@@ -70,28 +69,44 @@
     @media (min-width: 992px){
       .two-col{ display:grid; grid-template-columns: 1fr 1fr; gap:1rem; }
     }
+
+    /* PDF preview */
+   .pdf-frame {
+  width: 100%;
+  height: 620px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  margin: 0 auto 0.75rem; /* center horizontally, add bottom margin */
+  display: block;
+}
   </style>
 </head>
 <body>
+<%
+  // Helpers
+  const FN = (student.profile?.firstName || '').trim();
+  const LN = (student.profile?.lastName || '').trim();
+  const initials = ((FN ? FN[0] : '') + (LN ? LN[0] : '') || (student.username?.slice(0,2) || 'ST')).toUpperCase();
+  const status = student.status || 'pending';
+  const maskSSN = (ssn) => {
+    if (!ssn) return '-';
+    const s = String(ssn).replace(/\D/g,'');
+    const last4 = s.slice(-4);
+    return '***-**-' + last4.padStart(4,'*');
+  };
+%>
 
   <div class="profile-hero">
     <div class="container d-flex align-items-center justify-content-between gap-3 flex-wrap">
       <div class="d-flex align-items-center gap-3">
-        <div class="avatar">
-          <%
-            const FN = (student.profile?.firstName || '').trim();
-            const LN = (student.profile?.lastName || '').trim();
-            const initials = ((FN ? FN[0] : '') + (LN ? LN[0] : '') || (student.username?.slice(0,2) || 'ST')).toUpperCase();
-          %>
-          <%= initials %>
-        </div>
+        <div class="avatar"><%= initials %></div>
         <div class="headline">
           <h1><%= FN %> <%= LN %></h1>
           <div class="subline">@<%= student.username %> • <%= student.email %></div>
         </div>
       </div>
       <div>
-        <% const status = student.status || 'pending'; %>
         <span class="status <%= status==='approved'?'status-approved':(status==='declined'?'status-declined':'status-pending') %>">
           <%= status.charAt(0).toUpperCase() + status.slice(1) %>
         </span>
@@ -101,8 +116,9 @@
 
   <div class="container pb-4">
     <% if (typeof reset !== 'undefined' && reset) { %>
-  <div class="alert alert-success text-center">Password reset email sent.</div>
-<% } %>
+      <div class="alert alert-success text-center">Password reset email sent.</div>
+    <% } %>
+
     <!-- Key facts -->
     <div class="cardish">
       <div class="row g-3">
@@ -136,11 +152,12 @@
           </span>
         </div>
         <div class="mb-2"><strong>Phones:</strong> Home: <%= student.profile?.phones?.home || '-' %>, Cell: <%= student.profile?.phones?.cell || '-' %>, Work: <%= student.profile?.phones?.work || '-' %></div>
-        <div class="mb-2"><strong>SSN:</strong> <%= student.profile?.ssn || '-' %></div>
+        <!-- MASKED SSN -->
+        <div class="mb-2"><strong>SSN:</strong> <%= maskSSN(student.profile?.ssn) %></div>
         <div class="mb-0"><strong>Emergency Contact:</strong> <%= student.profile?.emergencyContact?.name || '-' %> (<%= student.profile?.emergencyContact?.relation || '-' %>) - <%= student.profile?.emergencyContact?.phone || '-' %></div>
       </section>
 
-     <section class="cardish">
+      <section class="cardish">
         <div class="section-title">Program</div>
         <div class="mb-2"><strong>Course:</strong> <%= student.profile?.course || '-' %></div>
         <div class="mb-2"><strong>Affiliated Program:</strong> <%= student.profile?.affiliateProgram || '-' %></div>
@@ -164,6 +181,7 @@
       <div class="mb-0"><strong>Total Cost:</strong> $<%= student.profile?.tuition?.totalCost || '0' %></div>
     </section>
 
+    <!-- ADMIN EDIT: Step 2 + Tuition + Total Hours -->
     <% if (role === 'admin' && student.status === 'pending') { %>
     <section class="cardish">
       <div class="section-title">Step 2: Program Details</div>
@@ -184,12 +202,95 @@
           <label class="form-label">Class Days</label>
           <input name="classDays" class="form-control" value="<%= student.profile?.program?.classDays || '' %>">
         </div>
+
+        <!-- NEW: Total Hours -->
         <div class="col-md-6">
+          <label class="form-label">Total Hours</label>
+          <input type="number" step="1" min="0" name="totalHours" class="form-control" value="<%= student.profile?.program?.totalHours || '' %>">
+        </div>
+
+        <hr class="mt-2">
+
+        <div class="col-12">
+          <div class="section-title" style="margin-top:.25rem;">Tuition Breakdown</div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Tuition</label>
+          <input type="number" step="0.01" name="tuitionTuition" class="form-control" value="<%= student.profile?.tuition?.tuition || '' %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Registration Fee</label>
+          <input type="number" step="0.01" name="tuitionRegistrationFee" class="form-control" value="<%= student.profile?.tuition?.registrationFee || '' %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Books/Supplies</label>
+          <input type="number" step="0.01" name="tuitionBooks" class="form-control" value="<%= student.profile?.tuition?.books || '' %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Equipment</label>
+          <input type="number" step="0.01" name="tuitionEquipment" class="form-control" value="<%= student.profile?.tuition?.equipment || '' %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Misc. Fees</label>
+          <input type="number" step="0.01" name="tuitionMiscFees" class="form-control" value="<%= student.profile?.tuition?.miscFees || '' %>">
+        </div>
+        <div class="col-md-4">
           <label class="form-label">Total Cost</label>
           <input type="number" step="0.01" name="tuitionTotal" class="form-control" value="<%= student.profile?.tuition?.totalCost || '' %>">
         </div>
+
         <div class="col-12">
-          <button class="btn btn-primary">Save & Send Step 2</button>
+          <button class="btn btn-primary">Save &amp; Send Step 2</button>
+        </div>
+      </form>
+    </section>
+    <% } %>
+
+    <% if (role === 'student') { %>
+    <section class="cardish">
+      <div class="section-title">Complete Registration</div>
+      <form method="post" action="/student/profile/complete" enctype="multipart/form-data" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">SSN</label>
+          <!-- mask input display; don't echo raw value -->
+          <input name="ssn" type="password" class="form-control" placeholder="Enter SSN" autocomplete="off">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Emergency Contact</label>
+          <input name="emergencyName" class="form-control" value="<%= student.profile?.emergencyContact?.name || '' %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Relationship</label>
+          <input name="emergencyRelation" class="form-control" value="<%= student.profile?.emergencyContact?.relation || '' %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Emergency Phone</label>
+          <input name="emergencyPhone" class="form-control" value="<%= student.profile?.emergencyContact?.phone || '' %>">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">GED / HS Diploma / College Degree</label>
+          <input type="file" name="gedDoc" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Government Issued ID</label>
+          <input type="file" name="govIdDoc" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+        </div>
+
+        <div class="col-12">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="agree" name="agree" value="yes" <%= (student.profile?.documents||[]).find(d => d.type === 'registration-agreement')?.agreed ? 'checked' : '' %> required>
+            <label class="form-check-label" for="agree">I have read and agree to the <a href="/docs/course-curriculm.pdf" target="_blank">Registration Agreement</a>.</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="grievanceAck" name="grievanceAck" value="yes" <%= student.profile?.grievanceAcknowledged ? 'checked' : '' %>>
+            <label class="form-check-label" for="grievanceAck">I acknowledge I have received the grievance process information.</label>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-primary">Save</button>
         </div>
       </form>
     </section>
@@ -224,24 +325,34 @@
 
     <!-- Agreements & Signatures -->
     <section class="cardish">
-      <div class="section-title">Agreements & Signatures</div>
+      <div class="section-title">Agreements &amp; Signatures</div>
       <% const docs = (student.profile && student.profile.documents) || []; %>
       <% if (!docs.length) { %>
         <div class="alert alert-secondary m-0">No documents on file.</div>
       <% } else { %>
         <div class="row g-3">
-          <% docs.forEach(d => { %>
-            <div class="col-md-6">
+          <% docs.forEach(d => {
+               const pdfSrc = (signatureDocsConfig && signatureDocsConfig[d.type]) || null;
+          %>
+            <div class="col-md-12">
               <div class="card h-100 border" style="border-color: var(--border);">
                 <div class="card-body">
                   <h5 class="card-title text-capitalize mb-1"><%= d.type.replace(/-/g,' ') %></h5>
                   <div class="text-muted mb-2">Version: <%= d.version %> • Signed: <%= d.signedAt || '-' %></div>
+
+                  <!-- PDF preview above signature -->
+                  <% if (pdfSrc) { %>
+                    <iframe class="pdf-frame" src="<%= pdfSrc %>#view=fitH" title="<%= d.type %> PDF"></iframe>
+                  <% } %>
+
                   <% if (d.signatureDataUrl) { %>
                     <img src="<%= d.signatureDataUrl %>" alt="Signature" style="max-width:100%;border:1px solid #ddd;background:#fff;border-radius:6px;">
                   <% } else if (role === 'admin' && d.requiredRole === 'admin') { %>
                     <form method="post" action="/admin/students/<%= student.id %>/sign-doc" onsubmit="return capturePad('<%= d.type %>')">
                       <canvas class="sig" id="sig_<%= d.type %>" style="width:100%;height:160px;touch-action:none;border:1px solid #ced4da;border-radius:8px;"></canvas>
-                      <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button></div>
+                      <div class="mt-1">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button>
+                      </div>
                       <input type="hidden" name="docType" value="<%= d.type %>">
                       <input type="hidden" name="signatureDataUrl" id="sigInput_<%= d.type %>">
                       <button class="btn btn-primary btn-sm mt-2">Sign</button>
@@ -249,7 +360,9 @@
                   <% } else if (role === 'student' && !d.requiredRole) { %>
                     <form method="post" action="/student/sign-doc" onsubmit="return capturePad('<%= d.type %>')">
                       <canvas class="sig" id="sig_<%= d.type %>" style="width:100%;height:160px;touch-action:none;border:1px solid #ced4da;border-radius:8px;"></canvas>
-                      <div class="mt-1"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button></div>
+                      <div class="mt-1">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button>
+                      </div>
                       <input type="hidden" name="docType" value="<%= d.type %>">
                       <input type="hidden" name="signatureDataUrl" id="sigInput_<%= d.type %>">
                       <button class="btn btn-primary btn-sm mt-2">Sign</button>
@@ -267,11 +380,12 @@
 
     <div class="d-flex justify-content-between align-items-center mt-3">
       <a class="btn btn-link" href="javascript:history.back()">Back</a>
-   <% if (role === 'admin' || role === 'teacher') { %>
+      <% if (role === 'admin' || role === 'teacher') { %>
         <form method="post" action="/<%= role %>/students/<%= student.id %>/reset-password" style="margin:0;" onsubmit="return confirm('Reset password for this user?');">
           <button class="btn btn-warning">Reset Password</button>
         </form>
-      <% } %>    </div>
+      <% } %>
+    </div>
   </div>
 
 <% const adminDocs = docs.filter(d => !d.signatureDataUrl && d.requiredRole === 'admin'); %>
@@ -281,10 +395,18 @@
   const pads = {};
   function setupPad(id){
     const el=document.getElementById(id); const ctx=el.getContext('2d');
-    const DPR=window.devicePixelRatio||1; function resize(){const r=el.getBoundingClientRect(); el.width=r.width*DPR; el.height=r.height*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle='#000';}
+    const DPR=window.devicePixelRatio||1;
+    function resize(){
+      const r=el.getBoundingClientRect();
+      el.width=r.width*DPR; el.height=r.height*DPR;
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle='#000';
+    }
     resize(); window.addEventListener('resize',resize);
-    let drawing=false,prev=null; function pos(e){const b=el.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:(t.clientX-b.left), y:(t.clientY-b.top)};}
-    function start(e){drawing=true; prev=pos(e);} function move(e){ if(!drawing) return; const p=pos(e); ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(p.x,p.y); ctx.stroke(); prev=p; }
+    let drawing=false,prev=null;
+    function pos(e){const b=el.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:(t.clientX-b.left), y:(t.clientY-b.top)};}
+    function start(e){drawing=true; prev=pos(e);}
+    function move(e){ if(!drawing) return; const p=pos(e); ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(p.x,p.y); ctx.stroke(); prev=p; }
     function end(){drawing=false;}
     el.addEventListener('mousedown',start); el.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
     el.addEventListener('touchstart',e=>{e.preventDefault();start(e);}); el.addEventListener('touchmove',e=>{e.preventDefault();move(e);}); window.addEventListener('touchend',end);
@@ -293,6 +415,7 @@
   function clearPad(id){ const p=pads[id]; if(p) p.ctx.clearRect(0,0,p.el.width,p.el.height); }
   function capture(id){ const p=pads[id]; if(!p) return ''; return p.el.toDataURL('image/png'); }
   function capturePad(type){ const id='sig_'+type; const v=capture(id); document.getElementById('sigInput_'+type).value=v; if(!v){alert('Please sign before submitting.'); return false;} return true; }
+
   document.addEventListener('DOMContentLoaded', ()=>{
     <% if (role === 'admin') { adminDocs.forEach(d => { %>setupPad('sig_<%= d.type %>');<% }) } else { studentDocs.forEach(d => { %>setupPad('sig_<%= d.type %>');<% }) } %>
   });

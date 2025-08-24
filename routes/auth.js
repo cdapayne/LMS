@@ -213,14 +213,14 @@ router.post('/register', (req, res) => {
       });
     }
 
-     try {
+    try {
       const firstName = ensureStr(req.body.firstName);
       const lastName = ensureStr(req.body.lastName);
       const username = ensureStr(req.body.username) || `${firstName}${lastName}`.replace(/\s+/g, '');
       const email = ensureStr(req.body.email);
       const confirmEmail = ensureStr(req.body.confirmEmail);
       const password = ensureStr(req.body.password);
- const studentId = ensureStr(req.body.studentId) || await userModel.generateStudentId();      const agree = ensureStr(req.body.agree);
+ const studentId = ensureStr(req.body.studentId) || await userModel.generateStudentId();
       const suffix = ensureStr(req.body.suffix);
       const address = ensureStr(req.body.address);
       const city = ensureStr(req.body.city);
@@ -231,17 +231,13 @@ router.post('/register', (req, res) => {
       const phoneHome = ensureStr(req.body.phoneHome);
       const phoneCell = ensureStr(req.body.phoneCell);
       const phoneWork = ensureStr(req.body.phoneWork);
-      const ssn = ensureStr(req.body.ssn);
-      const emergencyName = ensureStr(req.body.emergencyName);
-      const emergencyRelation = ensureStr(req.body.emergencyRelation);
-      const emergencyPhone = ensureStr(req.body.emergencyPhone);
    
       const selfPay = affiliateProgram === 'Self Pay';
 
-      const grievanceAck = ensureStr(req.body.grievanceAck);
       const financialAid = ensureStr(req.body.financialAid);
       const referralName = ensureStr(req.body.referralName);
       const referralEmail = ensureStr(req.body.referralEmail);
+
 
       if (email !== confirmEmail) {
         return res.status(400).render('register', {
@@ -254,18 +250,7 @@ router.post('/register', (req, res) => {
         });
       }
 
-       if (!agree) {
-      return res.status(400).render('register', {
-          error: 'You must agree to the registration agreement.',
-          docVersion: DOC_VERSION,
-          docText: DOC_TEXT,
-          formData: req.body,
-          courses: dd.courses,
-          affiliatePrograms: dd.affiliatePrograms
-        });
-      }
-
-      const user = await userModel.createStudent({
+        const user = await userModel.createStudent({
         username,
         firstName,
         lastName,
@@ -277,10 +262,9 @@ router.post('/register', (req, res) => {
         course,
         affiliateProgram,
         phones: { home: phoneHome, cell: phoneCell, work: phoneWork },
-        ssn,
-        emergencyContact: { name: emergencyName, relation: emergencyRelation, phone: emergencyPhone },
-     
-        grievanceAck,
+        ssn: '',
+        emergencyContact: {},
+        grievanceAck: false,
         name: `${firstName} ${lastName}`.trim(),
         email,
         password,
