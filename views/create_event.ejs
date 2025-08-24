@@ -58,7 +58,7 @@
 
   <div class="container pb-4">
     <div class="cardish">
-      <form method="POST" action="/admin/create-event" novalidate>
+      <form method="POST" action="/admin/create-event" enctype="multipart/form-data" novalidate>
         <div class="mb-3">
           <label class="form-label">Event Name</label>
           <input type="text" name="name" class="form-control" required>
@@ -70,6 +70,10 @@
         <div class="mb-3">
           <label class="form-label">Description</label>
           <textarea name="description" class="form-control" rows="3" placeholder="Optional details"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Attachment (PDF or Image)</label>
+          <input type="file" name="attachment" class="form-control" accept="image/*,application/pdf">
         </div>
         <div class="d-flex gap-2 mt-4">
           <button type="submit" class="btn btn-primary">Save Event</button>

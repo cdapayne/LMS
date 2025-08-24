@@ -33,6 +33,10 @@
         <textarea name="html" class="form-control" rows="10"><%= template.html %></textarea>
       </div>
       <div class="mb-3">
+        <label class="form-label">Preview</label>
+        <div id="htmlPreview" class="border rounded p-3"></div>
+      </div>
+      <div class="mb-3">
         <label class="form-label">AI Prompt</label>
         <textarea id="aiPrompt" class="form-control" rows="3"></textarea>
         <button type="button" id="aiBtn" class="btn btn-secondary mt-2">Generate with AI</button>
@@ -42,6 +46,12 @@
     <% } %>
   </div>
 <script>
+  const htmlBox = document.querySelector('textarea[name="html"]');
+  const preview = document.getElementById('htmlPreview');
+  function updatePreview(){ preview.innerHTML = htmlBox.value; }
+  htmlBox?.addEventListener('input', updatePreview);
+  document.addEventListener('DOMContentLoaded', updatePreview);
+
   document.getElementById('aiBtn')?.addEventListener('click', async () => {
     const prompt = document.getElementById('aiPrompt').value;
     if (!prompt.trim()) return;
@@ -52,7 +62,8 @@
     });
     const data = await res.json();
     if (data.html) {
-      document.querySelector('textarea[name="html"]').value = data.html;
+      htmlBox.value = data.html;
+      updatePreview();
     }
   });
 </script>
