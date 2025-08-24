@@ -145,12 +145,17 @@ async function updateProfile(id, updates) {
 async function signDocument(id, docType, signatureDataUrl) {
   const user = await findById(id);
   if (!user) return null;
+  // Prevent signature updates once the student has been approved
+  if (user.status === 'approved') return user;
+
   user.profile = user.profile || {};
   user.profile.documents = user.profile.documents || [];
   const doc = user.profile.documents.find(d => d.type === docType);
-  if (!doc) return null;
+  if (!doc) return user;
+
   doc.signatureDataUrl = signatureDataUrl;
   doc.signedAt = new Date().toISOString();
+
   await db.query('UPDATE mdtslms_users SET profile=? WHERE id=?', [JSON.stringify(user.profile), id]);
   return user;
 }
