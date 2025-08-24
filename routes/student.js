@@ -38,6 +38,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+
 router.use((req, res, next) => {
   if (!req.session || req.session.role !== 'student') return res.status(403).send('Forbidden');
   next();
@@ -107,7 +108,14 @@ const upload = multer({
 router.post('/sign-doc', async (req, res) => {
   const { docType, signatureDataUrl } = req.body;
   if (docType && signatureDataUrl) {
-    try { await userModel.signDocument(req.session.user.id, docType, signatureDataUrl); } catch (e) { console.error('student sign', e); }
+    try {
+      const user = await userModel.signDocument(req.session.user.id, docType, signatureDataUrl);
+      const docs = (user.profile && user.profile.documents) || [];
+      const pending = docs.filter(d => !d.requiredRole && !d.signatureDataUrl);
+      if (!pending.length) {
+        try { await userModel.markApplicationComplete(req.session.user.id); } catch (err) { console.error('complete mark', err); }
+      }
+    } catch (e) { console.error('student sign', e); }
   }
   res.redirect('/student/profile');
 });

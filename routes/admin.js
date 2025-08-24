@@ -397,6 +397,20 @@ router.post('/students/:id/step2', async (req, res) => {
       tuition: { totalCost: tuitionTotal }
     });
     const student = await userModel.findById(id);
+    const tuition = (student.profile && student.profile.tuition) || {};
+    const program = (student.profile && student.profile.program) || {};
+    const documents = (student.profile && student.profile.documents) || [];
+    const tuitionFilled = tuition.tuition && tuition.registrationFee && tuition.books;
+    const programFilled = program.startDate && program.endDate && program.classTime && program.classDays && program.totalHours;
+    const adminDocsSigned = ['representatives-certification', 'school-official'].every(t => {
+      const d = documents.find(doc => doc.type === t);
+      return d && d.signatureDataUrl;
+    });
+
+    if (!(tuitionFilled && programFilled && adminDocsSigned)) {
+      return res.render('student_profile', { student, role: 'admin', reset: false, error: 'All tuition and program fields must be completed and required admin documents signed before sending Step 2.' });
+    }
+
     if (student && student.email) {
       const token = crypto.randomBytes(32).toString('hex');
       const expires = Date.now() + 1000 * 60 * 60 * 24;
