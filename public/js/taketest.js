@@ -1,6 +1,6 @@
 (function(){
-  const questions = window.testQuestions || [];
-  const total = questions.length;
+  let questions = [];
+  let total = 0;
   const testId = window.testId;
   let current = 0;
   let score = 0;
@@ -93,7 +93,7 @@
     }, 500);
   });
 
-  let remaining = (window.timePerQuestion || 90) * total;
+  let remaining = 0;
   function tick(){
     const m = Math.floor(remaining / 60);
     const s = remaining % 60;
@@ -113,7 +113,16 @@
       title: 'Start Test',
       text: `You have 5 attempts. This is attempt ${(window.attempts||0)+1} of 5.`,
       confirmButtonText: 'Begin'
-    }).then(() => {
+    }).then(async () => {
+      try {
+        const resp = await fetch(window.questionsUrl);
+        questions = await resp.json();
+      } catch (e) {
+        console.error('Failed to load questions', e);
+        questions = [];
+      }
+      total = questions.length;
+      remaining = (window.timePerQuestion || 90) * total;
       if (total > 0) {
         loadQuestion(current);
         updateGrade();
