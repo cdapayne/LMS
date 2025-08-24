@@ -113,6 +113,7 @@
     <% if (typeof reset !== 'undefined' && reset) { %>
       <div class="alert alert-success text-center">Password reset email sent.</div>
     <% } %>
+    <div id="sigBlankWarning" class="alert alert-warning text-center" style="display:none;">Please sign before submitting.</div>
 
     <!-- Key facts -->
     <div class="cardish">
@@ -340,20 +341,23 @@
                     <iframe class="pdf-frame" src="<%= pdfSrc %>#view=fitH" title="<%= d.type %> PDF"></iframe>
                   <% } %>
 
+                  <% const canSign = status !== 'approved' && ((role === 'admin' && d.requiredRole === 'admin') || (role === 'student' && !d.requiredRole)); %>
+                  <% const action = role === 'admin' ? `/admin/students/${student.id}/sign-doc` : '/student/sign-doc'; %>
                   <% if (d.signatureDataUrl) { %>
                     <img src="<%= d.signatureDataUrl %>" alt="Signature" style="max-width:100%;border:1px solid #ddd;background:#fff;border-radius:6px;">
-                  <% } else if (role === 'admin' && d.requiredRole === 'admin') { %>
-                    <form method="post" action="/admin/students/<%= student.id %>/sign-doc" onsubmit="return capturePad('<%= d.type %>')">
-                      <canvas class="sig" id="sig_<%= d.type %>" style="width:100%;height:160px;touch-action:none;border:1px solid #ced4da;border-radius:8px;"></canvas>
-                      <div class="mt-1">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button>
-                      </div>
-                      <input type="hidden" name="docType" value="<%= d.type %>">
-                      <input type="hidden" name="signatureDataUrl" id="sigInput_<%= d.type %>">
-                      <button class="btn btn-primary btn-sm mt-2">Sign</button>
-                    </form>
-                  <% } else if (role === 'student' && !d.requiredRole) { %>
-                    <form method="post" action="/student/sign-doc" onsubmit="return capturePad('<%= d.type %>')">
+                    <% if (canSign) { %>
+                      <form class="mt-2" method="post" action="<%= action %>" onsubmit="return capturePad('<%= d.type %>')">
+                        <canvas class="sig" id="sig_<%= d.type %>" style="width:100%;height:160px;touch-action:none;border:1px solid #ced4da;border-radius:8px;"></canvas>
+                        <div class="mt-1">
+                          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button>
+                        </div>
+                        <input type="hidden" name="docType" value="<%= d.type %>">
+                        <input type="hidden" name="signatureDataUrl" id="sigInput_<%= d.type %>">
+                        <button class="btn btn-primary btn-sm mt-2">Update Signature</button>
+                      </form>
+                    <% } %>
+                  <% } else if (canSign) { %>
+                    <form method="post" action="<%= action %>" onsubmit="return capturePad('<%= d.type %>')">
                       <canvas class="sig" id="sig_<%= d.type %>" style="width:100%;height:160px;touch-action:none;border:1px solid #ced4da;border-radius:8px;"></canvas>
                       <div class="mt-1">
                         <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPad('sig_<%= d.type %>')">Clear</button>
@@ -383,19 +387,21 @@
     </div>
   </div>
 
-<% const adminDocs = docs.filter(d => !d.signatureDataUrl && d.requiredRole === 'admin'); %>
-<% const studentDocs = docs.filter(d => !d.signatureDataUrl && !d.requiredRole); %>
+<% const adminDocs = docs.filter(d => d.requiredRole === 'admin' && status !== 'approved'); %>
+<% const studentDocs = docs.filter(d => !d.requiredRole && status !== 'approved'); %>
 <% if ((role === 'admin' && adminDocs.length) || (role === 'student' && studentDocs.length)) { %>
 <script>
   const pads = {};
   function setupPad(id){
     const el=document.getElementById(id); const ctx=el.getContext('2d');
     const DPR=window.devicePixelRatio||1;
+    pads[id]={el,ctx,blank:null};
     function resize(){
       const r=el.getBoundingClientRect();
       el.width=r.width*DPR; el.height=r.height*DPR;
       ctx.setTransform(DPR,0,0,DPR,0,0);
       ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle='#000';
+      pads[id].blank = el.toDataURL();
     }
     resize(); window.addEventListener('resize',resize);
     let drawing=false,prev=null;
@@ -405,11 +411,19 @@
     function end(){drawing=false;}
     el.addEventListener('mousedown',start); el.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
     el.addEventListener('touchstart',e=>{e.preventDefault();start(e);}); el.addEventListener('touchmove',e=>{e.preventDefault();move(e);}); window.addEventListener('touchend',end);
-    pads[id]={el,ctx};
   }
-  function clearPad(id){ const p=pads[id]; if(p) p.ctx.clearRect(0,0,p.el.width,p.el.height); }
+  function clearPad(id){ const p=pads[id]; if(p){ p.ctx.clearRect(0,0,p.el.width,p.el.height); p.blank = p.el.toDataURL(); } }
   function capture(id){ const p=pads[id]; if(!p) return ''; return p.el.toDataURL('image/png'); }
-  function capturePad(type){ const id='sig_'+type; const v=capture(id); document.getElementById('sigInput_'+type).value=v; if(!v){alert('Please sign before submitting.'); return false;} return true; }
+  function capturePad(type){
+    const id='sig_'+type; const p=pads[id];
+    const v=capture(id); document.getElementById('sigInput_'+type).value=v;
+    if(p && v === p.blank){
+      document.getElementById('sigBlankWarning').style.display='block';
+      return false;
+    }
+    document.getElementById('sigBlankWarning').style.display='none';
+    return true;
+  }
 
   document.addEventListener('DOMContentLoaded', ()=>{
     <% if (role === 'admin') { adminDocs.forEach(d => { %>setupPad('sig_<%= d.type %>');<% }) } else { studentDocs.forEach(d => { %>setupPad('sig_<%= d.type %>');<% }) } %>
