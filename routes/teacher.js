@@ -75,6 +75,19 @@ router.post('/profile', mediaUpload.single('photo'), async (req, res) => {
   res.redirect('/teacher/profile?saved=1');
 });
 
+router.post('/profile/links', mediaUpload.single('image'), async (req, res) => {
+  const { url } = req.body;
+  if (url) {
+    const link = { url };
+    if (req.file) {
+      link.image = { url: `/uploads/${req.file.filename}`, originalName: req.file.originalname };
+    }
+    try { await userModel.addLinks(req.session.user.id, [link]); }
+    catch (e) { console.error('add link', e); }
+  }
+  res.redirect('/teacher/profile?saved=1');
+});
+
 
 // Dashboard with weekly schedule and announcements
 router.get('/', async (req, res) => {
