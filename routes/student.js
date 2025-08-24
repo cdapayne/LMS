@@ -54,7 +54,8 @@ router.post('/profile/complete', (req, res) => {
     const student = await userModel.findById(req.session.user.id);
     if (!student) return res.status(404).send('Not found');
     if (err) return res.status(400).render('student_profile', { student, role: 'student', step2Error: err.message,  signatureDocsConfig   });
-    const { emergencyName, emergencyRelation, emergencyPhone, agree, grievanceAck } = req.body;
+    const { ssn: rawSSN, emergencyName, emergencyRelation, emergencyPhone, agree, grievanceAck } = req.body;
+    const ssn = rawSSN ? String(rawSSN).replace(/\D/g, '') : undefined;
     if (!agree) {
       return res.status(400).render('student_profile', { student, role: 'student', step2Error: 'You must agree to the registration agreement.',signatureDocsConfig });
     }
@@ -63,6 +64,7 @@ router.post('/profile/complete', (req, res) => {
       const reg = docs.find(d => d.type === 'registration-agreement');
       if (reg) reg.agreed = true;
       await userModel.updateProfile(student.id, {
+        ssn,
         emergencyContact: { name: emergencyName, relation: emergencyRelation, phone: emergencyPhone },
         grievanceAcknowledged: !!grievanceAck,
         documents: docs

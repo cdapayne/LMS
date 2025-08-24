@@ -65,7 +65,7 @@ async function generateStudentId() {
 
 async function createStudent({ username, name, email, password, studentId,
   firstName, lastName, suffix, address, city, state, zip, course, affiliateProgram,
-  phones, ssn, emergencyContact, admissionDate, startDate, endDate, classTime, classDays, totalHours,
+  phones, ssn, emergencyContact, admissionDate, startDate, endDate, classTime, classDays,
   tuition, grievanceAck, financialAid, referralName, referralEmail }) {
   const { salt, hash } = hashPassword(password);
   const docNow = new Date().toISOString();
@@ -84,7 +84,7 @@ async function createStudent({ username, name, email, password, studentId,
     phones: phones || {},
     ssn,
     emergencyContact: emergencyContact || {},
-    program: { admissionDate, startDate, endDate, classTime, classDays, totalHours },
+    program: { admissionDate, startDate, endDate, classTime, classDays },
     course,
     affiliateProgram,
     tuition: tuition || {},

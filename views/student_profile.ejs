@@ -110,6 +110,12 @@
   </div>
 
   <div class="container pb-4">
+    <div class="alert alert-info text-center">Make sure to click Add Signature after each signing, otherwise information may be lost.</div>
+    <% if (role === 'admin' && student.status !== 'approved') { %>
+      <form method="post" action="/admin/approve/<%= student.id %>" class="mb-3 text-end">
+        <button class="btn btn-success">Approve Student</button>
+      </form>
+    <% } %>
     <% if (typeof reset !== 'undefined' && reset) { %>
       <div class="alert alert-success text-center">Password reset email sent.</div>
     <% } %>
@@ -149,7 +155,7 @@
         </div>
         <div class="mb-2"><strong>Phones:</strong> Home: <%= student.profile?.phones?.home || '-' %>, Cell: <%= student.profile?.phones?.cell || '-' %>, Work: <%= student.profile?.phones?.work || '-' %></div>
         <!-- MASKED SSN -->
-        <div class="mb-2"><strong>SSN:</strong> <%= maskSSN(student.profile?.ssn) %></div>
+        <div class="mb-2"><strong>SSN:</strong> <%= role === 'admin' ? (student.profile?.ssn || '-') : maskSSN(student.profile?.ssn) %></div>
         <div class="mb-0"><strong>Emergency Contact:</strong> <%= student.profile?.emergencyContact?.name || '-' %> (<%= student.profile?.emergencyContact?.relation || '-' %>) - <%= student.profile?.emergencyContact?.phone || '-' %></div>
       </section>
 
@@ -162,7 +168,6 @@
         <div class="mb-2"><strong>End Date:</strong> <%= student.profile?.program?.endDate || '-' %></div>
         <div class="mb-2"><strong>Class Time:</strong> <%= student.profile?.program?.classTime || '-' %></div>
         <div class="mb-2"><strong>Days:</strong> <%= student.profile?.program?.classDays || '-' %></div>
-        <div class="mb-2"><strong>Total Hours:</strong> <%= student.profile?.program?.totalHours || '-' %></div>
         <div class="mb-0"><strong>Grievance Acknowledged:</strong> <%= student.profile?.grievanceAcknowledged ? 'Yes' : 'No' %></div>
       </section>
     </div>
@@ -199,12 +204,6 @@
           <input name="classDays" class="form-control" value="<%= student.profile?.program?.classDays || '' %>">
         </div>
 
-        <!-- NEW: Total Hours -->
-        <div class="col-md-6">
-          <label class="form-label">Total Hours</label>
-          <input type="number" step="1" min="0" name="totalHours" class="form-control" value="<%= student.profile?.program?.totalHours || '' %>">
-        </div>
-
         <hr class="mt-2">
 
         <div class="col-12">
@@ -237,7 +236,7 @@
         </div>
 
         <div class="col-12">
-          <button class="btn btn-primary">Save &amp; Send Step 2</button>
+          <button class="btn btn-primary">Send to Student</button>
         </div>
       </form>
     </section>
