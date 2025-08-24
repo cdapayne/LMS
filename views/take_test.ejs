@@ -25,10 +25,10 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
-    window.testQuestions = <%- JSON.stringify(test.questions) %>;
     window.timePerQuestion = <%= test.timeLimit || 90 %>;
     window.attempts = <%= attempts %>;
     window.testId = <%= test.id %>;
+    window.questionsUrl = "<%= questionsUrl %>";
   </script>
   <script src="/js/taketest.js"></script>
 </body>

@@ -1062,8 +1062,25 @@ router.get('/classes/:id/tests/:testId/preview', async (req, res) => {
   if (!klass) return res.status(404).send('Not found');
   const test = (klass.tests || []).find(t => t.id === testId);
   if (!test) return res.status(404).send('Test not found');
-  test.questions = await testModel.getQuestionsByTest(test.title);
-  res.render('take_test', { klass, test, attempts: 0, user: req.session.user, action: `/admin/classes/${classId}/tests/${testId}/preview` });
+  res.render('take_test', {
+    klass,
+    test,
+    attempts: 0,
+    user: req.session.user,
+    action: `/admin/classes/${classId}/tests/${testId}/preview`,
+    questionsUrl: `/admin/classes/${classId}/tests/${testId}/questions`
+  });
+});
+
+router.get('/classes/:id/tests/:testId/questions', async (req, res) => {
+  const classId = Number(req.params.id);
+  const testId = Number(req.params.testId);
+  const klass = await classModel.findClassById(classId);
+  if (!klass) return res.status(404).json({ error: 'Not found' });
+  const test = (klass.tests || []).find(t => t.id === testId);
+  if (!test) return res.status(404).json({ error: 'Test not found' });
+  const questions = await testModel.getQuestionsByTest(test.title);
+  res.json(questions);
 });
 
 router.post('/classes/:id/tests/:testId/preview', async (req, res) => {

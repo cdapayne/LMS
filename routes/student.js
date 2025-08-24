@@ -231,11 +231,28 @@ router.get('/classes/:id/tests/:testId', async (req, res) => {
   if (!klass) return res.status(404).send('Not found');
   const test = (klass.tests || []).find(t => t.id === testId);
   if (!test) return res.status(404).send('Test not found');
-  test.questions = await testModel.getQuestionsByTest(test.title);
   const existing = (klass.grades || []).find(g => g.testId === testId && g.studentId === req.session.user.id);
   const attempts = existing ? existing.attempt || 0 : 0;
   if (attempts >= 5) return res.status(403).send('No attempts remaining');
-  res.render('take_test', { klass, test, attempts, user: req.session.user, action: `/student/classes/${id}/tests/${testId}` });
+  res.render('take_test', {
+    klass,
+    test,
+    attempts,
+    user: req.session.user,
+    action: `/student/classes/${id}/tests/${testId}`,
+    questionsUrl: `/student/classes/${id}/tests/${testId}/questions`
+  });
+});
+
+router.get('/classes/:id/tests/:testId/questions', async (req, res) => {
+  const classId = Number(req.params.id);
+  const testId = Number(req.params.testId);
+  const klass = await classModel.findClassById(classId);
+  if (!klass) return res.status(404).json({ error: 'Not found' });
+  const test = (klass.tests || []).find(t => t.id === testId);
+  if (!test) return res.status(404).json({ error: 'Test not found' });
+  const questions = await testModel.getQuestionsByTest(test.title);
+  res.json(questions);
 });
 
 // study helper for custom material
