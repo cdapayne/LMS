@@ -843,7 +843,7 @@ router.post('/classes/:id/tests/generate', async (req, res) => {
         options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD, q.OptionE, q.OptionF, q.OptionG].filter(Boolean),
         test: q.Test,
         contentType: q['Content Type'],
-        title: q.Title,
+        title: title,
         itemType: q['Item Type'],
         path: q.Path
       }));
@@ -1070,6 +1070,7 @@ router.get('/classes/:id/tests/:testId/preview', async (req, res) => {
     return res.status(404).send('Test not found');
   }
   test.questions = await testModel.getQuestionsByTest(test.title);
+  console.log(test.questions);
   res.render('take_test', {
     klass,
     test,
