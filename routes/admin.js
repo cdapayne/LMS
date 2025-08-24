@@ -13,6 +13,7 @@ const emailTemplates = require('../utils/emailTemplates');
 const announcementModel = require('../models/announcementModel');
 const testModel = require('../models/testModel');
 const dripCampaign = require('../utils/dripCampaign');
+const dropdowns = require('../utils/dropdownStore');
 
 const multer = require('multer');
 const crypto = require('crypto');
@@ -31,7 +32,6 @@ const mediaStorage = multer.diskStorage({
 });
 const mediaUpload = multer({ storage: mediaStorage });  
 const nodemailer = require('nodemailer');
-
 const transporter = nodemailer.createTransport({
   host: 'mdts-apps.com',
   port: 465,
@@ -58,6 +58,24 @@ router.get('/chart/meta', async (_req, res) => {
     out[name] = cols.map(c => c.Field);
   }
   res.json({ tables: out });
+});
+
+// ----- dropdown options -----
+router.get('/dropdowns', (req, res) => {
+  const data = dropdowns.getAll();
+  res.render('admin_dropdowns', { user: req.session.user, dropdowns: data, saved: req.query.saved });
+});
+
+router.post('/dropdowns/add', (req, res) => {
+  const { type, value } = req.body;
+  dropdowns.add(type, value && value.trim());
+  res.redirect('/admin/dropdowns?saved=1');
+});
+
+router.post('/dropdowns/delete', (req, res) => {
+  const { type, value } = req.body;
+  dropdowns.remove(type, value);
+  res.redirect('/admin/dropdowns?saved=1');
 });
 
 router.get('/email-templates', (req, res) => {

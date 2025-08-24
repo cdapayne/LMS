@@ -57,6 +57,13 @@
       max-width: 560px;
       width: 100%;
     }
+    .patriotic-text {
+    background: linear-gradient(90deg, red, white, blue);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 600;
+  }
     .celebrate h2{ font-size: clamp(1.25rem, 2.8vw, 1.75rem); }
     .celebrate .lead{ color: var(--bs-secondary-color); }
   </style>
@@ -145,19 +152,36 @@
 
               <div class="col-12 col-md-6">
                 <label class="form-label req" for="phone">Phone Number</label>
-                <input id="phone" name="phone" class="form-control" required
-                  autocomplete="tel" inputmode="tel"
-                  pattern="^[0-9\\-\\+\\(\\)\\s\\.]{7,}$"
-                  value="<%= formData.phone || '' %>"/>
+               <input id="phone" name="phone" class="form-control" required
+  autocomplete="tel" inputmode="tel"
+  pattern="^[0-9\-\+\(\)\s\.]{7,}$"
+  value="<%= formData.phone || '' %>"/>
                 <div class="help small">Formats like 555-555-5555 are accepted.</div>
                 <div class="invalid-feedback">Enter a valid phone number.</div>
               </div>
 
-              <div class="col-12 col-md-6">
-                <label class="form-label" for="phoneCarrier">Phone Carrier (optional)</label>
-                <input id="phoneCarrier" name="phoneCarrier" class="form-control"
-                  autocomplete="off" value="<%= formData.phoneCarrier || '' %>"/>
-              </div>
+           <div class="col-12 col-md-6">
+  <label class="form-label" for="phoneCarrier">Phone Carrier (optional)</label>
+  <select id="phoneCarrier" name="phoneCarrier" class="form-select">
+    <option value="">Select a carrier</option>
+    <% const carriers = [
+      "AT&T",
+      "Verizon",
+      "T-Mobile",
+      "Sprint",
+      "US Cellular",
+      "Cricket Wireless",
+      "Metro by T-Mobile",
+      "Boost Mobile",
+      "Google Fi",
+      "Xfinity Mobile",
+      "Other"
+    ]; %>
+    <% for (const c of carriers) { %>
+      <option value="<%= c %>" <%= formData.phoneCarrier === c ? 'selected' : '' %>><%= c %></option>
+    <% } %>
+  </select>
+</div>
 
               <div class="col-12">
                 <label class="form-label" for="address">Address (optional)</label>
@@ -180,22 +204,24 @@
                 <div class="invalid-feedback">State (e.g., VA) is required.</div>
               </div>
 
-              <div class="col-12">
-                <label class="form-label req d-block">Are you serving?</label>
-                <div class="d-flex gap-3">
-                  <div class="form-check">
-                    <input class="form-check-input" type="radio" name="serving" id="servingYes"
-                      value="yes" <%= formData.serving === 'yes' ? 'checked' : '' %> required />
-                    <label class="form-check-label" for="servingYes">Yes</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input" type="radio" name="serving" id="servingNo"
-                      value="no" <%= formData.serving === 'no' ? 'checked' : '' %> required />
-                    <label class="form-check-label" for="servingNo">No</label>
-                  </div>
-                </div>
-                <div class="invalid-feedback d-block">Please select one.</div>
-              </div>
+           <div class="col-12">
+  <label class="form-label req d-block">Are you serving?</label>
+  <div class="d-flex gap-3 align-items-center">
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="serving" id="servingYes"
+        value="yes" <%= formData.serving === 'yes' ? 'checked' : '' %> required />
+      <label class="form-check-label" for="servingYes">Yes</label>
+    </div>
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="serving" id="servingNo"
+        value="no" <%= formData.serving === 'no' ? 'checked' : '' %> required />
+      <label class="form-check-label" for="servingNo">No</label>
+    </div>
+
+    <!-- Message placeholder -->
+<div id="serviceMessage" class="ms-3 patriotic-text"></div>  </div>
+  <div class="invalid-feedback d-block">Please select one.</div>
+</div>
 
               <div class="col-12" id="branchGroup" style="<%= formData.serving === 'yes' ? '' : 'display:none;' %>">
                 <label class="form-label req" for="branchInput">Branch of Service</label>
@@ -208,14 +234,10 @@
               <div class="col-12 col-md-6">
                 <label class="form-label req" for="course">Course</label>
                 <select id="course" name="course" class="form-select" required>
-                  <option value="">Select a course</option>
-                  <% const courseOptions = [
-                    "Jr Network Engineer","Helpdesk","CCNA","RMF","ITIL 4 Foundations","CEH",
-                    "CND","Security+","CASP+","CHFI","Internship","Other"
-                  ]; %>
-                  <% for (const opt of courseOptions) { %>
+                     <option value="">Select a course</option>
+                  <% (courses || []).forEach(function(opt){ %>
                     <option value="<%= opt %>" <%= formData.course === opt ? 'selected' : '' %>><%= opt %></option>
-                  <% } %>
+                  <% }) %>
                 </select>
                 <div class="invalid-feedback">Please choose a course.</div>
               </div>
@@ -223,14 +245,10 @@
               <div class="col-12 col-md-6">
                 <label class="form-label req" for="applicantType">Applicant Type</label>
                 <select id="applicantType" name="applicantType" class="form-select" required>
-                  <option value="">Select applicant type</option>
-                  <% const applicantOptions = [
-                    "Airforce","Army","College Student","Coastguard","DARS","Corporation",
-                    "MYCAA","Navy","Other","Post 911","Self Pay","VR&E","WIOA","WIOA Veteran"
-                  ]; %>
-                  <% for (const opt of applicantOptions) { %>
+                      <option value="">Select applicant type</option>
+                  <% (affiliatePrograms || []).forEach(function(opt){ %>
                     <option value="<%= opt %>" <%= formData.applicantType === opt ? 'selected' : '' %>><%= opt %></option>
-                  <% } %>
+                  <% }) %>
                 </select>
                 <div class="invalid-feedback">Please choose an applicant type.</div>
               </div>
@@ -290,16 +308,27 @@
 
     <% if (!success) { %>
     // Show/hide branch field based on serving choice
-    function toggleBranch(){
-      const yes = document.getElementById('servingYes')?.checked;
-      const grp = document.getElementById('branchGroup');
-      const inp = document.getElementById('branchInput');
-      if(!grp || !inp) return;
-      grp.style.display = yes ? '' : 'none';
-      if (yes) inp.setAttribute('required','required'); else inp.removeAttribute('required');
-    }
-    document.querySelectorAll('input[name="serving"]').forEach(function(r){ r.addEventListener('change', toggleBranch); });
-    toggleBranch();
+  function toggleBranch(){
+  const yes = document.getElementById('servingYes')?.checked;
+  const grp = document.getElementById('branchGroup');
+  const inp = document.getElementById('branchInput');
+  const msg = document.getElementById('serviceMessage');
+
+  if(!grp || !inp || !msg) return;
+
+  grp.style.display = yes ? '' : 'none';
+  if (yes) {
+    inp.setAttribute('required','required');
+   // msg.textContent = "Thank You for Your Service.";
+  } else {
+    inp.removeAttribute('required');
+    msg.textContent = "";
+  }
+}
+document.querySelectorAll('input[name="serving"]').forEach(r => {
+  r.addEventListener('change', toggleBranch);
+});
+toggleBranch();
 
     // Bootstrap validation + submit UX
     (function () {
