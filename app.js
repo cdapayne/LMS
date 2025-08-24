@@ -12,6 +12,7 @@ const paymentRoutes = require('./routes/payment');
 const preRegRoutes = require('./routes/preReg');
 const eventRoutes = require('./routes/events');
 const accountRoutes = require('./routes/account');
+const dripCampaign = require('./utils/dripCampaign');
 
 
 
@@ -63,6 +64,8 @@ app.use(eventRoutes);
 app.use('/student', studentRoutes);
 app.use('/teacher', teacherRoutes);
 app.use(accountRoutes);
+
+dripCampaign.init();
 
 const PORT = process.env.PORT || 3012;
 app.listen(PORT, () => console.log(`School LMS running on http://localhost:${PORT}`));
