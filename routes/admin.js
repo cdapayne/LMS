@@ -358,6 +358,14 @@ router.post('/announcements', async (req, res) => {
   res.redirect('/admin');
 });
 
+router.post('/announcements/:id/delete', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isNaN(id)) {
+    await announcementModel.remove(id);
+  }
+  res.redirect('/admin');
+});
+
 router.post('/classes/:id/tests/media', mediaUpload.single('media'), (req, res) => {
   const classId = Number(req.params.id);
   if (!req.file) return res.status(400).send('No file uploaded');

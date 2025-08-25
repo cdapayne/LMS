@@ -103,17 +103,10 @@
 
   <div class="d-flex align-items-center gap-3">
     <small class="text-muted"><%= new Date(a.createdAt).toLocaleString() %></small>
-
-    <!-- Hide (remove) button -->
-    <button type="button"
-            class="btn btn-sm btn-outline-secondary hide-ann"
-            title="Hide this announcement"
-            aria-label="Hide this announcement">
-      Hide
-    </button>
-    <!-- Or use a close icon:
-    <button type="button" class="btn-close hide-ann" aria-label="Hide"></button>
-    -->
+    <form method="POST" action="/student/announcements/<%= a.id %>/delete" class="m-0">
+      <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+    </form>
+    <button type="button" class="btn btn-sm btn-outline-secondary hide-ann" title="Hide this announcement" aria-label="Hide this announcement">Hide</button>
   </div>
 </li>
           <% }) %>

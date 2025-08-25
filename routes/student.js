@@ -372,6 +372,14 @@ router.get('/', async (req, res) => {
   });
 });
 
+router.post('/announcements/:id/delete', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isNaN(id)) {
+    await announcementModel.remove(id);
+  }
+  res.redirect('/student');
+});
+
 // study mode for existing tests
 router.get('/classes/:id/tests/:testId/study', async (req, res) => {
   const classId = Number(req.params.id);
