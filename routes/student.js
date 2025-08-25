@@ -78,7 +78,7 @@ router.post('/profile/complete', (req, res) => {
             originalName: f.originalname,
             mimeType: f.mimetype,
             size: f.size,
-            url: `/uploads/${f.filename}`
+            url: `/docs/stxd/${f.filename}`
           }));
           await userModel.addUploads(student.id, uploads);
         }
@@ -93,7 +93,7 @@ router.post('/profile/complete', (req, res) => {
 
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
+    destination: (req, file, cb) => cb(null, path.join(__dirname, '../docs/stxd')),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
   }),
   limits: { fileSize: 15 * 1024 * 1024 },
