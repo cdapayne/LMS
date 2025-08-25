@@ -190,11 +190,12 @@ router.get('/classes/:id', async (req, res) => {
   const klass = await classModel.findClassById(Number(req.params.id));
   if (!klass) return res.status(404).send('Not found');
   const users = await userModel.getAll();
-  const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
- const today = new Date().toISOString().slice(0,10);
+  const allStudents = users.filter(u => u.role === 'student');
+  const students = allStudents.filter(u => (klass.studentIds || []).includes(u.id));
+  const today = new Date().toISOString().slice(0,10);
   const attendanceToday = (klass.attendance || []).find(a => a.date === today) || { present: [] };
   const discussions = await discussionModel.getByClass(klass.id);
-  res.render('teacher_view_class', { klass, students, today, attendanceToday, discussions });
+  res.render('teacher_view_class', { klass, students, allStudents, today, attendanceToday, discussions });
 });
 
 router.post('/classes/:id/rename', async (req, res) => {
