@@ -290,7 +290,9 @@ function buildDailySeries(people, days, tz = 'America/New_York') {
 
   for (const s of people) {
     if (!s.appliedAt) continue;
-    const bucket = fmtDay.format(new Date(s.appliedAt));
+        const dateObj = new Date(s.appliedAt);
+    if (isNaN(dateObj)) continue; // skip invalid dates
+    const bucket = fmtDay.format(dateObj);
     if (bucket in counts) counts[bucket] += 1;
   }
 
@@ -514,10 +516,25 @@ router.get('/marketing', async (req, res) => {
   const students = await userModel.getByRole('student');
   const preregs = await preRegModel.getAll();
   const rsvps = await rsvpModel.getAllRSVPs();
+  const courseSet = new Set();
+  const programSet = new Set();
+  students.forEach(s => {
+    const course = s.profile?.course;
+    const program = s.profile?.affiliateProgram;
+    if (course) courseSet.add(course);
+    if (program) programSet.add(program);
+  });
+  preregs.forEach(p => {
+    if (p.course) courseSet.add(p.course);
+  });
+  const courses = Array.from(courseSet).sort();
+  const programs = Array.from(programSet).sort();
   res.render('admin_marketing', {
     students,
     preregs,
     rsvps,
+    courses,
+    programs,
     templates: marketingSubjects,
     user: req.session.user,
     sent: req.query.sent,
@@ -567,6 +584,19 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
   const students = await userModel.getByRole('student');
   const preregs = await preRegModel.getAll();
   const rsvps = await rsvpModel.getAllRSVPs();
+  const courseSet = new Set();
+  const programSet = new Set();
+  students.forEach(s => {
+    const course = s.profile?.course;
+    const program = s.profile?.affiliateProgram;
+    if (course) courseSet.add(course);
+    if (program) programSet.add(program);
+  });
+  preregs.forEach(p => {
+    if (p.course) courseSet.add(p.course);
+  });
+  const courses = Array.from(courseSet).sort();
+  const programs = Array.from(programSet).sort();
   const { recipients, type, subject, message } = req.body;
   const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
   const attachments = req.file
@@ -578,6 +608,8 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
       students,
       preregs,
       rsvps,
+      courses,
+      programs,
       templates: marketingSubjects,
       user: req.session.user,
       sent: null,
@@ -644,6 +676,8 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
       students,
       preregs,
       rsvps,
+      courses,
+      programs,
       templates: marketingSubjects,
       user: req.session.user,
       sent: null,
