@@ -20,7 +20,18 @@
 <body>
   <%- include('header', { user: user }) %>
   <div class="container mt-4">
-    <h2>Drip Campaigns</h2>
+    <div class="alert alert-info">
+      <strong>How it works:</strong> Schedule automated emails and texts for a contact.
+      <ul class="mb-0">
+        <li><strong>Email</strong> – required recipient address.</li>
+        <li><strong>Phone</strong> – optional number for SMS messages.</li>
+        <li><strong>Name</strong> – used for personalization.</li>
+        <li><strong>Segment</strong> – choose the audience type to determine the message flow.</li>
+        <li><strong>Program</strong> – optional program identifier.</li>
+        <li><strong>Enrollment Status</strong> – optional current enrollment note.</li>
+      </ul>
+    </div>
+    <h2 class="mt-3">Drip Campaigns</h2>
     <% if (created) { %>
       <div class="alert alert-success">Campaign scheduled.</div>
     <% } %>
@@ -46,10 +57,6 @@
         </select>
       </div>
       <div class="mb-3">
-        <label class="form-label">Grade Level</label>
-        <input type="text" name="grade" class="form-control">
-      </div>
-      <div class="mb-3">
         <label class="form-label">Program</label>
         <input type="text" name="program" class="form-control">
       </div>
@@ -70,6 +77,22 @@
         <li class="list-group-item">No campaigns.</li>
       <% } %>
     </ul>
+    <h5 class="mt-4">Campaign History</h5>
+    <form method="get" class="mb-3" style="max-width:300px;">
+      <select name="email" class="form-select" onchange="this.form.submit()">
+        <option value="">Select email</option>
+        <% campaigns.forEach(c => { %>
+          <option value="<%= c.email %>" <%= historyEmail === c.email ? 'selected' : '' %>><%= c.email %></option>
+        <% }) %>
+      </select>
+    </form>
+      <% if (historyCampaign) { %>
+        <ul class="list-group">
+          <% historyCampaign.steps.forEach((s, idx) => { %>
+            <li class="list-group-item">Step <%= idx + 1 %>: <%= s.template %> - <%= s.sentAt ? ('sent ' + new Date(s.sentAt).toLocaleString()) : 'pending' %></li>
+          <% }) %>
+        </ul>
+      <% } %>
   </div>
 </body>
 </html>

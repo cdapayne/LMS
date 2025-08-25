@@ -173,16 +173,20 @@ router.post('/email-templates/ai', async (req, res) => {
 
 router.get('/drip-campaigns', (req, res) => {
   const campaigns = dripCampaign.loadCampaigns();
+  const historyEmail = req.query.email;
+  const historyCampaign = historyEmail ? campaigns.find(c => c.email === historyEmail) : null;
   res.render('admin_drip_campaigns', {
     user: req.session.user,
     campaigns,
-    created: req.query.created
+    created: req.query.created,
+    historyEmail,
+    historyCampaign
   });
 });
 
 router.post('/drip-campaigns', (req, res) => {
-  const { email, phone } = req.body;
-  if (email) dripCampaign.addCampaign({ email, phone });
+  const { email, phone, name, segment, program, enrollmentStatus } = req.body;
+  if (email) dripCampaign.addCampaign({ email, phone, name, segment, program, enrollmentStatus });
   res.redirect('/admin/drip-campaigns?created=1');
 });
 
