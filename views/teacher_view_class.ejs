@@ -424,7 +424,67 @@
           <button type="submit" class="btn btn-primary btn-sm">Post</button>
         </form>
       </section>
-   <!-- Grades -->
+      <!-- Students -->
+      <section class="cardish" aria-labelledby="students-title" id="students">
+        <div class="section-title"><span class="dot"></span><span id="students-title">Students</span></div>
+
+        <form method="post" action="/teacher/classes/<%= klass.id %>/add-student" class="row g-2 align-items-center mb-3">
+          <div class="col-12 col-md-auto">
+            <label class="visually-hidden" for="studentSearch">Search Students</label>
+            <input type="text" id="studentSearch" class="form-control" placeholder="Search students...">
+          </div>
+          <div class="col-12 col-md-auto">
+            <label class="visually-hidden" for="studentId">Student</label>
+            <select id="studentId" name="studentId" class="form-select" style="min-width:240px;">
+              <% (allStudents || []).forEach(s => { %>
+                <% if (!(klass.studentIds||[]).includes(s.id)) { %>
+                  <option value="<%= s.id %>"><%= s.name %> (@<%= s.username %>)</option>
+                <% } %>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-12 col-md-auto">
+            <button class="btn btn-outline-primary">
+              <i class="bi bi-person-plus"></i> Add Student
+            </button>
+          </div>
+        </form>
+
+        <% const roster = (students || []); %>
+        <% if (!roster.length) { %>
+          <div class="empty">
+            <div class="fs-4 mb-1">🧑‍🏫</div>
+            <div class="fw-semibold">No students enrolled</div>
+            <div class="small">Add students to build the class roster.</div>
+          </div>
+        <% } else { %>
+          <div class="table-wrap">
+            <table class="table table-bordered align-middle mb-0">
+              <thead>
+                <tr>
+                  <th style="min-width:220px;">Student</th>
+                  <th style="min-width:160px;">Username</th>
+                  <th style="min-width:120px;">Profile</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% roster.forEach(s => { %>
+                  <tr>
+                    <td><%= s.name %></td>
+                    <td>@<%= s.username %></td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-secondary" href="/teacher/students/<%= s.id %>">
+                        <i class="bi bi-box-arrow-up-right"></i> Open
+                      </a>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </section>
+      <!-- Grades -->
       <section class="cardish" aria-labelledby="grades-title">
       <div class="d-flex align-items-center justify-content-between">
         <div class="section-title mb-0"><span class="dot"></span><span id="grades-title">Students & Grades</span></div>
@@ -510,6 +570,23 @@
         li.innerHTML=`<input type="checkbox" name="done" value="${idx}"> <input type="text" name="item" class="form-control d-inline-block w-auto">`;
         list.appendChild(li);
       });
+    })();
+  </script>
+
+  <script>
+    (function(){
+      const search=document.getElementById('studentSearch');
+      const select=document.getElementById('studentId');
+      function filter(){
+        const term=(search.value||'').toLowerCase();
+        Array.from(select.options).forEach(opt=>{
+          opt.hidden=term && !opt.textContent.toLowerCase().includes(term);
+        });
+        if(select.selectedIndex>=0 && select.options[select.selectedIndex].hidden){
+          select.selectedIndex=-1;
+        }
+      }
+      search?.addEventListener('input',filter);
     })();
   </script>
 
