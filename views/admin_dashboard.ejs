@@ -687,155 +687,155 @@ function ColorfulUnifiedTheme(root, opts = {}) {
     //select.addEventListener('change', () => renderSignupPieChart(chartId, select.value));
     renderSignupPieChart(chartId, 'week');
 
-    document.getElementById(chartId).addEventListener('click', async () => {
-      const res = await fetch('/admin/chart/Newsignups');
-      const raw = await res.json();
-      const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
-        ts: new Date(d.date + 'T00:00:00Z').getTime(),
-        count: Number(d.count || 0),
-        dateStr: d.date
-      }));
-      let popupRoot;
-      Swal.fire({
-        title: 'Pre-Registrations Per Day',
-        html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
-        width: '90%',
-        didOpen: () => {
-          popupRoot = am5.Root.new('signupChartPopup');
-          popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
-          const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
-            layout: popupRoot.verticalLayout,
-            panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
-          }));
-          const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
-            baseInterval: { timeUnit: 'day', count: 1 },
-            renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
-            tooltip: am5.Tooltip.new(popupRoot, {})
-          }));
-          const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
-            renderer: am5xy.AxisRendererY.new(popupRoot, {})
-          }));
-          const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
-            name: 'Sign-ups',
-            xAxis, yAxis,
-            valueXField: 'ts',
-            valueYField: 'count',
-            tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
-          }));
-          series.strokes.template.setAll({ strokeWidth: 2 });
-          chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
-          chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
-          series.data.setAll(data);
-          if (data.length) {
-            xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
-          }
-        },
-        willClose: () => { if (popupRoot) popupRoot.dispose(); }
-      });
-    });
+    // document.getElementById(chartId).addEventListener('click', async () => {
+    //   const res = await fetch('/admin/chart/Newsignups');
+    //   const raw = await res.json();
+    //   const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
+    //     ts: new Date(d.date + 'T00:00:00Z').getTime(),
+    //     count: Number(d.count || 0),
+    //     dateStr: d.date
+    //   }));
+    //   let popupRoot;
+    //   Swal.fire({
+    //     title: 'Pre-Registrations Per Day',
+    //     html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
+    //     width: '90%',
+    //     didOpen: () => {
+    //       popupRoot = am5.Root.new('signupChartPopup');
+    //       popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
+    //       const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
+    //         layout: popupRoot.verticalLayout,
+    //         panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
+    //       }));
+    //       const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
+    //         baseInterval: { timeUnit: 'day', count: 1 },
+    //         renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
+    //         tooltip: am5.Tooltip.new(popupRoot, {})
+    //       }));
+    //       const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
+    //         renderer: am5xy.AxisRendererY.new(popupRoot, {})
+    //       }));
+    //       const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
+    //         name: 'Sign-ups',
+    //         xAxis, yAxis,
+    //         valueXField: 'ts',
+    //         valueYField: 'count',
+    //         tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
+    //       }));
+    //       series.strokes.template.setAll({ strokeWidth: 2 });
+    //       chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
+    //       chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
+    //       series.data.setAll(data);
+    //       if (data.length) {
+    //         xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
+    //       }
+    //     },
+    //     willClose: () => { if (popupRoot) popupRoot.dispose(); }
+    //   });
+    // });
 
 
       const chartId2 = `chart-signups-2`;
    // select.addEventListener('change', () => renderSignupPieChart(chartId2, select.value));
     renderSignupPieChart2(chartId2, 'week');
 
-    document.getElementById(chartId2).addEventListener('click', async () => {
-      const res = await fetch('/admin/chart/AffCounts');
-      const raw = await res.json();
-      const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
-        ts: new Date(d.date + 'T00:00:00Z').getTime(),
-        count: Number(d.count || 0),
-        dateStr: d.date
-      }));
-      let popupRoot;
-      Swal.fire({
-        title: 'Pre-Registrations Per Day',
-        html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
-        width: '90%',
-        didOpen: () => {
-          popupRoot = am5.Root.new('signupChartPopup');
-          popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
-          const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
-            layout: popupRoot.verticalLayout,
-            panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
-          }));
-          const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
-            baseInterval: { timeUnit: 'day', count: 1 },
-            renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
-            tooltip: am5.Tooltip.new(popupRoot, {})
-          }));
-          const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
-            renderer: am5xy.AxisRendererY.new(popupRoot, {})
-          }));
-          const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
-            name: 'Sign-ups',
-            xAxis, yAxis,
-            valueXField: 'ts',
-            valueYField: 'count',
-            tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
-          }));
-          series.strokes.template.setAll({ strokeWidth: 2 });
-          chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
-          chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
-          series.data.setAll(data);
-          if (data.length) {
-            xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
-          }
-        },
-        willClose: () => { if (popupRoot) popupRoot.dispose(); }
-      });
-    });
+    // document.getElementById(chartId2).addEventListener('click', async () => {
+    //   const res = await fetch('/admin/chart/AffCounts');
+    //   const raw = await res.json();
+    //   const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
+    //     ts: new Date(d.date + 'T00:00:00Z').getTime(),
+    //     count: Number(d.count || 0),
+    //     dateStr: d.date
+    //   }));
+    //   let popupRoot;
+    //   Swal.fire({
+    //     title: 'Pre-Registrations Per Day',
+    //     html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
+    //     width: '90%',
+    //     didOpen: () => {
+    //       popupRoot = am5.Root.new('signupChartPopup');
+    //       popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
+    //       const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
+    //         layout: popupRoot.verticalLayout,
+    //         panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
+    //       }));
+    //       const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
+    //         baseInterval: { timeUnit: 'day', count: 1 },
+    //         renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
+    //         tooltip: am5.Tooltip.new(popupRoot, {})
+    //       }));
+    //       const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
+    //         renderer: am5xy.AxisRendererY.new(popupRoot, {})
+    //       }));
+    //       const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
+    //         name: 'Sign-ups',
+    //         xAxis, yAxis,
+    //         valueXField: 'ts',
+    //         valueYField: 'count',
+    //         tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
+    //       }));
+    //       series.strokes.template.setAll({ strokeWidth: 2 });
+    //       chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
+    //       chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
+    //       series.data.setAll(data);
+    //       if (data.length) {
+    //         xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
+    //       }
+    //     },
+    //     willClose: () => { if (popupRoot) popupRoot.dispose(); }
+    //   });
+    // });
 
         const chartId3 = `chart-signups-3`;
    // select.addEventListener('change', () => renderSignupPieChart(chartId2, select.value));
     renderSignupPieChart3(chartId3, 'week');
 
-    document.getElementById(chartId3).addEventListener('click', async () => {
-      const res = await fetch('/admin/chart/CourseCounts');
-      const raw = await res.json();
-      const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
-        ts: new Date(d.date + 'T00:00:00Z').getTime(),
-        count: Number(d.count || 0),
-        dateStr: d.date
-      }));
-      let popupRoot;
-      Swal.fire({
-        title: 'Pre-Registrations Per Day',
-        html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
-        width: '90%',
-        didOpen: () => {
-          popupRoot = am5.Root.new('signupChartPopup');
-          popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
-          const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
-            layout: popupRoot.verticalLayout,
-            panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
-          }));
-          const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
-            baseInterval: { timeUnit: 'day', count: 1 },
-            renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
-            tooltip: am5.Tooltip.new(popupRoot, {})
-          }));
-          const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
-            renderer: am5xy.AxisRendererY.new(popupRoot, {})
-          }));
-          const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
-            name: 'Sign-ups',
-            xAxis, yAxis,
-            valueXField: 'ts',
-            valueYField: 'count',
-            tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
-          }));
-          series.strokes.template.setAll({ strokeWidth: 2 });
-          chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
-          chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
-          series.data.setAll(data);
-          if (data.length) {
-            xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
-          }
-        },
-        willClose: () => { if (popupRoot) popupRoot.dispose(); }
-      });
-    });
+    // document.getElementById(chartId3).addEventListener('click', async () => {
+    //   const res = await fetch('/admin/chart/CourseCounts');
+    //   const raw = await res.json();
+    //   const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
+    //     ts: new Date(d.date + 'T00:00:00Z').getTime(),
+    //     count: Number(d.count || 0),
+    //     dateStr: d.date
+    //   }));
+    //   let popupRoot;
+    //   Swal.fire({
+    //     title: 'Pre-Registrations Per Day',
+    //     html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
+    //     width: '90%',
+    //     didOpen: () => {
+    //       popupRoot = am5.Root.new('signupChartPopup');
+    //       popupRoot.setThemes([am5themes_Animated.new(popupRoot)]);
+    //       const chart = popupRoot.container.children.push(am5xy.XYChart.new(popupRoot, {
+    //         layout: popupRoot.verticalLayout,
+    //         panX: true, panY: false, wheelX: 'panX', wheelY: 'zoomX'
+    //       }));
+    //       const xAxis = chart.xAxes.push(am5xy.DateAxis.new(popupRoot, {
+    //         baseInterval: { timeUnit: 'day', count: 1 },
+    //         renderer: am5xy.AxisRendererX.new(popupRoot, { minGridDistance: 40 }),
+    //         tooltip: am5.Tooltip.new(popupRoot, {})
+    //       }));
+    //       const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(popupRoot, {
+    //         renderer: am5xy.AxisRendererY.new(popupRoot, {})
+    //       }));
+    //       const series = chart.series.push(am5xy.LineSeries.new(popupRoot, {
+    //         name: 'Sign-ups',
+    //         xAxis, yAxis,
+    //         valueXField: 'ts',
+    //         valueYField: 'count',
+    //         tooltip: am5.Tooltip.new(popupRoot, { labelText: '{valueY}' })
+    //       }));
+    //       series.strokes.template.setAll({ strokeWidth: 2 });
+    //       chart.set('cursor', am5xy.XYCursor.new(popupRoot, { xAxis }));
+    //       chart.set('scrollbarX', am5.Scrollbar.new(popupRoot, { orientation: 'horizontal' }));
+    //       series.data.setAll(data);
+    //       if (data.length) {
+    //         xAxis.zoomToValues(data[0].ts, data[data.length - 1].ts);
+    //       }
+    //     },
+    //     willClose: () => { if (popupRoot) popupRoot.dispose(); }
+    //   });
+    // });
 
          const chartId4 = `chart-signups-4`;
    // select.addEventListener('change', () => renderSignupPieChart(chartId2, select.value));

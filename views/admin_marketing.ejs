@@ -83,13 +83,14 @@
                 </tr>
               </thead>
               <tbody id="recipientsBody">
-                <% students.forEach(function(s){
-                     const full = s.name || (s.profile?.firstName + ' ' + s.profile?.lastName);
-                     const course = s.profile?.course || '';
-                     const aff = s.profile?.affiliateProgram || '';
-                     const signup = s.appliedAt ? new Date(s.appliedAt).toISOString().slice(0,10) : '';
-                     const status = s.status === 'approved' ? 'Enrolled' : (s.status === 'declined' ? 'Denied' : 'Pending');
-                %>
+                   <% students.forEach(function(s){
+                   const full = s.name || (s.profile?.firstName + ' ' + s.profile?.lastName);
+                   const course = s.profile?.course || 'N/A';
+                   const aff = s.profile?.affiliateProgram || 'N/A';
+                   const signupDate = s.appliedAt ? new Date(s.appliedAt) : null;
+                   const signup = signupDate && !isNaN(signupDate) ? signupDate.toISOString().slice(0,10) : 'N/A';
+                   const status = s.status === 'approved' ? 'Enrolled' : (s.status === 'declined' ? 'Denied' : 'Pending');
+              %>
                   <tr data-type="student" data-course="<%= course %>" data-program="<%= aff %>" data-status="<%= status %>">
                     <td><input type="checkbox" name="recipients" value="student-<%= s.id %>"></td>
                     <td>Student</td>
