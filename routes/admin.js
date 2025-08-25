@@ -961,78 +961,108 @@ res.json(affiliateCounts);
 });
 
 router.get('/chart/SignUp365', async (req, res) => {
-      const users = await userModel.getAll();
-  const classes = await classModel.getAllClasses();
-  const teachers = users.filter(u => u.role === 'teacher');
-  const students = users.filter(u => u.role === 'student');
-  const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
-  const approvedStudents = students.filter(u => u.status === 'approved');
-  const announcements = await announcementModel.forAdmin();
+  try {
+    const users = await userModel.getAllpre();
 
-  // ----- course counts -----
-  const courseCountsMap = students.reduce((acc, s) => {
-    const course = (s.profile && s.profile.course) || 'Unknown';
-    acc[course] = (acc[course] || 0) + 1;
-    return acc;
-  }, {});
-  const courseCounts = Object.entries(courseCountsMap).map(([course, count]) => ({ course, count }));
+    // Group by date (YYYY-MM-DD)
+    const dailyCounts = users.reduce((acc, u) => {
+      if (!u.createdAt) return acc;
+      const date = new Date(u.createdAt).toISOString().split('T')[0]; // keep only YYYY-MM-DD
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {});
 
-  // ----- state counts -----
-  const stateCounts = {};
-  students.forEach(s => {
-    const state = s.profile && s.profile.address && s.profile.address.state;
-    if (state) stateCounts[state] = (stateCounts[state] || 0) + 1;
-  });
-  const studentsByState = Object.entries(stateCounts).map(([state, count]) => ({ state, count }));
+    // Convert to array for charting
+    const result = Object.entries(dailyCounts).map(([date, count]) => ({
+      date,
+      count
+    }));
+    console.log("**************");
+    console.log(result);
 
-  // ----- affiliate counts -----
-  const affiliateCounts = students.reduce((acc, s) => {
-    const program = (s.profile && s.profile.affiliateProgram) || 'Unspecified';
-    acc[program] = (acc[program] || 0) + 1;
-    return acc;
-  }, {});
+    // Sort chronologically
+    result.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-
-const signupsLast7Days  = buildDailySeries(students, 7);    // day-by-day for past 7 days
-const signupsLast30Days = buildDailySeries(students, 30);   // optional
-const signupsLast365    = buildDailySeries(students, 365);  // optional
-
-  // const sum = a => a.reduce((n, x) => n + x.count, 0);
-  // const signupsTotals = {
-  //   week:  sum(signupsDailyWeek),
-  //   month: sum(signupsDailyMonth),
-  //   year:  sum(signupsDailyYear)
-  // };
-
-  const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
-
-  // (optional) logging
-  console.log("course counts:", JSON.stringify(courseCounts));
-  console.log("student by state:", JSON.stringify(studentsByState));
-  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
-  console.log("signups totals:", JSON.stringify(signupsLast7Days));
-    console.log("signups totals:", JSON.stringify(signupsLast30Days));
-      console.log("signups totals:", JSON.stringify(signupsLast365));
-
-
-res.json(signupsLast365);
-  // res.render('admin_dashboard', {
-  //   user: req.session.user,
-  //   classes,
-  //   teachers,
-  //   students,
-  //   announcements,
-  //   pendingCount: pendingStudents.length,
-  //   approvedCount: approvedStudents.length,
-  //   classSizes,
-  //   courseCounts,
-  //   studentsByState,
-  //   affiliateCounts,
-  //   signupsLast7Days,
-  //   signupsLast30Days,
-  //   signupsLast365
-  // });
+    res.json(result);
+  } catch (err) {
+    console.error("Error fetching user signup counts:", err);
+    res.status(500).json({ error: "Failed to fetch signup counts" });
+  }
 });
+
+// router.get('/chart/SignUp365', async (req, res) => {
+//       const users = await userModel.getAllpre();
+//   const classes = await classModel.getAllClasses();
+//   const teachers = users.filter(u => u.role === 'teacher');
+//   const students = users.filter(u => u.role === 'student');
+//   const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
+//   const approvedStudents = students.filter(u => u.status === 'approved');
+//   const announcements = await announcementModel.forAdmin();
+
+//   // ----- course counts -----
+//   const courseCountsMap = students.reduce((acc, s) => {
+//     const course = (s.profile && s.profile.course) || 'Unknown';
+//     acc[course] = (acc[course] || 0) + 1;
+//     return acc;
+//   }, {});
+//   const courseCounts = Object.entries(courseCountsMap).map(([course, count]) => ({ course, count }));
+
+//   // ----- state counts -----
+//   const stateCounts = {};
+//   students.forEach(s => {
+//     const state = s.profile && s.profile.address && s.profile.address.state;
+//     if (state) stateCounts[state] = (stateCounts[state] || 0) + 1;
+//   });
+//   const studentsByState = Object.entries(stateCounts).map(([state, count]) => ({ state, count }));
+
+//   // ----- affiliate counts -----
+//   const affiliateCounts = students.reduce((acc, s) => {
+//     const program = (s.profile && s.profile.affiliateProgram) || 'Unspecified';
+//     acc[program] = (acc[program] || 0) + 1;
+//     return acc;
+//   }, {});
+
+
+// const signupsLast7Days  = buildDailySeries(students, 7);    // day-by-day for past 7 days
+// const signupsLast30Days = buildDailySeries(students, 30);   // optional
+// const signupsLast365    = buildDailySeries(students, 365);  // optional
+
+//   // const sum = a => a.reduce((n, x) => n + x.count, 0);
+//   // const signupsTotals = {
+//   //   week:  sum(signupsDailyWeek),
+//   //   month: sum(signupsDailyMonth),
+//   //   year:  sum(signupsDailyYear)
+//   // };
+
+//   const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
+
+//   // (optional) logging
+//   console.log("course counts:", JSON.stringify(courseCounts));
+//   console.log("student by state:", JSON.stringify(studentsByState));
+//   console.log("affiliate counts:", JSON.stringify(affiliateCounts));
+//   console.log("signups totals:", JSON.stringify(signupsLast7Days));
+//     console.log("signups totals:", JSON.stringify(signupsLast30Days));
+//       console.log("signups totals:", JSON.stringify(signupsLast365));
+
+
+// res.json(signupsLast365);
+//   // res.render('admin_dashboard', {
+//   //   user: req.session.user,
+//   //   classes,
+//   //   teachers,
+//   //   students,
+//   //   announcements,
+//   //   pendingCount: pendingStudents.length,
+//   //   approvedCount: approvedStudents.length,
+//   //   classSizes,
+//   //   courseCounts,
+//   //   studentsByState,
+//   //   affiliateCounts,
+//   //   signupsLast7Days,
+//   //   signupsLast30Days,
+//   //   signupsLast365
+//   // });
+// });
 
 router.get('/chart/signups', async (req, res) => {
   const range = req.query.range || 'week';
