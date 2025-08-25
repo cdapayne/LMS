@@ -185,12 +185,20 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Course<span class="req">*</span></label>
-              <select class="form-select" name="course" required>
-                <option value="">Select a course…</option>
-                <% (courses || []).forEach(function(c){ %>
-                  <option value="<%= c %>" <%= formData?.course === c ? 'selected' : '' %>><%= c %></option>
-                <% }) %>
-              </select>
+              <div class="dropdown">
+                <button class="form-select text-start" type="button" id="courseDropdown" data-bs-toggle="dropdown" aria-expanded="false">Select a course…</button>
+                <ul class="dropdown-menu" id="courseMenu">
+                  <% (courses || []).forEach(function(c){ %>
+                    <li>
+                      <label class="dropdown-item">
+                        <input type="checkbox" class="form-check-input me-2 course-option" value="<%= c %>" <%= (formData?.course || '').includes(c) ? 'checked' : '' %>>
+                        <%= c %>
+                      </label>
+                    </li>
+                  <% }) %>
+                </ul>
+                <input type="hidden" id="course" name="course" value="<%= formData?.course || '' %>">
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label">Affiliated Program<span class="req">*</span></label>
@@ -269,6 +277,14 @@
       document.querySelectorAll('.error-text').forEach(el => el.remove());
       document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
+      // course selection
+      const courseInput = document.getElementById('course');
+      const courseDropdown = document.getElementById('courseDropdown');
+      if (courseInput && courseDropdown && !courseInput.value.trim()) {
+        showError(courseDropdown, 'Please choose at least one course.');
+        return false;
+      }
+
       // email match
       const email = document.querySelector('input[name="email"]');
       const confirmEmail = document.querySelector('input[name="confirmEmail"]');
@@ -305,6 +321,26 @@
         const saved = localStorage.getItem('reg_' + el.name);
         if (saved !== null) el.type === 'checkbox' ? (el.checked = saved === 'true') : (el.value = saved);
       });
+
+      const courseDropdown = document.getElementById('courseDropdown');
+      const courseHidden = document.getElementById('course');
+      const courseMenu = document.getElementById('courseMenu');
+      if (courseDropdown && courseHidden && courseMenu) {
+        const checkboxes = courseMenu.querySelectorAll('.course-option');
+        function update(){
+          const selected = Array.from(checkboxes).filter(c=>c.checked).map(c=>c.value);
+          courseHidden.value = selected.join(', ');
+          courseDropdown.textContent = selected.length ? selected.join(', ') : 'Select a course…';
+          courseDropdown.classList.toggle('is-invalid', !selected.length);
+          if (selected.length) {
+            const err = courseDropdown.parentNode.querySelector('.error-text');
+            if (err) err.remove();
+          }
+          courseHidden.dispatchEvent(new Event('input'));
+        }
+        checkboxes.forEach(cb => cb.addEventListener('change', update));
+        update();
+      }
 
         const step1 = document.getElementById('step1');
       const step2 = document.getElementById('step2');
