@@ -190,11 +190,12 @@ router.get('/classes/:id', async (req, res) => {
   const klass = await classModel.findClassById(Number(req.params.id));
   if (!klass) return res.status(404).send('Not found');
   const users = await userModel.getAll();
-  const students = users.filter(u => u.role === 'student' && (klass.studentIds || []).includes(u.id));
- const today = new Date().toISOString().slice(0,10);
+  const allStudents = users.filter(u => u.role === 'student' && u.status === 'approved');
+  const students = allStudents.filter(u => (klass.studentIds || []).includes(u.id));
+  const today = new Date().toISOString().slice(0,10);
   const attendanceToday = (klass.attendance || []).find(a => a.date === today) || { present: [] };
   const discussions = await discussionModel.getByClass(klass.id);
-  res.render('teacher_view_class', { klass, students, today, attendanceToday, discussions });
+  res.render('teacher_view_class', { klass, students, today, attendanceToday, discussions, allStudents });
 });
 
 router.post('/classes/:id/rename', async (req, res) => {
@@ -233,6 +234,17 @@ router.post('/classes/:id/discussion', async (req, res) => {
     }
   }
   res.redirect(`/teacher/classes/${classId}#discussion`);
+});
+
+router.post('/classes/:id/add-student', async (req, res) => {
+  const id = Number(req.params.id);
+  const studentId = Number(req.body.studentId);
+  const student = await userModel.findById(studentId);
+  if (!student || student.status !== 'approved') {
+    return res.status(400).send('Student not approved');
+  }
+  await classModel.addStudent(id, studentId);
+  res.redirect(`/teacher/classes/${id}#students`);
 });
 router.post('/classes/:id/checklist', async (req, res) => {
   const classId = Number(req.params.id);

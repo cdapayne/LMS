@@ -400,6 +400,10 @@
 
         <form method="post" action="/admin/classes/<%= klass.id %>/add-student" class="row g-2 align-items-center mb-3">
           <div class="col-12 col-md-auto">
+            <label class="visually-hidden" for="studentSearch">Search Students</label>
+            <input type="text" id="studentSearch" class="form-control" placeholder="Search students...">
+          </div>
+          <div class="col-12 col-md-auto">
             <label class="visually-hidden" for="studentId">Student</label>
             <select id="studentId" name="studentId" class="form-select" style="min-width:240px;">
               <% (students || []).forEach(s => { %>
@@ -469,6 +473,22 @@
     })();
   </script>
   <% } %>
+  <script>
+    (function(){
+      const search=document.getElementById('studentSearch');
+      const select=document.getElementById('studentId');
+      function filter(){
+        const term=(search.value||'').toLowerCase();
+        Array.from(select.options).forEach(opt=>{
+          opt.hidden=term && !opt.textContent.toLowerCase().includes(term);
+        });
+        if(select.selectedIndex>=0 && select.options[select.selectedIndex].hidden){
+          select.selectedIndex=-1;
+        }
+      }
+      search?.addEventListener('input',filter);
+    })();
+  </script>
   <script>
     document.getElementById('renameBtn')?.addEventListener('click', () => {
       const newName = prompt('Enter new class name:', <%- JSON.stringify(klass.name) %>);
