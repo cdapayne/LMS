@@ -38,10 +38,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 const uploadsPath = path.join(__dirname, 'uploads');
 app.use('/uploads', (req, res, next) => {
-  if (req.session && req.session.role === 'admin') {
     return express.static(uploadsPath)(req, res, next);
-  }
-  res.status(403).send('Unable to access area');
 });
 
 const docsPath = path.join(__dirname, 'docs');
