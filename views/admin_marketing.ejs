@@ -38,27 +38,96 @@
     <% } %>
     <div class="cardish mt-3">
       <form id="marketingForm" method="post" action="/admin/marketing" enctype="multipart/form-data">
-        <div class="mb-3">
-          <label class="form-label">Recipients</label>
-          <select name="recipients" class="form-select" multiple size="10">
-            <% students.forEach(function(s){
-                 const full = s.name || (s.profile?.firstName + ' ' + s.profile?.lastName);
-                 const course = s.profile?.course || 'N/A';
-                 const aff = s.profile?.affiliateProgram || 'N/A';
-                 const signup = s.appliedAt ? new Date(s.appliedAt).toISOString().slice(0,10) : 'N/A';
-                 const status = s.status === 'approved' ? 'Enrolled' : (s.status === 'declined' ? 'Denied' : 'Pending');
-            %>
-              <option value="student-<%= s.id %>" title="Course: <%= course %> | Program: <%= aff %> | Signed up: <%= signup %>"><%= status %> - <%= full %> (<%= s.email %>)</option>
-            <% }); %>
-            <% preregs.forEach(function(p){ %>
-              <option value="pre-<%= p.id %>" title="Course: <%= p.course %>">Pre-registered - <%= p.name %> (<%= p.email %>)</option>
-            <% }); %>
-            <% rsvps.forEach(function(r){ %>
-              <option value="rsvp-<%= r.id %>" title="Event: <%= r.eventName %>">RSVP - <%= r.fullName %> (<%= r.email %>)</option>
-            <% }); %>
-          </select>
-          <div class="form-text">Hold Ctrl (Cmd on Mac) to select multiple people.</div>
-        </div>
+          <div class="mb-3">
+            <label class="form-label">Recipients</label>
+            <div class="row g-2 mb-2">
+              <div class="col-md-3">
+                <input type="text" id="searchRecipients" class="form-control" placeholder="Search">
+              </div>
+              <div class="col-md-3">
+                <select id="filterType" class="form-select">
+                  <option value="">All Types</option>
+                  <option value="student">Student</option>
+                  <option value="pre">Pre-registered</option>
+                  <option value="rsvp">RSVP</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <select id="filterCourse" class="form-select">
+                  <option value="">All Courses</option>
+                  <% courses.forEach(c => { %>
+                    <option value="<%= c %>"><%= c %></option>
+                  <% }); %>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <select id="filterProgram" class="form-select">
+                  <option value="">All Programs</option>
+                  <% programs.forEach(p => { %>
+                    <option value="<%= p %>"><%= p %></option>
+                  <% }); %>
+                </select>
+              </div>
+            </div>
+            <table class="table table-sm" id="recipientsTable">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAll"></th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Course</th>
+                  <th>Program</th>
+                  <th>Signed Up</th>
+                </tr>
+              </thead>
+              <tbody id="recipientsBody">
+                <% students.forEach(function(s){
+                     const full = s.name || (s.profile?.firstName + ' ' + s.profile?.lastName);
+                     const course = s.profile?.course || '';
+                     const aff = s.profile?.affiliateProgram || '';
+                     const signup = s.appliedAt ? new Date(s.appliedAt).toISOString().slice(0,10) : '';
+                     const status = s.status === 'approved' ? 'Enrolled' : (s.status === 'declined' ? 'Denied' : 'Pending');
+                %>
+                  <tr data-type="student" data-course="<%= course %>" data-program="<%= aff %>" data-status="<%= status %>">
+                    <td><input type="checkbox" name="recipients" value="student-<%= s.id %>"></td>
+                    <td>Student</td>
+                    <td><%= status %></td>
+                    <td><%= full %></td>
+                    <td><%= s.email %></td>
+                    <td><%= course %></td>
+                    <td><%= aff %></td>
+                    <td><%= signup %></td>
+                  </tr>
+                <% }); %>
+                <% preregs.forEach(function(p){ %>
+                  <tr data-type="pre" data-course="<%= p.course || '' %>" data-program="" data-status="Pre-registered">
+                    <td><input type="checkbox" name="recipients" value="pre-<%= p.id %>"></td>
+                    <td>Pre-registered</td>
+                    <td>Pre-registered</td>
+                    <td><%= p.name %></td>
+                    <td><%= p.email %></td>
+                    <td><%= p.course || '' %></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                <% }); %>
+                <% rsvps.forEach(function(r){ %>
+                  <tr data-type="rsvp" data-course="" data-program="" data-status="RSVP">
+                    <td><input type="checkbox" name="recipients" value="rsvp-<%= r.id %>"></td>
+                    <td>RSVP</td>
+                    <td>RSVP</td>
+                    <td><%= r.fullName %></td>
+                    <td><%= r.email %></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
         <div class="mb-3">
           <label class="form-label">Email Type</label>
           <select name="type" class="form-select">
@@ -101,6 +170,11 @@
     const subjectInput = document.querySelector('input[name="subject"]');
     const imageInput = document.querySelector('input[name="image"]');
     const previewDiv = document.getElementById('preview');
+    const searchInput = document.getElementById('searchRecipients');
+    const filterType = document.getElementById('filterType');
+    const filterCourse = document.getElementById('filterCourse');
+    const filterProgram = document.getElementById('filterProgram');
+    const selectAll = document.getElementById('selectAll');
     let touched = false;
     messageBox.addEventListener('input', () => { touched = true; fetchPreview(); });
     imageInput.addEventListener('change', fetchPreview);
@@ -132,6 +206,45 @@
       }
     }
 
+    function applyFilters() {
+      selectAll.checked = false;
+      const search = searchInput.value.toLowerCase();
+      const typeVal = filterType.value;
+      const courseVal = filterCourse.value.toLowerCase();
+      const programVal = filterProgram.value.toLowerCase();
+      document.querySelectorAll('#recipientsBody tr').forEach(tr => {
+        const text = tr.innerText.toLowerCase();
+        const type = tr.dataset.type;
+        const course = (tr.dataset.course || '').toLowerCase();
+        const program = (tr.dataset.program || '').toLowerCase();
+        const matchesSearch = text.includes(search);
+        const matchesType = !typeVal || type === typeVal;
+        const matchesCourse = !courseVal || course === courseVal;
+        const matchesProgram = !programVal || program === programVal;
+        tr.style.display = matchesSearch && matchesType && matchesCourse && matchesProgram ? '' : 'none';
+      });
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    filterType.addEventListener('change', applyFilters);
+    filterCourse.addEventListener('change', applyFilters);
+    filterProgram.addEventListener('change', applyFilters);
+
+    selectAll.addEventListener('change', (e) => {
+      document.querySelectorAll('#recipientsBody tr').forEach(tr => {
+        if (tr.style.display !== 'none') {
+          const cb = tr.querySelector('input[type="checkbox"]');
+          cb.checked = e.target.checked;
+        }
+      });
+    });
+
+    document.querySelectorAll('#recipientsBody input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (!cb.checked) selectAll.checked = false;
+      });
+    });
+
     typeSelect.addEventListener('change', () => {
       touched = false;
       updatePreface();
@@ -143,6 +256,7 @@
       updatePreface();
       updateSubject();
       fetchPreview();
+      applyFilters();
     });
   </script>
 </body>
