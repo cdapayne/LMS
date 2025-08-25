@@ -35,14 +35,40 @@ function saveCampaigns(list) {
   fs.writeFileSync(campaignsPath, JSON.stringify(list, null, 2));
 }
 
-function addCampaign({ email, phone }) {
-  const steps = [
-    { delayMinutes: 0, template: 'registrationSubmitted', sms: 'Thanks for registering with MDTS!' },
-    { delayMinutes: 1440, template: 'enrollmentStep2', sms: 'Remember to finish your enrollment.' }
-  ];
+function defaultSteps(segment) {
+  switch (segment) {
+    case 'parent':
+      return [
+        { delayMinutes: 0, template: 'parentWelcome' },
+        { delayMinutes: 1440 * 7, template: 'parentWeeklySummary' }
+      ];
+    case 'instructor':
+      return [
+        { delayMinutes: 0, template: 'instructorWelcome' },
+        { delayMinutes: 1440, template: 'instructorGrading' },
+        { delayMinutes: 1440 * 3, template: 'instructorContent' },
+        { delayMinutes: 1440 * 7, template: 'instructorAnalytics' },
+        { delayMinutes: 1440 * 14, template: 'instructorBestPractices' }
+      ];
+    case 'student':
+    default:
+      return [
+        { delayMinutes: 0, template: 'studentWelcome', sms: 'Welcome to MDTS!' },
+        { delayMinutes: 1440, template: 'studentNavigate' },
+        { delayMinutes: 1440 * 3, template: 'studentFirstAssignment' },
+        { delayMinutes: 1440 * 5, template: 'studentDiscussion' },
+        { delayMinutes: 1440 * 7, template: 'studentTips' },
+        { delayMinutes: 1440 * 14, template: 'studentInactive' }
+      ];
+  }
+}
+
+function addCampaign({ email, phone, segment = 'student', name = '', grade = '', program = '', enrollmentStatus = '' }) {
+  const steps = defaultSteps(segment);
   const campaigns = loadCampaigns();
-  const firstRun = Date.now() + steps[0].delayMinutes * 60000;
-  campaigns.push({ email, phone, steps, nextStep: 0, nextRun: firstRun });
+  const firstRun = Date.now() + (steps[0]?.delayMinutes || 0) * 60000;
+  const metadata = { name, grade, program, enrollmentStatus, segment };
+  campaigns.push({ email, phone, segment, metadata, steps, nextStep: 0, nextRun: firstRun });
   saveCampaigns(campaigns);
 }
 
@@ -53,7 +79,7 @@ function processCampaigns() {
   campaigns.forEach(c => {
     if (c.nextRun <= now) {
       const step = c.steps[c.nextStep];
-      const rendered = emailTemplates.render(step.template, { name: c.email });
+      const rendered = emailTemplates.render(step.template, { ...c.metadata, email: c.email });
       transporter.sendMail({ to: c.email, subject: rendered.subject, html: rendered.html });
       if (c.phone && step.sms) {
         twilioClient.messages.create({ to: c.phone, from: process.env.TWILIO_FROM_NUMBER, body: step.sms }).catch(() => {});
