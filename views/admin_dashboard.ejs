@@ -712,7 +712,7 @@ function ColorfulUnifiedTheme(root, opts = {}) {
     renderSignupPieChart2(chartId2, 'week');
 
     document.getElementById(chartId2).addEventListener('click', async () => {
-      const res = await fetch('/admin/chart/Newsignups');
+      const res = await fetch('/admin/chart/AffCounts');
       const raw = await res.json();
       const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
         ts: new Date(d.date + 'T00:00:00Z').getTime(),
@@ -763,7 +763,7 @@ function ColorfulUnifiedTheme(root, opts = {}) {
     renderSignupPieChart3(chartId3, 'week');
 
     document.getElementById(chartId3).addEventListener('click', async () => {
-      const res = await fetch('/admin/chart/Newsignups');
+      const res = await fetch('/admin/chart/CourseCounts');
       const raw = await res.json();
       const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
         ts: new Date(d.date + 'T00:00:00Z').getTime(),
@@ -814,7 +814,7 @@ function ColorfulUnifiedTheme(root, opts = {}) {
     renderSignupPieChart4(chartId4, 'week');
 
     document.getElementById(chartId4).addEventListener('click', async () => {
-      const res = await fetch('/admin/chart/Newsignups');
+      const res = await fetch('/admin/chart/SignUp365');
       const raw = await res.json();
       const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
         ts: new Date(d.date + 'T00:00:00Z').getTime(),
