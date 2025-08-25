@@ -145,6 +145,9 @@
             <i class="bi bi-files"></i> Duplicate
           </button>
         </form>
+        <button class="btn btn-outline-primary" type="button" id="renameBtn">
+          <i class="bi bi-pencil"></i> Rename
+        </button>
       </div>
       <% } %>
     </div>
@@ -448,7 +451,7 @@
    
     <% } %>
   </main>
-    <% if (klass.startDate) { %>
+  <% if (klass.startDate) { %>
   <script>
     (function(){
       const el=document.getElementById('startCountdown');
@@ -463,5 +466,22 @@
     })();
   </script>
   <% } %>
+  <script>
+    document.getElementById('renameBtn')?.addEventListener('click', () => {
+      const newName = prompt('Enter new class name:', <%- JSON.stringify(klass.name) %>);
+      if (newName && newName.trim()) {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/admin/classes/<%= klass.id %>/rename';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'name';
+        input.value = newName.trim();
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+      }
+    });
+  </script>
 </body>
 </html>

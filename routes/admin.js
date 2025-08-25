@@ -561,6 +561,9 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
   const rsvps = await rsvpModel.getAllRSVPs();
   const { recipients, type, subject, message } = req.body;
   const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
+  const attachments = req.file
+    ? [{ filename: req.file.originalname, path: req.file.path }]
+    : [];
   const ids = Array.isArray(recipients) ? recipients : [recipients].filter(Boolean);
   if (!ids.length || !marketingTypes.includes(type)) {
     return res.status(400).render('admin_marketing', {
@@ -621,7 +624,8 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
         to: recipient.email,
         subject: subj,
         html,
-        text: bodyText
+        text: bodyText,
+        attachments
       });
     }
 
@@ -776,6 +780,234 @@ const signupsLast365    = buildDailySeries(students, 365);  // optional
 
 
 res.json(signupsLast7Days);
+  // res.render('admin_dashboard', {
+  //   user: req.session.user,
+  //   classes,
+  //   teachers,
+  //   students,
+  //   announcements,
+  //   pendingCount: pendingStudents.length,
+  //   approvedCount: approvedStudents.length,
+  //   classSizes,
+  //   courseCounts,
+  //   studentsByState,
+  //   affiliateCounts,
+  //   signupsLast7Days,
+  //   signupsLast30Days,
+  //   signupsLast365
+  // });
+});
+
+router.get('/chart/CourseCounts', async (req, res) => {
+      const users = await userModel.getAll();
+  const classes = await classModel.getAllClasses();
+  const teachers = users.filter(u => u.role === 'teacher');
+  const students = users.filter(u => u.role === 'student');
+  const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
+  const approvedStudents = students.filter(u => u.status === 'approved');
+  const announcements = await announcementModel.forAdmin();
+
+  // ----- course counts -----
+  const courseCountsMap = students.reduce((acc, s) => {
+    const course = (s.profile && s.profile.course) || 'Unknown';
+    acc[course] = (acc[course] || 0) + 1;
+    return acc;
+  }, {});
+  const courseCounts = Object.entries(courseCountsMap).map(([course, count]) => ({ course, count }));
+
+  // ----- state counts -----
+  const stateCounts = {};
+  students.forEach(s => {
+    const state = s.profile && s.profile.address && s.profile.address.state;
+    if (state) stateCounts[state] = (stateCounts[state] || 0) + 1;
+  });
+  const studentsByState = Object.entries(stateCounts).map(([state, count]) => ({ state, count }));
+
+  // ----- affiliate counts -----
+  const affiliateCounts = students.reduce((acc, s) => {
+    const program = (s.profile && s.profile.affiliateProgram) || 'Unspecified';
+    acc[program] = (acc[program] || 0) + 1;
+    return acc;
+  }, {});
+
+
+const signupsLast7Days  = buildDailySeries(students, 7);    // day-by-day for past 7 days
+const signupsLast30Days = buildDailySeries(students, 30);   // optional
+const signupsLast365    = buildDailySeries(students, 365);  // optional
+
+  // const sum = a => a.reduce((n, x) => n + x.count, 0);
+  // const signupsTotals = {
+  //   week:  sum(signupsDailyWeek),
+  //   month: sum(signupsDailyMonth),
+  //   year:  sum(signupsDailyYear)
+  // };
+
+  const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
+
+  // (optional) logging
+  console.log("course counts:", JSON.stringify(courseCounts));
+  console.log("student by state:", JSON.stringify(studentsByState));
+  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
+  console.log("signups totals:", JSON.stringify(signupsLast7Days));
+    console.log("signups totals:", JSON.stringify(signupsLast30Days));
+      console.log("signups totals:", JSON.stringify(signupsLast365));
+
+
+res.json(courseCounts);
+  // res.render('admin_dashboard', {
+  //   user: req.session.user,
+  //   classes,
+  //   teachers,
+  //   students,
+  //   announcements,
+  //   pendingCount: pendingStudents.length,
+  //   approvedCount: approvedStudents.length,
+  //   classSizes,
+  //   courseCounts,
+  //   studentsByState,
+  //   affiliateCounts,
+  //   signupsLast7Days,
+  //   signupsLast30Days,
+  //   signupsLast365
+  // });
+});
+
+router.get('/chart/AffCounts', async (req, res) => {
+      const users = await userModel.getAll();
+  const classes = await classModel.getAllClasses();
+  const teachers = users.filter(u => u.role === 'teacher');
+  const students = users.filter(u => u.role === 'student');
+  const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
+  const approvedStudents = students.filter(u => u.status === 'approved');
+  const announcements = await announcementModel.forAdmin();
+
+  // ----- course counts -----
+  const courseCountsMap = students.reduce((acc, s) => {
+    const course = (s.profile && s.profile.course) || 'Unknown';
+    acc[course] = (acc[course] || 0) + 1;
+    return acc;
+  }, {});
+  const courseCounts = Object.entries(courseCountsMap).map(([course, count]) => ({ course, count }));
+
+  // ----- state counts -----
+  const stateCounts = {};
+  students.forEach(s => {
+    const state = s.profile && s.profile.address && s.profile.address.state;
+    if (state) stateCounts[state] = (stateCounts[state] || 0) + 1;
+  });
+  const studentsByState = Object.entries(stateCounts).map(([state, count]) => ({ state, count }));
+
+  // ----- affiliate counts -----
+// ----- affiliate counts -----
+const affiliateCountsMap = students.reduce((acc, s) => {
+  const program = (s.profile && s.profile.affiliateProgram) || 'Unspecified';
+  acc[program] = (acc[program] || 0) + 1;
+  return acc;
+}, {});
+
+const affiliateCounts = Object.entries(affiliateCountsMap).map(([affiliate, count]) => ({
+  affiliate,
+  count
+}));
+
+
+const signupsLast7Days  = buildDailySeries(students, 7);    // day-by-day for past 7 days
+const signupsLast30Days = buildDailySeries(students, 30);   // optional
+const signupsLast365    = buildDailySeries(students, 365);  // optional
+
+  // const sum = a => a.reduce((n, x) => n + x.count, 0);
+  // const signupsTotals = {
+  //   week:  sum(signupsDailyWeek),
+  //   month: sum(signupsDailyMonth),
+  //   year:  sum(signupsDailyYear)
+  // };
+
+  const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
+
+  // (optional) logging
+  console.log("course counts:", JSON.stringify(courseCounts));
+  console.log("student by state:", JSON.stringify(studentsByState));
+  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
+  console.log("signups totals:", JSON.stringify(signupsLast7Days));
+    console.log("signups totals:", JSON.stringify(signupsLast30Days));
+      console.log("signups totals:", JSON.stringify(signupsLast365));
+
+
+res.json(affiliateCounts);
+  // res.render('admin_dashboard', {
+  //   user: req.session.user,
+  //   classes,
+  //   teachers,
+  //   students,
+  //   announcements,
+  //   pendingCount: pendingStudents.length,
+  //   approvedCount: approvedStudents.length,
+  //   classSizes,
+  //   courseCounts,
+  //   studentsByState,
+  //   affiliateCounts,
+  //   signupsLast7Days,
+  //   signupsLast30Days,
+  //   signupsLast365
+  // });
+});
+
+router.get('/chart/SignUp365', async (req, res) => {
+      const users = await userModel.getAll();
+  const classes = await classModel.getAllClasses();
+  const teachers = users.filter(u => u.role === 'teacher');
+  const students = users.filter(u => u.role === 'student');
+  const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
+  const approvedStudents = students.filter(u => u.status === 'approved');
+  const announcements = await announcementModel.forAdmin();
+
+  // ----- course counts -----
+  const courseCountsMap = students.reduce((acc, s) => {
+    const course = (s.profile && s.profile.course) || 'Unknown';
+    acc[course] = (acc[course] || 0) + 1;
+    return acc;
+  }, {});
+  const courseCounts = Object.entries(courseCountsMap).map(([course, count]) => ({ course, count }));
+
+  // ----- state counts -----
+  const stateCounts = {};
+  students.forEach(s => {
+    const state = s.profile && s.profile.address && s.profile.address.state;
+    if (state) stateCounts[state] = (stateCounts[state] || 0) + 1;
+  });
+  const studentsByState = Object.entries(stateCounts).map(([state, count]) => ({ state, count }));
+
+  // ----- affiliate counts -----
+  const affiliateCounts = students.reduce((acc, s) => {
+    const program = (s.profile && s.profile.affiliateProgram) || 'Unspecified';
+    acc[program] = (acc[program] || 0) + 1;
+    return acc;
+  }, {});
+
+
+const signupsLast7Days  = buildDailySeries(students, 7);    // day-by-day for past 7 days
+const signupsLast30Days = buildDailySeries(students, 30);   // optional
+const signupsLast365    = buildDailySeries(students, 365);  // optional
+
+  // const sum = a => a.reduce((n, x) => n + x.count, 0);
+  // const signupsTotals = {
+  //   week:  sum(signupsDailyWeek),
+  //   month: sum(signupsDailyMonth),
+  //   year:  sum(signupsDailyYear)
+  // };
+
+  const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
+
+  // (optional) logging
+  console.log("course counts:", JSON.stringify(courseCounts));
+  console.log("student by state:", JSON.stringify(studentsByState));
+  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
+  console.log("signups totals:", JSON.stringify(signupsLast7Days));
+    console.log("signups totals:", JSON.stringify(signupsLast30Days));
+      console.log("signups totals:", JSON.stringify(signupsLast365));
+
+
+res.json(signupsLast365);
   // res.render('admin_dashboard', {
   //   user: req.session.user,
   //   classes,
@@ -979,6 +1211,15 @@ router.post('/classes/:id/duplicate', async (req, res) => {
   const copy = await classModel.duplicateClass(id);
   if (!copy) return res.status(404).send('Not found');
   res.redirect(`/admin/classes/${copy.id}`);
+});
+
+router.post('/classes/:id/rename', async (req, res) => {
+  const id = Number(req.params.id);
+  const { name } = req.body;
+  if (name && name.trim()) {
+    await classModel.renameClass(id, name.trim());
+  }
+  res.redirect(`/admin/classes/${id}`);
 });
 
 router.post('/users/:id/deactivate', async (req, res) => {
