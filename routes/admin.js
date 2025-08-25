@@ -290,7 +290,9 @@ function buildDailySeries(people, days, tz = 'America/New_York') {
 
   for (const s of people) {
     if (!s.appliedAt) continue;
-    const bucket = fmtDay.format(new Date(s.appliedAt));
+        const dateObj = new Date(s.appliedAt);
+    if (isNaN(dateObj)) continue; // skip invalid dates
+    const bucket = fmtDay.format(dateObj);
     if (bucket in counts) counts[bucket] += 1;
   }
 
