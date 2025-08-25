@@ -232,14 +232,22 @@
               </div>
 
               <div class="col-12 col-md-6">
-                <label class="form-label req" for="course">Course</label>
-                <select id="course" name="course" class="form-select" required>
-                     <option value="">Select a course</option>
-                  <% (courses || []).forEach(function(opt){ %>
-                    <option value="<%= opt %>" <%= formData.course === opt ? 'selected' : '' %>><%= opt %></option>
-                  <% }) %>
-                </select>
-                <div class="invalid-feedback">Please choose a course.</div>
+                <label class="form-label req" for="courseDropdown">Course</label>
+                <div class="dropdown">
+                  <button class="form-select text-start" type="button" id="courseDropdown" data-bs-toggle="dropdown" aria-expanded="false">Select a course</button>
+                  <ul class="dropdown-menu" id="courseMenu">
+                    <% (courses || []).forEach(function(opt){ %>
+                      <li>
+                        <label class="dropdown-item">
+                          <input type="checkbox" class="form-check-input me-2 course-option" value="<%= opt %>" <%= (formData.course || '').includes(opt) ? 'checked' : '' %>>
+                          <%= opt %>
+                        </label>
+                      </li>
+                    <% }) %>
+                  </ul>
+                  <input type="hidden" id="course" name="course" value="<%= formData.course || '' %>">
+                  <div class="invalid-feedback">Please choose a course.</div>
+                </div>
               </div>
 
               <div class="col-12 col-md-6">
@@ -307,6 +315,22 @@
     setupThemeToggle('themeToggle');
 
     <% if (!success) { %>
+    // Course dropdown with checkboxes
+    (function(){
+      const dropdownBtn = document.getElementById('courseDropdown');
+      const hiddenInput = document.getElementById('course');
+      const options = document.querySelectorAll('.course-option');
+      function update(){
+        const selected = Array.from(options).filter(o=>o.checked).map(o=>o.value);
+        hiddenInput.value = selected.join(', ');
+        dropdownBtn.textContent = selected.length ? selected.join(', ') : 'Select a course';
+        dropdownBtn.classList.toggle('is-invalid', !selected.length);
+        hiddenInput.dispatchEvent(new Event('input'));
+      }
+      options.forEach(o=>o.addEventListener('change', update));
+      update();
+    })();
+
     // Show/hide branch field based on serving choice
   function toggleBranch(){
   const yes = document.getElementById('servingYes')?.checked;
@@ -344,6 +368,18 @@ toggleBranch();
       form?.addEventListener('submit', (e) => {
         const trap = document.getElementById('website');
         if (trap && trap.value) { e.preventDefault(); return; }
+
+        const courseInput = document.getElementById('course');
+        const courseDropdown = document.getElementById('courseDropdown');
+        if (!courseInput.value.trim()) {
+          e.preventDefault();
+          e.stopPropagation();
+          courseDropdown.classList.add('is-invalid');
+          form.classList.add('was-validated');
+          return;
+        } else {
+          courseDropdown.classList.remove('is-invalid');
+        }
 
         if (!form.checkValidity()) {
           e.preventDefault();
