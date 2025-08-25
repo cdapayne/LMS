@@ -30,6 +30,9 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.get('/branding.json', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'branding.json'));
+});
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(session({
