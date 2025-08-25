@@ -275,6 +275,11 @@ async function setStatus(id, status) {
   return findById(id);
 }
 
+async function getAllpre() {
+  const [rows] = await db.query('SELECT * FROM mdtslms_pre_registrations');
+  return rows.map(mapRow);
+}
+
 async function getAll() {
   const [rows] = await db.query('SELECT * FROM mdtslms_users');
   return rows.map(mapRow);
@@ -318,6 +323,7 @@ module.exports = {
   findByStep2Token,
   clearStep2Token,
   getAll,
+  getAllpre,
   getByRole,
   deleteById
 };

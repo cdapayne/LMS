@@ -415,7 +415,7 @@
         <% } else { %>
           <ul class="list-plain">
             <% discussions.forEach(d => { %>
-              <li class="mb-1"><strong><%= d.name %>:</strong> <%= d.message %> <span class="muted small"><%= new Date(d.createdAt).toLocaleString() %></span></li>
+              <li class="mb-1"><strong class="<%= d.role === 'teacher' ? 'text-danger fs-5' : '' %>"><%= d.name %>:</strong> <%= d.message %> <span class="muted small"><%= new Date(d.createdAt).toLocaleString() %></span></li>
             <% }) %>
           </ul>
         <% } %>

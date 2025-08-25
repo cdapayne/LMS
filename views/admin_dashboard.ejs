@@ -167,6 +167,8 @@
             <a class="btn btn-outline-secondary" href="/admin/create-event">Create Event</a>
             <a class="btn btn-outline-secondary" href="/admin/event-rsvps">Event RSVPs</a>
             <a class="btn btn-outline-secondary" href="/admin/drip-campaigns">Drip Campaigns</a>
+                  <a class="btn btn-outline-secondary" href="/admin/dropdowns">Dropdowns</a>
+              <a class="btn btn-outline-secondary" href="/admin/branding">Branding</a>
           </div>
         </div>
            <div class="col qa-column">
@@ -203,7 +205,12 @@
           <% announcements.forEach(a => { %>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <span><%= a.message %></span>
-              <small class="text-muted"><%= a.createdAt %></small>
+              <div class="d-flex align-items-center gap-2">
+                <small class="text-muted"><%= a.createdAt %></small>
+                <form method="POST" action="/admin/announcements/<%= a.id %>/delete" class="m-0">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </div>
             </li>
           <% }) %>
         <% } else { %>

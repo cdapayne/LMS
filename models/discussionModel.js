@@ -13,7 +13,7 @@ const db = require('./db');
 
 async function getByClass(classId) {
   const [rows] = await db.query(
-    `SELECT d.*, u.name FROM mdtslms_discussions d JOIN mdtslms_users u ON d.userId = u.id WHERE d.classId = ? ORDER BY d.createdAt ASC`,
+    `SELECT d.*, u.name, u.role FROM mdtslms_discussions d JOIN mdtslms_users u ON d.userId = u.id WHERE d.classId = ? ORDER BY d.createdAt ASC`,
     [classId]
   );
   return rows;

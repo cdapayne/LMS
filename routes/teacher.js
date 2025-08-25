@@ -177,6 +177,14 @@ router.post('/announcements', async (req, res) => {
   res.redirect('/teacher');
 });
 
+router.post('/announcements/:id/delete', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isNaN(id)) {
+    await announcementModel.remove(id);
+  }
+  res.redirect('/teacher');
+});
+
 // Class view + roster + tests
 router.get('/classes/:id', async (req, res) => {
   const klass = await classModel.findClassById(Number(req.params.id));

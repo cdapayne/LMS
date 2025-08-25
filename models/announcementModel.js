@@ -48,9 +48,14 @@ async function forStudent(studentId) {
   return rows.map(map);
 }
 
+async function remove(id) {
+  await db.query('DELETE FROM mdtslms_announcements WHERE id=?', [id]);
+}
+
 module.exports = {
   create,
   forAdmin,
   forTeacher,
-  forStudent
+  forStudent,
+  remove
 };
