@@ -28,20 +28,21 @@ app.use((req, res, next) => {
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.get('/branding.json', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'branding.json'));
-});
-app.use(bodyParser.urlencoded({ extended: true }));
-
 app.use(session({
   secret: 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
   cookie: { sameSite: 'lax', httpOnly: true }
 }));
-
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+const uploadsPath = path.join(__dirname, 'uploads');
+app.use('/uploads', (req, res, next) => {
+  if (req.session && req.session.role === 'admin') {
+    return express.static(uploadsPath)(req, res, next);
+  }
+  res.status(403).send('Unable to access area');
+});
 app.use('/docs', express.static(path.join(__dirname, 'docs')));
 
 

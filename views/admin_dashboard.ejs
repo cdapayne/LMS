@@ -218,20 +218,20 @@
     </div>
     <div class="col-12 col-md-6">
       <div class="chart-card">
-        <div class="chart-title">Sign-ups (Pie Chart)</div>
+        <div class="chart-title">Students by Affiliation</div>
         <div id="chart-signups-2" class="chart-container"></div>
       </div>
     </div>
     <div class="col-12 col-md-6">
       <div class="chart-card">
-               <div class="chart-title">Sign-ups (Horizontal Bar)</div>
+               <div class="chart-title">Students by Course</div>
 
         <div id="chart-signups-3" class="chart-container"></div>
       </div>
     </div>
     <div class="col-12 col-md-6">
       <div class="chart-card">
-              <div class="chart-title">Sign-ups (Funnel Chart)</div>
+              <div class="chart-title">Sign ups past year</div>
 
         <div id="chart-signups-4" class="chart-container"></div>
       </div>
@@ -411,11 +411,13 @@ root.setThemes([
 }
 
   async function renderSignupPieChart2(id, range) {
-    const res = await fetch('/admin/chart/Newsignups');
+    const res = await fetch('/admin/chart/AffCounts');
     const raw = await res.json();
     const rows = Array.isArray(raw.series) ? raw.series : raw;
+    console.log("(******************************)");
+    console.log(rows);
     const pieData = rows
-      .map(d => ({ label: d.date, value: Number(d.count || 0) }))
+      .map(d => ({ label: d.affiliate, value: Number(d.count || 0) }))
       .filter(d => d.value > 0);
 
     if (signupRoots[id]) signupRoots[id].dispose();
@@ -426,7 +428,7 @@ root.setThemes([
     const chart = root.container.children.push(
       am5percent.PieChart.new(root, { layout: root.verticalLayout, innerRadius: am5.percent(50) })
     );
-
+    console.log("**************");
     const series = chart.series.push(
       am5percent.PieSeries.new(root, { name: 'Sign-ups per day', categoryField: 'label', valueField: 'value', alignLabels: true })
     );
@@ -445,13 +447,14 @@ root.setThemes([
   }
 
 async function renderSignupPieChart3(id, range) {
-  const res = await fetch('/admin/chart/Newsignups');
+  const res = await fetch('/admin/chart/CourseCounts');
   const raw = await res.json();
   const rows = Array.isArray(raw.series) ? raw.series : raw;
-
+   console.log("(******************************)");
+    console.log(rows);
   // Build + sort (desc by value)
   const barData = rows
-    .map(d => ({ label: d.date, value: Number(d.count || 0) }))
+    .map(d => ({ label: d.course, value: Number(d.count || 0) }))
     .filter(d => d.value > 0)
     .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
 
@@ -538,69 +541,87 @@ async function renderSignupPieChart3(id, range) {
 }
 
 async function renderSignupPieChart4(id, range) {
-  const res = await fetch('/admin/chart/Newsignups');
+  const res = await fetch('/admin/chart/SignUp365');
   const raw = await res.json();
   const rows = Array.isArray(raw.series) ? raw.series : raw;
 
-  // Prepare + sort (largest at the top is typical for funnels)
-  const funnelData = rows
-    .map(d => ({ label: d.date, value: Number(d.count || 0) }))
+  // Prepare data (keep chronological order)
+  const lineData = rows
+    .map(d => ({ date: new Date(d.date), value: Number(d.count || 0) }))
     .filter(d => d.value > 0)
-    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+    .sort((a, b) => a.date - b.date);
 
   // Dispose any existing chart
   if (signupRoots[id]) signupRoots[id].dispose();
 
-  // Init
+  // Init root
   const root = am5.Root.new(id);
   signupRoots[id] = root;
   root.setThemes([am5themes_Animated.new(root)]);
 
-  // Base Sliced chart (container for funnel / pyramid series)
+  // Chart container
   const chart = root.container.children.push(
-    am5percent.SlicedChart.new(root, {
-      layout: root.verticalLayout
+    am5xy.XYChart.new(root, {
+      panX: true,
+      panY: true,
+      wheelX: "panX",
+      wheelY: "zoomX"
     })
   );
 
-  // Funnel series
+  // X Axis (dates)
+  const xAxis = chart.xAxes.push(
+    am5xy.DateAxis.new(root, {
+      maxDeviation: 0.2,
+      baseInterval: { timeUnit: "day", count: 1 },
+      renderer: am5xy.AxisRendererX.new(root, {}),
+      tooltip: am5.Tooltip.new(root, {})
+    })
+  );
+
+  // Y Axis (values)
+  const yAxis = chart.yAxes.push(
+    am5xy.ValueAxis.new(root, {
+      renderer: am5xy.AxisRendererY.new(root, {})
+    })
+  );
+
+  // Line series
   const series = chart.series.push(
-    am5percent.FunnelSeries.new(root, {
-      name: 'Sign-ups per day',
-      valueField: 'value',
-      categoryField: 'label',
-      orientation: 'vertical', // change to 'horizontal' if you prefer
-      // Optional: make steps visually more separated
-      bottomRatio: 1, // 1 = classic straight sides; <1 narrows the bottom more
+    am5xy.LineSeries.new(root, {
+      name: "Sign-ups per day",
+      xAxis,
+      yAxis,
+      valueYField: "value",
+      valueXField: "date",
+      tooltip: am5.Tooltip.new(root, {
+        labelText: "{valueY}"
+      })
     })
   );
 
-  // Labels & tooltips
-  series.slices.template.setAll({
-    tooltipText: '{category}: {value} ({valuePercentTotal.formatNumber("0.0")}%)'
-  });
-  series.labels.template.setAll({
-    text: '{category}\n{value}',
-    centerX: am5.p50,
-    populateText: true
-  });
+  // Add bullets (dots on the line)
+  series.bullets.push(() =>
+    am5.Bullet.new(root, {
+      sprite: am5.Circle.new(root, {
+        radius: 4,
+        fill: series.get("fill")
+      })
+    })
+  );
 
-  // Data
-  series.data.setAll(funnelData);
+  // Set data
+  series.data.setAll(lineData);
 
-  // Legend
-  // const legend = chart.children.push(
-  //   am5.Legend.new(root, {
-  //     centerX: am5.percent(50),
-  //     x: am5.percent(50),
-  //     layout: root.verticalLayout
-  //   })
-  // );
-  // legend.data.setAll(series.dataItems);
+  // Cursor
+  chart.set("cursor", am5xy.XYCursor.new(root, {
+    behavior: "none",
+    xAxis
+  }));
 
   // Appear animation
-  series.appear(700, 80);
-  chart.appear(700, 80);
+  series.appear(1000);
+  chart.appear(1000, 100);
 }
 
 function ColorfulUnifiedTheme(root, opts = {}) {
@@ -712,7 +733,7 @@ function ColorfulUnifiedTheme(root, opts = {}) {
     renderSignupPieChart2(chartId2, 'week');
 
     document.getElementById(chartId2).addEventListener('click', async () => {
-      const res = await fetch('/admin/chart/Newsignups');
+      const res = await fetch('/admin/chart/AffCounts');
       const raw = await res.json();
       const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
         ts: new Date(d.date + 'T00:00:00Z').getTime(),
@@ -763,7 +784,7 @@ function ColorfulUnifiedTheme(root, opts = {}) {
     renderSignupPieChart3(chartId3, 'week');
 
     document.getElementById(chartId3).addEventListener('click', async () => {
-      const res = await fetch('/admin/chart/Newsignups');
+      const res = await fetch('/admin/chart/CourseCounts');
       const raw = await res.json();
       const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
         ts: new Date(d.date + 'T00:00:00Z').getTime(),
@@ -814,7 +835,7 @@ function ColorfulUnifiedTheme(root, opts = {}) {
     renderSignupPieChart4(chartId4, 'week');
 
     document.getElementById(chartId4).addEventListener('click', async () => {
-      const res = await fetch('/admin/chart/Newsignups');
+      const res = await fetch('/admin/chart/SignUp365');
       const raw = await res.json();
       const data = (Array.isArray(raw.series) ? raw.series : raw).map(d => ({
         ts: new Date(d.date + 'T00:00:00Z').getTime(),
@@ -823,7 +844,7 @@ function ColorfulUnifiedTheme(root, opts = {}) {
       }));
       let popupRoot;
       Swal.fire({
-        title: 'Pre-Registrations Per Day',
+        title: 'Sign ups Past 365',
         html: '<div id="signupChartPopup" style="width:100%;height:400px;"></div>',
         width: '90%',
         didOpen: () => {
