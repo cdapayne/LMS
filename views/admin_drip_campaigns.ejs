@@ -33,13 +33,37 @@
         <label class="form-label">Phone</label>
         <input type="tel" name="phone" class="form-control">
       </div>
+      <div class="mb-3">
+        <label class="form-label">Name</label>
+        <input type="text" name="name" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Segment</label>
+        <select name="segment" class="form-select">
+          <option value="student">Student</option>
+          <option value="parent">Parent</option>
+          <option value="instructor">Instructor</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Grade Level</label>
+        <input type="text" name="grade" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Program</label>
+        <input type="text" name="program" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Enrollment Status</label>
+        <input type="text" name="enrollmentStatus" class="form-control">
+      </div>
       <button class="btn btn-primary">Start Drip</button>
     </form>
     <h5>Active Campaigns</h5>
     <ul class="list-group">
       <% campaigns.forEach(c => { %>
         <li class="list-group-item">
-          <strong><%= c.email %></strong> - step <%= c.nextStep + 1 %> of <%= c.steps.length %>
+          <strong><%= c.email %></strong> (<%= c.segment %>) - step <%= c.nextStep + 1 %> of <%= c.steps.length %>
         </li>
       <% }) %>
       <% if (!campaigns.length) { %>

@@ -114,12 +114,14 @@
 
         <% if (!message) { %>
         <form method="POST" action="/events/rsvp" class="needs-validation" novalidate>
+          <!-- Attachment preview -->
+          <div id="attachmentPreview" class="mb-3 text-center"></div>
           <!-- Event -->
           <div class="mb-3">
             <label class="form-label req" for="eventId">Event</label>
             <select id="eventId" name="eventId" class="form-select" required>
               <% events.forEach(e => { %>
-                <option value="<%= e.id %>">
+                <option value="<%= e.id %>" data-attachment="<%= e.attachment || '' %>">
                   <%= e.name %> ( <%= new Date(e.eventDate).toISOString().slice(0,10) %> )
                 </option>
               <% }) %>
@@ -224,6 +226,26 @@
         btn?.setAttribute('disabled','disabled');
         spin?.classList.remove('d-none');
       });
+    })();
+
+    // Attachment preview
+    (function(){
+      const select = document.getElementById('eventId');
+      const preview = document.getElementById('attachmentPreview');
+      function update(){
+        const att = select?.options[select.selectedIndex]?.dataset.attachment;
+        if(att){
+          if(/\.(png|jpe?g|gif|webp|svg)$/i.test(att)){
+            preview.innerHTML = `<img src="${att}" class="img-fluid rounded mb-2" alt="Event attachment">`;
+          }else{
+            preview.innerHTML = `<a href="${att}" target="_blank" class="btn btn-outline-secondary mb-2">View attachment</a>`;
+          }
+        }else{
+          preview.innerHTML = '';
+        }
+      }
+      select?.addEventListener('change', update);
+      document.addEventListener('DOMContentLoaded', update);
     })();
   </script>
 </body>

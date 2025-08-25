@@ -34,5 +34,57 @@
   "discussionNotification": {
     "subject": "New discussion message for {{klassName}}",
     "html": "<p>{{message}}</p>"
+   },
+  "studentWelcome": {
+    "subject": "Welcome to the LMS",
+    "html": "<p>Hi {{name}}, welcome to MDTS!</p>"
+  },
+  "studentNavigate": {
+    "subject": "How to navigate courses",
+    "html": "<p>Here is how to navigate your dashboard.</p>"
+  },
+  "studentFirstAssignment": {
+    "subject": "Submit your first assignment",
+    "html": "<p>Let’s submit your first assignment.</p>"
+  },
+  "studentDiscussion": {
+    "subject": "Join the discussion board",
+    "html": "<p>Participate in the discussion board today.</p>"
+  },
+  "studentTips": {
+    "subject": "Study tips",
+    "html": "<p>Check out these tips for success.</p>"
+  },
+  "studentInactive": {
+    "subject": "We miss you!",
+    "html": "<p>You haven’t logged in recently. Jump back in!</p>"
+  },
+  "parentWelcome": {
+    "subject": "Welcome, Parent/Guardian",
+    "html": "<p>Hi {{name}}, you’re subscribed to student updates.</p>"
+  },
+  "parentWeeklySummary": {
+    "subject": "Weekly student progress",
+    "html": "<p>Here’s the latest progress for your student.</p>"
+  },
+  "instructorWelcome": {
+    "subject": "Welcome Instructor",
+    "html": "<p>Thanks for teaching with MDTS!</p>"
+  },
+  "instructorGrading": {
+    "subject": "How to grade assignments",
+    "html": "<p>Learn how to use the grading tools.</p>"
+  },
+  "instructorContent": {
+    "subject": "Adding course content",
+    "html": "<p>Tips for uploading course materials.</p>"
+  },
+  "instructorAnalytics": {
+    "subject": "Using analytics",
+    "html": "<p>Track student engagement and performance.</p>"
+  },
+  "instructorBestPractices": {
+    "subject": "Online teaching best practices",
+    "html": "<p>Discover strategies to engage your students.</p>"
   }
 }

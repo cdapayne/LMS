@@ -6,17 +6,22 @@ async function init() {
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     eventDate DATE NOT NULL,
-    description TEXT
+    description TEXT,
+    attachment VARCHAR(255)
   )`);
+  // ensure attachment column exists for older installs
+  await db
+    .query('ALTER TABLE mdtslms_events ADD COLUMN attachment VARCHAR(255) NULL')
+    .catch(() => {});
 }
 init().catch(console.error);
 
-async function createEvent({ name, eventDate, description }) {
+async function createEvent({ name, eventDate, description, attachment }) {
   const [result] = await db.query(
-    'INSERT INTO mdtslms_events (name, eventDate, description) VALUES (?,?,?)',
-    [name, eventDate, description]
+    'INSERT INTO mdtslms_events (name, eventDate, description, attachment) VALUES (?,?,?,?)',
+    [name, eventDate, description, attachment]
   );
-  return { id: result.insertId, name, eventDate, description };
+  return { id: result.insertId, name, eventDate, description, attachment };
 }
 
 async function getAllEvents() {

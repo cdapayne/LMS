@@ -125,7 +125,10 @@ router.post('/email-templates/ai', async (req, res) => {
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }]
+        messages: [
+          { role: 'system', content: 'You generate personalized HTML email templates that use {{name}} placeholders.' },
+          { role: 'user', content: prompt }
+        ]
       })
     });
     const data = await response.json();
@@ -288,9 +291,10 @@ router.get('/create-event', (req, res) => {
 });
 
 // Handle event creation
-router.post('/create-event', async (req, res) => {
+router.post('/create-event', mediaUpload.single('attachment'), async (req, res) => {
   const { name, date, description } = req.body;
-  await eventModel.createEvent({ name, eventDate: date, description });
+  const attachment = req.file ? `/uploads/${req.file.filename}` : null;
+  await eventModel.createEvent({ name, eventDate: date, description, attachment });
   res.redirect('/admin');
 });
 

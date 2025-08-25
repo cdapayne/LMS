@@ -41,10 +41,19 @@
         <div class="mb-3">
           <label class="form-label">Recipients</label>
           <div class="list-group">
-            <% students.forEach(function(s){ const full = s.name || (s.profile?.firstName + ' ' + s.profile?.lastName); %>
+            <% students.forEach(function(s){
+                 const full = s.name || (s.profile?.firstName + ' ' + s.profile?.lastName);
+                 const course = s.profile?.course || 'N/A';
+                 const aff = s.profile?.affiliateProgram || 'N/A';
+                 const signup = s.appliedAt ? new Date(s.appliedAt).toISOString().slice(0,10) : 'N/A';
+                 const enrolled = s.status === 'approved' ? 'Enrolled' : 'Not Enrolled';
+            %>
               <label class="list-group-item">
                 <input class="form-check-input me-1" type="checkbox" name="studentIds" value="<%= s.id %>">
-                <%= full %> (<%= s.email %>)
+                <div class="ms-2">
+                  <div><%= full %> (<%= s.email %>)</div>
+                  <small class="text-muted">Course: <%= course %> | Program: <%= aff %> | Signed up: <%= signup %> | <%= enrolled %></small>
+                </div>
               </label>
             <% }); %>
           </div>
