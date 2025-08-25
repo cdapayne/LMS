@@ -189,6 +189,15 @@ router.get('/classes/:id', async (req, res) => {
   res.render('teacher_view_class', { klass, students, today, attendanceToday, discussions });
 });
 
+router.post('/classes/:id/rename', async (req, res) => {
+  const id = Number(req.params.id);
+  const { name } = req.body;
+  if (name && name.trim()) {
+    await classModel.renameClass(id, name.trim());
+  }
+  res.redirect(`/teacher/classes/${id}`);
+});
+
 // add discussion message
 router.post('/classes/:id/discussion', async (req, res) => {
   const classId = Number(req.params.id);

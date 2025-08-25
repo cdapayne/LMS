@@ -52,6 +52,11 @@ async function duplicateClass(id) {
   return findClassById(result.insertId);
 }
 
+async function renameClass(id, name) {
+  await db.query('UPDATE mdtslms_classes SET name=? WHERE id=?', [name, id]);
+  return findClassById(id);
+}
+
 async function addTest(classId, test) {
   const klass = await findClassById(classId);
   if (!klass) return null;
@@ -192,7 +197,8 @@ module.exports = {
   upsertAssignmentGrade,
   upsertLabStatus,
   duplicateClass,
-  updateChecklist
+  updateChecklist,
+  renameClass
 };
 
 

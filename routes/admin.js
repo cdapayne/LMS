@@ -561,6 +561,9 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
   const rsvps = await rsvpModel.getAllRSVPs();
   const { recipients, type, subject, message } = req.body;
   const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
+  const attachments = req.file
+    ? [{ filename: req.file.originalname, path: req.file.path }]
+    : [];
   const ids = Array.isArray(recipients) ? recipients : [recipients].filter(Boolean);
   if (!ids.length || !marketingTypes.includes(type)) {
     return res.status(400).render('admin_marketing', {
@@ -621,7 +624,8 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
         to: recipient.email,
         subject: subj,
         html,
-        text: bodyText
+        text: bodyText,
+        attachments
       });
     }
 
@@ -979,6 +983,15 @@ router.post('/classes/:id/duplicate', async (req, res) => {
   const copy = await classModel.duplicateClass(id);
   if (!copy) return res.status(404).send('Not found');
   res.redirect(`/admin/classes/${copy.id}`);
+});
+
+router.post('/classes/:id/rename', async (req, res) => {
+  const id = Number(req.params.id);
+  const { name } = req.body;
+  if (name && name.trim()) {
+    await classModel.renameClass(id, name.trim());
+  }
+  res.redirect(`/admin/classes/${id}`);
 });
 
 router.post('/users/:id/deactivate', async (req, res) => {
