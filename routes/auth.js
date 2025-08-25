@@ -14,7 +14,7 @@ const userModel = require('../models/userModel');
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, path.join(__dirname, '../uploads'));
+      cb(null, path.join(__dirname, '../docs/stxd'));
     },
     filename: (req, file, cb) => {
       cb(null, Date.now() + '-' + file.originalname);
@@ -282,7 +282,7 @@ router.post('/register', (req, res) => {
             originalName: f.originalname,
             mimeType: f.mimetype,
             size: f.size,
-            url: `/uploads/${f.filename}`
+            url: `/docs/stxd/${f.filename}`
           }));
           await userModel.addUploads(user.id, uploads);
         }

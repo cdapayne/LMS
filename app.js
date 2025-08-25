@@ -43,7 +43,14 @@ app.use('/uploads', (req, res, next) => {
   }
   res.status(403).send('Unable to access area');
 });
-app.use('/docs', express.static(path.join(__dirname, 'docs')));
+
+const docsPath = path.join(__dirname, 'docs');
+app.use('/docs', (req, res, next) => {
+  if (req.path.startsWith('/stxd') && (!req.session || req.session.role !== 'admin')) {
+    return res.status(403).send('Unable to access area');
+  }
+  return express.static(docsPath)(req, res, next);
+});
 
 
 app.get('/', (req, res) => res.redirect('/dashboard'));
