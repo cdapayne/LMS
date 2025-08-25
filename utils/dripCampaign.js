@@ -63,12 +63,14 @@ function defaultSteps(segment) {
   }
 }
 
-function addCampaign({ email, phone, segment = 'student', name = '', grade = '', program = '', enrollmentStatus = '' }) {
+function addCampaign({ email, phone, segment = 'student', name = '', program = '', enrollmentStatus = '' }) {
   const steps = defaultSteps(segment);
   const campaigns = loadCampaigns();
   const firstRun = Date.now() + (steps[0]?.delayMinutes || 0) * 60000;
-  const metadata = { name, grade, program, enrollmentStatus, segment };
-  campaigns.push({ email, phone, segment, metadata, steps, nextStep: 0, nextRun: firstRun });
+  const metadata = { name, program, enrollmentStatus, segment };
+  // initialize history tracking for each step
+  const trackedSteps = steps.map(s => ({ ...s, sentAt: null }));
+  campaigns.push({ email, phone, segment, metadata, steps: trackedSteps, nextStep: 0, nextRun: firstRun });
   saveCampaigns(campaigns);
 }
 
@@ -84,6 +86,7 @@ function processCampaigns() {
       if (c.phone && step.sms) {
         twilioClient.messages.create({ to: c.phone, from: process.env.TWILIO_FROM_NUMBER, body: step.sms }).catch(() => {});
       }
+      step.sentAt = now;
       c.nextStep++;
       if (c.nextStep < c.steps.length) {
         c.nextRun = now + c.steps[c.nextStep].delayMinutes * 60000;
@@ -98,7 +101,10 @@ function processCampaigns() {
 }
 
 function init() {
-  cron.schedule('* * * * *', processCampaigns);
+  cron.schedule('* * * * *', () => {
+    console.log('Processing drip campaigns');
+    processCampaigns();
+  });
 }
 
 module.exports = { init, addCampaign, loadCampaigns };
