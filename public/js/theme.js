@@ -1,5 +1,12 @@
 (function(){
   const root = document.documentElement;
+  fetch('/branding.json')
+    .then(r => r.json())
+    .then(b => {
+      if (b.primaryColor) root.style.setProperty('--primary-color', b.primaryColor);
+      if (b.secondaryColor) root.style.setProperty('--secondary-color', b.secondaryColor);
+    })
+    .catch(() => {});
   const stored = localStorage.getItem('theme');
   if (stored === 'dark' || stored === 'light') {
     root.setAttribute('data-theme', stored);

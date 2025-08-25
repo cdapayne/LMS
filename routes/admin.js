@@ -22,6 +22,8 @@ const path = require('path');
 const upload = multer();
 
 const fs = require('fs');
+const branding = require('../branding.json');
+const brandingPath = path.join(__dirname, '..', 'branding.json');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'data', 'signature-docs.json');
 let signatureDocsConfig = {};
@@ -45,7 +47,16 @@ const mediaStorage = multer.diskStorage({
     cb(null, Date.now() + '-' + file.originalname);
   }
 });
-const mediaUpload = multer({ storage: mediaStorage });  
+const mediaUpload = multer({ storage: mediaStorage });
+const brandingStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '../uploads'));
+  },
+  filename: (req, file, cb) => {
+    cb(null, 'logo-' + Date.now() + path.extname(file.originalname));
+  }
+});
+const brandingUpload = multer({ storage: brandingStorage });
 const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   host: 'mdts-apps.com',
@@ -91,6 +102,26 @@ router.post('/dropdowns/delete', (req, res) => {
   const { type, value } = req.body;
   dropdowns.remove(type, value);
   res.redirect('/admin/dropdowns?saved=1');
+});
+
+router.get('/branding', (req, res) => {
+  res.render('admin_branding', {
+    user: req.session.user,
+    branding,
+    saved: req.query.saved
+  });
+});
+
+router.post('/branding', brandingUpload.single('primaryLogo'), (req, res) => {
+  const { primaryColor, secondaryColor } = req.body;
+  if (req.file) {
+    branding.primaryLogo = '/uploads/' + req.file.filename;
+  }
+  if (primaryColor) branding.primaryColor = primaryColor;
+  if (secondaryColor) branding.secondaryColor = secondaryColor;
+  fs.writeFileSync(brandingPath, JSON.stringify(branding, null, 2));
+  req.app.locals.branding = branding;
+  res.redirect('/admin/branding?saved=1');
 });
 
 router.get('/email-templates', (req, res) => {
