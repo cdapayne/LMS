@@ -362,25 +362,28 @@ await transporter.sendMail({
       console.error('Error sending pre-registration email', err);
     }
 
+    const [firstName, ...rest] = name.trim().split(' ');
+    const lastName = rest.join(' ');
+    req.session.preRegData = {
+      firstName,
+      lastName,
+      email: email.trim(),
+      confirmEmail: email.trim(),
+      address: (address || '').trim(),
+      state: state.trim(),
+      zip: zip.trim(),
+      course: course.trim(),
+      affiliateProgram: applicantType.trim(),
+      phoneCell: phone.trim(),
+      referralName: (referral || '').trim(),
+      referralEmail: (referralEmail || '').trim()
+    };
 
     if (action === 'enroll') {
-      const [firstName, ...rest] = name.trim().split(' ');
-      const lastName = rest.join(' ');
-      req.session.preRegData = {
-        firstName,
-        lastName,
-        email: email.trim(),
-        address: (address || '').trim(),
-        state: state.trim(),
-        zip: zip.trim(),
-        course: course.trim(),
-        referralName: (referral || '').trim(),
-        referralEmail: (referralEmail || '').trim()
-      };
       return res.redirect('/register');
     }
 
-     const dd = dropdowns.getAll();
+    const dd = dropdowns.getAll();
     res.render('pre_register', { error: null, success: true, formData: {}, courses: dd.courses, affiliatePrograms: dd.affiliatePrograms });
   } catch (e) {
     console.error(e);
