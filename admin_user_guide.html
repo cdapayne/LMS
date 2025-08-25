@@ -5,7 +5,7 @@
   <title>Admin User Guide</title>
   <link rel="stylesheet" href="/css/theme.css">
   <style>
-    body { max-width: 900px; margin: auto; padding: 1rem; }
+    body { max-width: 900px; margin: auto; padding: 1rem; font-family: sans-serif; }
     nav ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
     nav li { margin-right: .5rem; }
     nav a { text-decoration: none; color: #0055aa; }
@@ -15,7 +15,7 @@
 </head>
 <body>
   <h1>Admin User Guide</h1>
-  <p>This document explains every administrative feature available in the learning management system and how to use them.</p>
+  <p>Use this guide to manage the learning management system efficiently. Each section describes a core area of responsibility and provides practical steps and tips.</p>
 
   <nav>
     <ul>
@@ -31,78 +31,80 @@
       <li><a href="#reports">Reports</a></li>
       <li><a href="#announcements">Announcements</a></li>
       <li><a href="#charts">Charts</a></li>
+      <li><a href="#support">Support &amp; Best Practices</a></li>
     </ul>
   </nav>
 
   <h2 id="dashboard">Dashboard</h2>
-  <p>The dashboard provides quick stats and links to common tasks.</p>
+  <p>The dashboard offers a snapshot of current activity and links to common tasks.</p>
   <ul>
-    <li><strong>Stats cards:</strong> show the number of classes, students, and teachers.</li>
-    <li><strong>Quick Actions:</strong> shortcut buttons to student queues, class tools, reports, events, marketing, email templates and more.</li>
-    <li><strong>Announcements:</strong> post a message to students, teachers or everyone.</li>
-    <li><strong>Charts:</strong> visualize sign‑up trends. Use the edit icon to configure chart type and data source.</li>
+    <li><strong>Stats cards:</strong> show counts of classes, students, teachers and pending applications. Click a card to open the related management page.</li>
+    <li><strong>Quick Actions:</strong> provide shortcuts to student queues, class tools, reports, events, marketing, email templates and more. Review these actions often to keep operations moving.</li>
+    <li><strong>Announcements:</strong> post messages to students, teachers or everyone. Keep announcements brief and include clear calls to action.</li>
+    <li><strong>Charts:</strong> visualize trends such as monthly sign‑ups. Select the edit icon to configure chart type, data source and date range.</li>
   </ul>
 
   <h2 id="students">Students</h2>
   <h3>Pending Students</h3>
-  <p>View new registrations awaiting approval. Approve to grant access or decline to deny enrollment. Each student profile allows you to review submitted information and required documents.</p>
+  <p>Review new registrations awaiting approval. Open a profile to verify documents and information. Approve to grant access or decline to deny enrollment. Use notes to record reasons for decisions.</p>
   <h3>Accepted Students</h3>
-  <p>List of approved students. Open a profile to reset passwords, sign documents, or trigger step‑2 enrollment emails.</p>
+  <p>Lists all approved students. From a profile you can reset passwords, sign documents, send follow‑up emails or archive records when a student leaves.</p>
   <h3>Denied Students</h3>
-  <p>Review previously declined applications. You can revisit the decision if needed.</p>
+  <p>Shows previously declined applications. Revisit and approve later if circumstances change.</p>
   <h3>Pre‑Registered Users</h3>
-  <p>Shows users that expressed interest but have not started the full registration.</p>
+  <p>Displays users who expressed interest but have not completed registration. Follow up with reminders to encourage completion.</p>
 
   <h2 id="teachers">Teachers</h2>
-  <p>Create new teacher accounts and manage existing teachers.</p>
+  <p>Create new teacher accounts and manage existing staff.</p>
   <ul>
-    <li><strong>Create Teacher:</strong> supply profile information and login credentials.</li>
-    <li><strong>Teacher List:</strong> browse all teachers and open individual profiles.</li>
+    <li><strong>Create Teacher:</strong> enter profile information, assign a temporary password and designate permissions.</li>
+    <li><strong>Teacher List:</strong> browse all teachers, open profiles to reset credentials, view classes or disable access.</li>
   </ul>
 
   <h2 id="classes">Classes</h2>
   <p>Admins control all classes offered in the system.</p>
   <ul>
-    <li><strong>Class List:</strong> search, export CSV, and open classes for detailed management.</li>
-    <li><strong>Create Class:</strong> define core details, assign a teacher, set schedule and duration.</li>
-    <li><strong>Manage Class:</strong> within a class you may add students, upload lectures or PowerPoint files, create tests, attach media, and host discussions.</li>
+    <li><strong>Class List:</strong> search, filter and export to CSV. Open a class for detailed management.</li>
+    <li><strong>Create Class:</strong> define core details, assign a teacher, set schedule and duration. Double‑check dates before publishing.</li>
+    <li><strong>Manage Class:</strong> within a class you may add students, upload lectures or PowerPoint files, create tests, attach media and host discussions. Use the <em>Preview</em> button to verify the student view.</li>
   </ul>
 
   <h2 id="events">Events</h2>
   <ul>
-    <li><strong>Events Dashboard:</strong> overview of upcoming events.</li>
-    <li><strong>Create Event:</strong> publish events with date, description and optional attachment.</li>
-    <li><strong>Event RSVPs:</strong> view attendee responses.</li>
+    <li><strong>Events Dashboard:</strong> overview of upcoming events with links to edit or remove.</li>
+    <li><strong>Create Event:</strong> publish events with date, description and optional attachment. Mark events as public or private.</li>
+    <li><strong>Event RSVPs:</strong> track attendee responses and export the list for on‑site check‑in.</li>
   </ul>
 
   <h2 id="marketing">Marketing &amp; Drip Campaigns</h2>
   <h3>Marketing Emails</h3>
-  <p>Send targeted messages to students. Choose recipients, pick a type (recruitment, retention, approval, events or information), craft a subject and message, preview using AI, then send.</p>
+  <p>Send targeted messages to students. Choose recipients, pick a type (recruitment, retention, approval, events or information), craft a subject and message, preview using AI, then send. Monitor open rates to refine future campaigns.</p>
   <h3>Drip Campaigns</h3>
-  <p>Schedule automated follow‑ups. Provide contact information and segment; active campaigns display their current step.</p>
+  <p>Schedule automated follow‑ups. Provide contact information and segment; active campaigns display their current step. Review campaign performance regularly and pause sequences that are no longer needed.</p>
 
   <h2 id="email">Email Templates</h2>
-  <p>Manage reusable email templates. Select a template, edit subject and HTML body, preview the rendered email, or generate content with AI. Save to update the template library.</p>
+  <p>Manage reusable email templates. Select a template, edit subject and HTML body, preview the rendered email, or generate content with AI. Save to update the template library and reuse across campaigns.</p>
 
   <h2 id="branding">Branding</h2>
-  <p>Customize the logo and the primary and secondary colors used throughout the site. Upload a new logo image or choose colors and click <em>Save</em> to apply.</p>
+  <p>Customize the logo and the primary and secondary colors used throughout the site. Upload a new logo image or choose colors and click <em>Save</em> to apply. A consistent brand builds trust with students and partners.</p>
 
   <h2 id="dropdowns">Dropdown Options</h2>
-  <p>Add or remove values for course names and affiliate programs that appear in student forms.</p>
+  <p>Add or remove values for course names and affiliate programs that appear in student forms. Keep lists current to avoid confusion during registration.</p>
 
   <h2 id="reports">Reports</h2>
   <ul>
-    <li><strong>Class Summary:</strong> view counts of students, tests, and grades for each class.</li>
-    <li><strong>Pending Students Report:</strong> analyze applications awaiting approval.</li>
-    <li><strong>Custom Report Builder:</strong> select data fields to generate custom CSV exports.</li>
+    <li><strong>Class Summary:</strong> view counts of students, tests and grades for each class. Export the report to share with stakeholders.</li>
+    <li><strong>Pending Students Report:</strong> analyze applications awaiting approval and identify bottlenecks in processing.</li>
+    <li><strong>Custom Report Builder:</strong> select data fields to generate custom CSV exports. Save report templates for recurring use.</li>
   </ul>
 
   <h2 id="announcements">Announcements</h2>
-  <p>Publish messages to all users, only teachers, or only students. Announcements appear on dashboards after posting.</p>
+  <p>Publish messages to all users, only teachers or only students. Use announcements to highlight deadlines, policy changes or achievements. Announcements appear on dashboards immediately after posting.</p>
 
   <h2 id="charts">Charts</h2>
-  <p>The dashboard contains configurable charts for tracking sign‑ups. Use the gear icon to choose chart type, data table and fields.</p>
+  <p>The dashboard contains configurable charts for tracking sign‑ups and other metrics. Use the gear icon to choose chart type, data table and fields. Share charts during planning meetings to support data‑driven decisions.</p>
 
-  <p>For questions or assistance, contact the system administrator.</p>
+  <h2 id="support">Support &amp; Best Practices</h2>
+  <p>Regularly review audit logs and user activity for security. Provide training for new staff and document internal procedures. For questions or assistance, contact the system administrator.</p>
 </body>
 </html>
