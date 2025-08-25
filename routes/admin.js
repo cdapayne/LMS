@@ -518,8 +518,9 @@ router.get('/marketing', async (req, res) => {
 });
 
 // Preview marketing email with OpenAI
-router.post('/marketing/preview', async (req, res) => {
-  const { type, message, subject, imageUrl } = req.body;
+router.post('/marketing/preview', mediaUpload.single('image'), async (req, res) => {
+  const { type, message, subject } = req.body;
+  const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Missing OpenAI API key' });
   if (!marketingTypes.includes(type)) return res.status(400).json({ error: 'Invalid type' });
@@ -554,11 +555,12 @@ router.post('/marketing/preview', async (req, res) => {
 });
 
 // Send marketing email
-router.post('/marketing', async (req, res) => {
+router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
   const students = await userModel.getByRole('student');
   const preregs = await preRegModel.getAll();
   const rsvps = await rsvpModel.getAllRSVPs();
-  const { recipients, type, subject, imageUrl, message } = req.body;
+  const { recipients, type, subject, message } = req.body;
+  const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
   const ids = Array.isArray(recipients) ? recipients : [recipients].filter(Boolean);
   if (!ids.length || !marketingTypes.includes(type)) {
     return res.status(400).render('admin_marketing', {
@@ -835,18 +837,14 @@ router.get('/classes/:id', async (req, res) => {
   res.render('view_class', { klass, students, classStudents, studentView: false, discussions, teacher });
 });
 
-router.post('/classes/:id/lectures', mediaUpload.single('ppt'), async (req, res) => {
+router.post('/classes/:id/lectures', async (req, res) => {
   const classId = Number(req.params.id);
-  const { title, url, isPowerPoint } = req.body;
-  let finalUrl = url && url.trim();
-  if (isPowerPoint && req.file) {
-    finalUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  }
-  if (title && finalUrl) {
+  const { title, url } = req.body;
+  if (title && url) {
     await classModel.addLecture(classId, {
       title: title.trim(),
-      url: finalUrl,
-      isPowerPoint: !!isPowerPoint
+      url: url.trim(),
+      isPowerPoint: false
     });
   }
   res.redirect(`/admin/classes/${classId}#lectures`);
