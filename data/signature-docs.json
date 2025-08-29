@@ -1,8 +1,8 @@
 {
-  "registration-agreement": "/docs/MDTechBrochure24.pdf",
-  "code-of-conduct": "/docs/sept13.pdf",
-  "cancellation-policy": "/docs/MDTechBrochure24.pdf",
-    "contract-acceptance": "/docs/MDTechBrochure24.pdf",
-  "electronic-use-agreement": "/docs/MDTechBrochure24.pdf",
-    "notice-to-buyer": "/docs/MDTechBrochure24.pdf"
+  "registration-agreement": "/docs/studentacknowledgements.pdf",
+  "code-of-conduct": "/docs/codeofconduct.pdf",
+  "cancellation-policy": "/docs/righttocancel.pdf",
+    "contract-acceptance": "/docs/contractacceptance.pdf",
+  "electronic-use-agreement": "/docs/electronicuse.pdf",
+    "notice-to-buyer": "/docs/noticetobuyer.pdf"
 }

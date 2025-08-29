@@ -327,3 +327,32 @@ module.exports = {
   getByRole,
   deleteById
 };
+
+// --- Last Contacted helpers ---
+let ensuredUserLastContacted = false;
+async function ensureUserLastContactedColumn() {
+  if (ensuredUserLastContacted) return;
+  try {
+    await db.query('ALTER TABLE mdtslms_users ADD COLUMN IF NOT EXISTS lastContacted DATETIME NULL');
+  } catch (e) {
+    // Ignore if not supported or already exists
+  } finally {
+    ensuredUserLastContacted = true;
+  }
+}
+
+async function setLastContacted(id, when = new Date()) {
+  await ensureUserLastContactedColumn();
+  const ts = new Date(when).toISOString().slice(0, 19).replace('T', ' ');
+  try {
+    await db.query('UPDATE mdtslms_users SET lastContacted=? WHERE id=?', [ts, id]);
+  } catch (e) {
+    try {
+      await db.query('ALTER TABLE mdtslms_users ADD COLUMN lastContacted DATETIME NULL');
+    } catch (_) {}
+    await db.query('UPDATE mdtslms_users SET lastContacted=? WHERE id=?', [ts, id]);
+  }
+  return true;
+}
+
+module.exports.setLastContacted = setLastContacted;

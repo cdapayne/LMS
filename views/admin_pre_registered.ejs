@@ -95,6 +95,7 @@
       <table id="preTable" class="table table-hover align-middle mb-0">
         <thead>
           <tr>
+            <th style="min-width:120px">Action</th>
             <th style="min-width:180px">Name</th>
             <th style="min-width:140px">Phone</th>
             <th style="min-width:220px">Email</th>
@@ -106,6 +107,7 @@
             <th style="min-width:160px">Applicant Type</th>
             <th style="min-width:160px">Referral</th>
             <th style="min-width:220px">Referral Email</th>
+            <th style="min-width:180px">Last Contacted</th>
             <th style="min-width:200px">Created</th>
           </tr>
         </thead>
@@ -121,7 +123,11 @@
                 data-course="<%= p.course || '' %>"
                 data-type="<%= p.applicantType || '' %>"
                 data-serving="<%= p.serving ? 'yes' : 'no' %>"
-                data-created="<%= createdISO %>">
+                data-created="<%= createdISO %>"
+                data-lastcontacted="<%= p.lastContacted || '' %>">
+                <td>
+                  <button class="btn btn-sm btn-outline-primary btn-contact" data-id="<%= p.id %>" data-name="<%- (p.name||'').replace(/"/g,'&quot;') %>" data-email="<%= p.email || '' %>">Contact</button>
+                </td>
                 <td class="fw-semibold text-truncate"><%= p.name %></td>
                 <td><a href="tel:<%= (p.phone||'').replace(/[^0-9+]/g,'') %>"><%= p.phone %></a></td>
                 <td>
@@ -141,6 +147,7 @@
                     <a href="mailto:<%= p.referralEmail %>"><%= p.referralEmail %></a>
                   <% } %>
                 </td>
+                <td class="last-contacted"><%= p.lastContacted ? new Date(p.lastContacted).toLocaleString() : '' %></td>
                 <td data-ts="<%= createdISO %>"><%= new Date(p.createdAt).toLocaleString() %></td>
               </tr>
             <% }) %>
@@ -283,6 +290,66 @@
 
       // Initial count (in case table is empty or filters present via query params someday)
       applyFilters();
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    // SweetAlert contact flow
+    (function(){
+      const tbody = document.getElementById('preBody');
+      if (!tbody) return;
+      tbody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-contact');
+        if (!btn) return;
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name') || 'there';
+        const email = btn.getAttribute('data-email') || '';
+        const defaultSubject = (<%- JSON.stringify((templates && templates.recruitment && templates.recruitment.subject) || 'MD Technical School — Recruitment') %>);
+        const { value: formValues } = await Swal.fire({
+          title: 'Contact Pre-Registered User',
+          html:
+            `<div class="mb-2 text-start"><strong>${name}</strong><br><small>${email}</small></div>`+
+            '<input id="swal-subject" class="swal2-input" placeholder="Subject">' +
+            '<textarea id="swal-message" class="swal2-textarea" placeholder="Message" rows="6">Hello ' + name + ',\n\nThank you for your interest in MD Technical School. I’d love to share more about our programs and help with next steps.\n\n— MDTS Recruitment</textarea>',
+          focusConfirm: false,
+          didOpen: () => {
+            const subj = document.getElementById('swal-subject');
+            if (subj) subj.value = defaultSubject;
+          },
+          preConfirm: () => {
+            const subject = (document.getElementById('swal-subject')||{}).value || '';
+            const message = (document.getElementById('swal-message')||{}).value || '';
+            if (!subject.trim() || !message.trim()) {
+              Swal.showValidationMessage('Subject and message are required');
+              return false;
+            }
+            return { subject, message };
+          },
+          showCancelButton: true,
+          confirmButtonText: 'Send',
+          cancelButtonText: 'Cancel'
+        });
+        if (!formValues) return;
+        try {
+          const res = await fetch(`/admin/pre-registrations/${id}/contact`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formValues)
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Failed');
+          Swal.fire({ icon: 'success', title: 'Message sent', timer: 1400, showConfirmButton: false });
+          const tr = btn.closest('tr');
+          const cell = tr?.querySelector('.last-contacted');
+          if (cell && data.lastContacted) {
+            cell.textContent = new Date(data.lastContacted).toLocaleString();
+            tr.setAttribute('data-lastcontacted', data.lastContacted);
+          }
+        } catch (err) {
+          console.error(err);
+          Swal.fire({ icon: 'error', title: 'Could not send message' });
+        }
+      });
     })();
   </script>
 </body>

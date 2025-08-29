@@ -97,24 +97,18 @@
           <table id="approvalsTable" class="table table-bordered table-hover align-middle mb-0">
             <thead>
               <tr>
+                <th style="min-width:200px;">Actions</th>
                 <th style="min-width:220px;">Name</th>
                 <th style="min-width:140px;">Username</th>
                 <th style="min-width:220px;">Email</th>
                 <th style="min-width:120px;">Applied</th>
                 <th style="min-width:160px;">Course</th>
                 <th style="min-width:160px;">Program</th>
-                <th style="min-width:160px;">Actions</th>
               </tr>
             </thead>
             <tbody>
               <% pending.forEach(p => { %>
                 <tr>
-                  <td><%= p.name %></td>
-                  <td><%= p.username %></td>
-                  <td><%= p.email %></td>
-                  <td><%= p.appliedAt ? new Date(p.appliedAt).toLocaleDateString() : '-' %></td>
-                  <td><%= p.profile?.course || '-' %></td>
-                  <td><%= p.profile?.affiliateProgram || '-' %></td>
                   <td>
                     <div class="d-flex flex-wrap gap-2">
                       <a class="btn btn-sm btn-outline-secondary" href="/admin/students/<%= p.id %>">View</a>
@@ -126,6 +120,12 @@
                       </form>
                     </div>
                   </td>
+                  <td><%= p.name %></td>
+                  <td><%= p.username %></td>
+                  <td><%= p.email %></td>
+                  <td><%= p.appliedAt ? new Date(p.appliedAt).toLocaleDateString() : '-' %></td>
+                  <td><%= p.profile?.course || '-' %></td>
+                  <td><%= p.profile?.affiliateProgram || '-' %></td>
                 </tr>
               <% }) %>
             </tbody>
@@ -155,9 +155,9 @@
         const q = normalize(input.value);
         let shown = 0;
         Array.from(table.tBodies[0].rows).forEach(tr => {
-          const name = normalize(tr.cells[0]?.innerText);
-          const uname = normalize(tr.cells[1]?.innerText);
-          const email = normalize(tr.cells[2]?.innerText);
+          const name = normalize(tr.cells[1]?.innerText);
+          const uname = normalize(tr.cells[2]?.innerText);
+          const email = normalize(tr.cells[3]?.innerText);
           const match = !q || name.includes(q) || uname.includes(q) || email.includes(q);
           tr.style.display = match ? '' : 'none';
           if (match) shown++;

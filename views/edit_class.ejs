@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Class – MD Technical School</title>
+  <link rel="icon" href="<%= branding?.favicon %>">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <style>
+    :root{
+      --primary-color: dodgerblue;
+      --secondary-color: orange;
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --border: #e5e7eb;
+      --muted: #6b7280;
+    }
+    body{ background: var(--bg); font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+
+    .page-head{ background: linear-gradient(180deg, rgba(30,144,255,.10), rgba(255,165,0,.06)); border-bottom: 1px solid var(--border); padding: 1rem 0; margin-bottom: 1rem; }
+    .page-head h2{ margin:0; font-weight:800; font-size:1.35rem; }
+    .muted{ color: var(--muted); }
+
+    .cardish{ background: var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow: 0 .6rem 1.2rem rgba(0,0,0,.05); padding:1rem 1rem; }
+    .section-title{ display:flex; align-items:center; gap:10px; font-weight:700; margin: .25rem 0 .75rem; }
+    .section-title::before{ content:""; width:6px; height:18px; border-radius:3px; background: var(--secondary-color); }
+
+    .btn-primary{ background: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+    .btn-primary:hover{ background:#1e6edb !important; border-color:#1e6edb !important; }
+    .btn-outline-primary{ color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+    .btn-outline-primary:hover{ background: var(--primary-color) !important; color:#fff !important; }
+
+    .hint{ font-size:.9rem; color: var(--muted); }
+
+    @media (min-width: 992px){ .two-col{ display:grid; grid-template-columns: 1fr 1fr; gap:1rem; } }
+    .sched-row{ border:1px dashed var(--border); border-radius:10px; padding:.75rem; }
+    .sched-row + .sched-row{ margin-top:.5rem; }
+    .badge-holiday{ background:#fff3cd; color:#7a5b00; border:1px solid #ffe69c; }
+  </style>
+</head>
+<body>
+  <%- include('header', { user: { role: 'admin' } }) %>
+
+  <div class="page-head">
+    <div class="container">
+      <h2>Edit Class</h2>
+      <div class="muted">Update class details, assignment, and weekly schedule.</div>
+    </div>
+  </div>
+
+  <div class="container pb-4">
+    <div class="cardish">
+      <% if (error) { %>
+        <div class="alert alert-danger mb-3"><%= error %></div>
+      <% } %>
+
+      <form method="post" action="/admin/classes/<%= klass.id %>/edit" novalidate>
+        <div class="section-title">Core Details</div>
+        <div class="two-col">
+          <div class="mb-3">
+            <label class="form-label">School Year</label>
+            <input name="schoolYear" class="form-control" value="<%= klass.schoolYear || '' %>" required>
+            <div class="hint mt-1">Use academic year format (e.g., 2024–2025).</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Cohort</label>
+            <input name="cohort" class="form-control" value="<%= klass.cohort || '' %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Class Name</label>
+            <input name="name" class="form-control" value="<%= klass.name || '' %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Short Name</label>
+            <input name="shortName" class="form-control" value="<%= klass.shortName || '' %>" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="3"><%= klass.description || '' %></textarea>
+        </div>
+
+        <div class="two-col">
+          <div class="mb-3">
+            <label class="form-label">Teacher</label>
+            <select name="teacherId" class="form-select" required>
+              <option value="">Select a teacher…</option>
+              <% teachers.forEach(t => { %>
+                <option value="<%= t.id %>" <%= Number(klass.teacherId) === Number(t.id) ? 'selected' : '' %>><%= t.name %> (@<%= t.username %>)</option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Number of Weeks</label>
+            <input type="number" name="weeks" class="form-control" min="1" value="<%= klass.weeks || 1 %>">
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="mb-3">
+            <label class="form-label">First Day of Class</label>
+            <input type="date" name="startDate" class="form-control" value="<%= klass.startDate || '' %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Last Day of Class</label>
+            <input type="date" name="endDate" class="form-control" value="<%= klass.endDate || '' %>" required>
+          </div>
+        </div>
+
+        <div class="section-title mt-2">Schedule</div>
+        <p class="hint mb-2">Edit existing meeting times or add new ones. Leave rows blank to ignore.</p>
+
+        <div id="schedRows">
+          <% const dayOpts = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']; %>
+          <% const existing = (klass.schedule || []).slice(0,7); %>
+          <% const totalRows = 7; %>
+          <% for (let i=0;i<totalRows;i++) { const s = existing[i] || {}; %>
+            <div class="sched-row row g-2 align-items-center">
+              <div class="col-md-4">
+                <label class="form-label mb-1">Day</label>
+                <select name="day" class="form-select">
+                  <option value="">Day…</option>
+                  <% dayOpts.forEach(d => { %>
+                    <option <%= s.day === d ? 'selected' : '' %>><%= d %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label mb-1">Start</label>
+                <input type="time" name="start" class="form-control" value="<%= s.start || '' %>">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label mb-1">End</label>
+                <input type="time" name="end" class="form-control" value="<%= s.end || '' %>">
+              </div>
+              <div class="col-md-2">
+                <div class="form-check mt-4 pt-1">
+                  <input type="checkbox" class="form-check-input" id="holiday<%= i %>" name="holiday<%= i %>" <%= s.holiday ? 'checked' : '' %>>
+                  <label class="form-check-label" for="holiday<%= i %>">Holiday</label>
+                </div>
+              </div>
+            </div>
+          <% } %>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+          <button class="btn btn-primary">Save Changes</button>
+          <a href="/admin/classes/<%= klass.id %>" class="btn btn-outline-primary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
+

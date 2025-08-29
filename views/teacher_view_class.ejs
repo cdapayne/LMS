@@ -217,12 +217,17 @@
         <% } else { %>
           <ul class="list-plain">
             <% (klass.lectures || []).forEach(l => { %>
-              <li class="mb-1">
-                <% if (l.isPowerPoint) { %>
-                  <a href="/student/powerpoint?url=<%= encodeURIComponent(l.url) %>&title=<%= encodeURIComponent(l.title) %>" target="_blank" rel="noopener"><%= l.title %> (PowerPoint)</a>
-                <% } else { %>
-                  <a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a>
-                <% } %>
+              <li class="mb-1 d-flex justify-content-between align-items-center">
+                <div>
+                  <% if (l.isPowerPoint) { %>
+                    <a href="/student/powerpoint?url=<%= encodeURIComponent(l.url) %>&title=<%= encodeURIComponent(l.title) %>" target="_blank" rel="noopener"><%= l.title %> (PowerPoint)</a>
+                  <% } else { %>
+                    <a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a>
+                  <% } %>
+                </div>
+                <form method="post" action="/teacher/classes/<%= klass.id %>/lectures/<%= l.id %>/delete" onsubmit="return confirm('Delete this lecture?');" class="m-0">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
               </li>
             <% }) %>
           </ul>
@@ -244,7 +249,12 @@
         <% } else { %>
           <ul class="list-plain">
             <% (klass.simulations || []).forEach(l => { %>
-              <li class="mb-1"><a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a></li>
+              <li class="mb-1 d-flex justify-content-between align-items-center">
+                <a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a>
+                <form method="post" action="/teacher/classes/<%= klass.id %>/simulations/<%= l.id %>/delete" onsubmit="return confirm('Delete this simulation?');" class="m-0">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </li>
             <% }) %>
           </ul>
         <% } %>
@@ -266,7 +276,14 @@
         <% } else { %>
           <ul class="list-plain">
             <% (klass.assignments || []).forEach(a => { %>
-              <li class="mb-1"><a href="<%= a.url %>" target="_blank" rel="noopener"><%= a.title %></a> <span class="muted small"><%= a.date %></span></li>
+              <li class="mb-1 d-flex justify-content-between align-items-center">
+                <div>
+                  <a href="<%= a.url %>" target="_blank" rel="noopener"><%= a.title %></a> <span class="muted small"><%= a.date %></span>
+                </div>
+                <form method="post" action="/teacher/classes/<%= klass.id %>/assignments/<%= a.id %>/delete" onsubmit="return confirm('Delete this assignment?');" class="m-0">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </li>
             <% }) %>
           </ul>
         <% } %>
@@ -291,7 +308,15 @@
         <% } else { %>
           <ul class="list-plain">
             <% (klass.tests || []).forEach(t => { %>
-              <li class="mb-1"><%= t.title %> <a class="btn btn-sm btn-outline-primary ms-2" href="/teacher/classes/<%= klass.id %>/tests/<%= t.id %>/preview">Preview</a></li>
+              <li class="mb-1 d-flex justify-content-between align-items-center">
+                <div>
+                  <%= t.title %>
+                  <a class="btn btn-sm btn-outline-primary ms-2" href="/teacher/classes/<%= klass.id %>/tests/<%= t.id %>/preview">Preview</a>
+                </div>
+                <form method="post" action="/teacher/classes/<%= klass.id %>/tests/<%= t.id %>/delete" onsubmit="return confirm('Delete this test?');" class="m-0">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </li>
             <% }) %>
           </ul>
         <% } %>

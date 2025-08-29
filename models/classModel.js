@@ -41,6 +41,15 @@ async function addStudent(classId, studentId) {
   return klass;
 }
 
+async function removeStudent(classId, studentId) {
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  const before = Array.isArray(klass.studentIds) ? klass.studentIds : [];
+  const after = before.filter(id => Number(id) !== Number(studentId));
+  await db.query('UPDATE mdtslms_classes SET studentIds=? WHERE id=?', [JSON.stringify(after), classId]);
+  return true;
+}
+
 async function duplicateClass(id) {
   const original = await findClassById(id);
   if (!original) return null;
@@ -55,6 +64,47 @@ async function duplicateClass(id) {
 async function renameClass(id, name) {
   await db.query('UPDATE mdtslms_classes SET name=? WHERE id=?', [name, id]);
   return findClassById(id);
+}
+
+// Update core class fields and schedule
+async function updateClass(id, payload) {
+  const {
+    schoolYear,
+    cohort,
+    name,
+    shortName,
+    description,
+    teacherId,
+    weeks,
+    startDate,
+    endDate,
+    schedule
+  } = payload;
+  await db.query(
+    `UPDATE mdtslms_classes
+     SET schoolYear=?, cohort=?, name=?, shortName=?, description=?, teacherId=?, weeks=?, startDate=?, endDate=?, schedule=?
+     WHERE id=?`,
+    [
+      schoolYear,
+      cohort,
+      name,
+      shortName,
+      description,
+      teacherId,
+      Number(weeks) || 0,
+      startDate,
+      endDate,
+      JSON.stringify(schedule || []),
+      id
+    ]
+  );
+  return findClassById(id);
+}
+
+// Permanently delete a class
+async function deleteClass(id) {
+  await db.query('DELETE FROM mdtslms_classes WHERE id = ?', [id]);
+  return true;
 }
 
 async function addTest(classId, test) {
@@ -180,6 +230,43 @@ async function upsertLabStatus(classId, labId, studentId, passed) {
   return upsertItemGrade(classId, 'labId', labId, studentId, { passed: !!passed });
 }
 
+// Removal helpers
+async function removeLecture(classId, lectureId) {
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  const list = Array.isArray(klass.lectures) ? klass.lectures : [];
+  const next = list.filter(l => Number(l.id) !== Number(lectureId));
+  await db.query('UPDATE mdtslms_classes SET lectures=? WHERE id=?', [JSON.stringify(next), classId]);
+  return true;
+}
+
+async function removeSimulation(classId, simulationId) {
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  const list = Array.isArray(klass.simulations) ? klass.simulations : [];
+  const next = list.filter(s => Number(s.id) !== Number(simulationId));
+  await db.query('UPDATE mdtslms_classes SET simulations=? WHERE id=?', [JSON.stringify(next), classId]);
+  return true;
+}
+
+async function removeAssignment(classId, assignmentId) {
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  const list = Array.isArray(klass.assignments) ? klass.assignments : [];
+  const next = list.filter(a => Number(a.id) !== Number(assignmentId));
+  await db.query('UPDATE mdtslms_classes SET assignments=? WHERE id=?', [JSON.stringify(next), classId]);
+  return true;
+}
+
+async function removeTest(classId, testId) {
+  const klass = await findClassById(classId);
+  if (!klass) return null;
+  const list = Array.isArray(klass.tests) ? klass.tests : [];
+  const next = list.filter(t => Number(t.id) !== Number(testId));
+  await db.query('UPDATE mdtslms_classes SET tests=? WHERE id=?', [JSON.stringify(next), classId]);
+  return true;
+}
+
 module.exports = {
   getAllClasses,
   findClassById,
@@ -189,6 +276,11 @@ module.exports = {
   addLecture,
   addSimulation,
   addAssignment,
+  removeStudent,
+  removeLecture,
+  removeSimulation,
+  removeAssignment,
+  removeTest,
 
   recordGrade,
   byTeacher,
@@ -198,7 +290,7 @@ module.exports = {
   upsertLabStatus,
   duplicateClass,
   updateChecklist,
-  renameClass
+  renameClass,
+  updateClass,
+  deleteClass
 };
-
-

@@ -24,12 +24,22 @@
     }
     .btn-primary{ background: var(--primary-color) !important; border-color: var(--primary-color) !important; }
     .btn-primary:hover{ background:#1e6edb !important; border-color:#1e6edb !important; }
+    .pill{ display:inline-block; padding:.15rem .5rem; border-radius:999px; font-weight:600; font-size:.8rem; margin-right:.25rem; }
+    .pill-red{ color:#842029; background:#f8d7da; border:1px solid #f5c2c7; }
+    .pill-yellow{ color:#664d03; background:#fff3cd; border:1px solid #ffe69c; }
+    .pill-blue{ color:#084298; background:#cfe2ff; border:1px solid #b6d4fe; }
   </style>
 </head>
 <body>
   <%- include('header', { user: user }) %>
   <div class="container mt-4">
     <h2>Marketing Email</h2>
+    <div class="small mb-2">
+      Legend:
+      <span class="pill pill-blue">Contacted &lt; 2 weeks</span>
+      <span class="pill pill-yellow">Contacted ≥ 2 weeks</span>
+      <span class="pill pill-red">Never contacted</span>
+    </div>
     <% if (sent) { %>
       <div class="alert alert-success">Email sent successfully.</div>
     <% } %>
@@ -68,6 +78,12 @@
                   <% }); %>
                 </select>
               </div>
+              <div class="col-md-3">
+                <input type="date" id="filterLastFrom" class="form-control" placeholder="Last contacted from">
+              </div>
+              <div class="col-md-3">
+                <input type="date" id="filterLastTo" class="form-control" placeholder="Last contacted to">
+              </div>
             </div>
             <table class="table table-sm" id="recipientsTable">
               <thead>
@@ -80,6 +96,7 @@
                   <th>Course</th>
                   <th>Program</th>
                   <th>Signed Up</th>
+                  <th id="thLastContacted" style="cursor:pointer;" title="Sort by Last Contacted">Last Contacted ▾</th>
                 </tr>
               </thead>
               <tbody id="recipientsBody">
@@ -91,7 +108,7 @@
                    const signup = signupDate && !isNaN(signupDate) ? signupDate.toISOString().slice(0,10) : 'N/A';
                    const status = s.status === 'approved' ? 'Enrolled' : (s.status === 'declined' ? 'Denied' : 'Pending');
               %>
-                  <tr data-type="student" data-course="<%= course %>" data-program="<%= aff %>" data-status="<%= status %>">
+                  <tr data-type="student" data-course="<%= course %>" data-program="<%= aff %>" data-status="<%= status %>" data-lastcontacted="<%= s.lastContacted || '' %>">
                     <td><input type="checkbox" name="recipients" value="student-<%= s.id %>"></td>
                     <td>Student</td>
                     <td><%= status %></td>
@@ -100,10 +117,11 @@
                     <td><%= course %></td>
                     <td><%= aff %></td>
                     <td><%= signup %></td>
+                    <td class="last-contacted" data-ts="<%= s.lastContacted || '' %>"></td>
                   </tr>
                 <% }); %>
                 <% preregs.forEach(function(p){ %>
-                  <tr data-type="pre" data-course="<%= p.course || '' %>" data-program="" data-status="Pre-registered">
+                  <tr data-type="pre" data-course="<%= p.course || '' %>" data-program="" data-status="Pre-registered" data-lastcontacted="<%= p.lastContacted || '' %>">
                     <td><input type="checkbox" name="recipients" value="pre-<%= p.id %>"></td>
                     <td>Pre-registered</td>
                     <td>Pre-registered</td>
@@ -112,10 +130,11 @@
                     <td><%= p.course || '' %></td>
                     <td></td>
                     <td></td>
+                    <td class="last-contacted" data-ts="<%= p.lastContacted || '' %>"></td>
                   </tr>
                 <% }); %>
                 <% rsvps.forEach(function(r){ %>
-                  <tr data-type="rsvp" data-course="" data-program="" data-status="RSVP">
+                  <tr data-type="rsvp" data-course="" data-program="" data-status="RSVP" data-lastcontacted="">
                     <td><input type="checkbox" name="recipients" value="rsvp-<%= r.id %>"></td>
                     <td>RSVP</td>
                     <td>RSVP</td>
@@ -124,6 +143,7 @@
                     <td></td>
                     <td></td>
                     <td></td>
+                    <td class="last-contacted" data-ts=""></td>
                   </tr>
                 <% }); %>
               </tbody>
@@ -159,11 +179,11 @@
   </div>
   <script>
     const prefaces = {
-      recruitment: 'Join the MD Technical School family!',
-      retention: 'We value your continued learning with MDTS.',
-      approval: 'Congratulations on your approval!',
-      events: 'Upcoming opportunities await you at MDTS.',
-      information: 'Here is an important update from MDTS.'
+      recruitment: '',
+      retention: '',
+      approval: '',
+      events: '',
+      information: ''
     };
     const templates = <%- JSON.stringify(templates) %>;
     const typeSelect = document.querySelector('select[name="type"]');
@@ -213,16 +233,31 @@
       const typeVal = filterType.value;
       const courseVal = filterCourse.value.toLowerCase();
       const programVal = filterProgram.value.toLowerCase();
+      const lastFrom = document.getElementById('filterLastFrom').value;
+      const lastTo = document.getElementById('filterLastTo').value;
+      const fromTs = lastFrom ? new Date(lastFrom + 'T00:00:00').getTime() : null;
+      const toTs = lastTo ? new Date(lastTo + 'T23:59:59').getTime() : null;
       document.querySelectorAll('#recipientsBody tr').forEach(tr => {
         const text = tr.innerText.toLowerCase();
         const type = tr.dataset.type;
         const course = (tr.dataset.course || '').toLowerCase();
         const program = (tr.dataset.program || '').toLowerCase();
+        const last = tr.dataset.lastcontacted || '';
+        const lastTs = last ? Date.parse(last) : NaN;
         const matchesSearch = text.includes(search);
         const matchesType = !typeVal || type === typeVal;
         const matchesCourse = !courseVal || course === courseVal;
         const matchesProgram = !programVal || program === programVal;
-        tr.style.display = matchesSearch && matchesType && matchesCourse && matchesProgram ? '' : 'none';
+        let matchesLast = true;
+        if (fromTs || toTs) {
+          if (!last || isNaN(lastTs)) {
+            matchesLast = false;
+          } else {
+            if (fromTs && lastTs < fromTs) matchesLast = false;
+            if (toTs && lastTs > toTs) matchesLast = false;
+          }
+        }
+        tr.style.display = (matchesSearch && matchesType && matchesCourse && matchesProgram && matchesLast) ? '' : 'none';
       });
     }
 
@@ -230,6 +265,8 @@
     filterType.addEventListener('change', applyFilters);
     filterCourse.addEventListener('change', applyFilters);
     filterProgram.addEventListener('change', applyFilters);
+    document.getElementById('filterLastFrom').addEventListener('change', applyFilters);
+    document.getElementById('filterLastTo').addEventListener('change', applyFilters);
 
     selectAll.addEventListener('change', (e) => {
       document.querySelectorAll('#recipientsBody tr').forEach(tr => {
@@ -258,7 +295,56 @@
       updateSubject();
       fetchPreview();
       applyFilters();
+      renderLastContactedPills();
     });
+  </script>
+  <script>
+    function renderLastContactedPills(){
+      const cells = document.querySelectorAll('#recipientsBody td.last-contacted');
+      const now = Date.now();
+      const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+      cells.forEach(td => {
+        const ts = td.getAttribute('data-ts') || '';
+        if (!ts) {
+          td.innerHTML = '<span class="pill pill-red">Never</span>';
+          return;
+        }
+        const t = Date.parse(ts);
+        if (isNaN(t)) {
+          td.textContent = '';
+          return;
+        }
+        const diff = now - t;
+        const dateStr = new Date(t).toLocaleString();
+        if (diff < twoWeeksMs) {
+          td.innerHTML = `<span class="pill pill-blue" title="${dateStr}">${dateStr}</span>`;
+        } else {
+          td.innerHTML = `<span class="pill pill-yellow" title="${dateStr}">${dateStr}</span>`;
+        }
+      });
+    }
+  </script>
+  <script>
+    // Sorting by Last Contacted
+    (function(){
+      const th = document.getElementById('thLastContacted');
+      if (!th) return;
+      let desc = true;
+      th.addEventListener('click', () => {
+        const tbody = document.getElementById('recipientsBody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort((a, b) => {
+          const va = a.dataset.lastcontacted || '';
+          const vb = b.dataset.lastcontacted || '';
+          const ta = va ? Date.parse(va) : 0;
+          const tb = vb ? Date.parse(vb) : 0;
+          return desc ? tb - ta : ta - tb;
+        });
+        rows.forEach(r => tbody.appendChild(r));
+        desc = !desc;
+        th.textContent = 'Last Contacted ' + (desc ? '▾' : '▴');
+      });
+    })();
   </script>
 </body>
 </html>

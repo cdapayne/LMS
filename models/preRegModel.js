@@ -43,4 +43,30 @@ async function getAll() {
   return rows;
 }
 
-module.exports = { create, getAll };
+let ensuredPreLastContacted = false;
+async function ensurePreLastContactedColumn() {
+  if (ensuredPreLastContacted) return;
+  try {
+    await db.query('ALTER TABLE mdtslms_pre_registrations ADD COLUMN IF NOT EXISTS lastContacted DATETIME NULL');
+  } catch (e) {
+    // ignore if exists
+  } finally {
+    ensuredPreLastContacted = true;
+  }
+}
+
+async function setLastContacted(id, when = new Date()) {
+  await ensurePreLastContactedColumn();
+  const ts = new Date(when).toISOString().slice(0, 19).replace('T', ' ');
+  try {
+    await db.query('UPDATE mdtslms_pre_registrations SET lastContacted=? WHERE id=?', [ts, id]);
+  } catch (e) {
+    try {
+      await db.query('ALTER TABLE mdtslms_pre_registrations ADD COLUMN lastContacted DATETIME NULL');
+    } catch (_) {}
+    await db.query('UPDATE mdtslms_pre_registrations SET lastContacted=? WHERE id=?', [ts, id]);
+  }
+  return true;
+}
+
+module.exports = { create, getAll, setLastContacted };

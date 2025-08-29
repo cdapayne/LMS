@@ -295,7 +295,14 @@ router.post('/classes/:id/lectures', async (req, res) => {
       url: finalUrl
     });
   }
-    res.redirect(`/teacher/classes/${classId}#lectures`);
+  res.redirect(`/teacher/classes/${classId}#lectures`);
+});
+
+router.post('/classes/:id/lectures/:lectureId/delete', async (req, res) => {
+  const classId = Number(req.params.id);
+  const lectureId = Number(req.params.lectureId);
+  await classModel.removeLecture(classId, lectureId);
+  res.redirect(`/teacher/classes/${classId}#lectures`);
 });
 
 router.post('/classes/:id/assignments', async (req, res) => {
@@ -307,6 +314,13 @@ router.post('/classes/:id/assignments', async (req, res) => {
   res.redirect(`/teacher/classes/${classId}#assignments`);
 });
 
+router.post('/classes/:id/assignments/:assignmentId/delete', async (req, res) => {
+  const classId = Number(req.params.id);
+  const assignmentId = Number(req.params.assignmentId);
+  await classModel.removeAssignment(classId, assignmentId);
+  res.redirect(`/teacher/classes/${classId}#assignments`);
+});
+
 
 router.post('/classes/:id/simulations', async (req, res) => {
   const classId = Number(req.params.id);
@@ -314,6 +328,13 @@ router.post('/classes/:id/simulations', async (req, res) => {
   if (title && url) {
     await classModel.addSimulation(classId, { title: title.trim(), url: url.trim() });
   }
+  res.redirect(`/teacher/classes/${classId}#simulations`);
+});
+
+router.post('/classes/:id/simulations/:simId/delete', async (req, res) => {
+  const classId = Number(req.params.id);
+  const simId = Number(req.params.simId);
+  await classModel.removeSimulation(classId, simId);
   res.redirect(`/teacher/classes/${classId}#simulations`);
 });
 
@@ -342,7 +363,7 @@ router.post('/classes/:id/simulations', async (req, res) => {
         };
       });
       await testModel.replaceTestQuestions(title, questions);
-      await classModel.addTest(classId, { title, timeLimit });
+  await classModel.addTest(classId, { title, timeLimit });
     }
     res.redirect(`/teacher/classes/${classId}#tests`);
   });
@@ -351,6 +372,13 @@ router.post('/classes/:id/simulations', async (req, res) => {
 router.post('/classes/:id/tests/media', mediaUpload.single('media'), (req, res) => {
   const classId = Number(req.params.id);
   if (!req.file) return res.status(400).send('No file uploaded');
+  res.redirect(`/teacher/classes/${classId}#tests`);
+});
+
+router.post('/classes/:id/tests/:testId/delete', async (req, res) => {
+  const classId = Number(req.params.id);
+  const testId = Number(req.params.testId);
+  await classModel.removeTest(classId, testId);
   res.redirect(`/teacher/classes/${classId}#tests`);
 });
 

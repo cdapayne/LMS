@@ -197,11 +197,16 @@ router.post('/drip-campaigns', (req, res) => {
 router.get('/', async (req, res) => {
   const users = await userModel.getAll();
   const classes = await classModel.getAllClasses();
+  const preregs = await preRegModel.getAll();
   const teachers = users.filter(u => u.role === 'teacher');
   const students = users.filter(u => u.role === 'student');
   const pendingStudents = students.filter(u => u.status === 'pending' || !u.status);
   const approvedStudents = students.filter(u => u.status === 'approved');
   const announcements = await announcementModel.forAdmin();
+  // Pre-registered in last 14 days
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const prereg30Count = preregs.filter(p => p.createdAt && new Date(p.createdAt) >= cutoff).length;
 
   // ----- course counts -----
   const courseCountsMap = students.reduce((acc, s) => {
@@ -241,12 +246,7 @@ const signupsLast365    = buildDailySeries(students, 365);  // optional
   const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
 
   // (optional) logging
-  console.log("course counts:", JSON.stringify(courseCounts));
-  console.log("student by state:", JSON.stringify(studentsByState));
-  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
-  console.log("signups totals:", JSON.stringify(signupsLast7Days));
-    console.log("signups totals:", JSON.stringify(signupsLast30Days));
-      console.log("signups totals:", JSON.stringify(signupsLast365));
+
 
 
 
@@ -255,6 +255,7 @@ const signupsLast365    = buildDailySeries(students, 365);  // optional
     classes,
     teachers,
     students,
+    prereg30Count,
     announcements,
     pendingCount: pendingStudents.length,
     approvedCount: approvedStudents.length,
@@ -318,6 +319,7 @@ router.post('/approve/:id', async (req, res) => {
         html,
         text
       });
+      try { await userModel.setLastContacted(user.id, new Date()); } catch(_) {}
     } catch (e) {
       console.error('Error sending approval email', e);
     }
@@ -348,7 +350,7 @@ router.get('/event-rsvps', async (req, res) => {
 
 router.get('/pre-registrations', async (req, res) => {
   const preregs = await preRegModel.getAll();
-  res.render('admin_pre_registered', { preregs, user: req.session.user });
+  res.render('admin_pre_registered', { preregs, user: req.session.user, templates: marketingSubjects });
 });
 
 
@@ -392,7 +394,7 @@ router.post('/students/:id/reset-password', async (req, res) => {
   if (!user) return res.status(404).send('Not found');
   const newPassword = crypto.randomBytes(4).toString('hex');
   await userModel.updatePassword(user.username, newPassword);
- if (user.email) {
+  if (user.email) {
     try {
       const { subject, html, text } = emailTemplates.render('passwordReset', {
         name: user.name || 'User',
@@ -405,6 +407,7 @@ router.post('/students/:id/reset-password', async (req, res) => {
         html,
         text
       });
+      try { await userModel.setLastContacted(user.id, new Date()); } catch(_) {}
     } catch (e) {
       console.error('Error sending reset email', e);
     }
@@ -430,6 +433,7 @@ router.post('/students/:id/sign-doc', async (req, res) => {
           html,
           text
         });
+        try { await userModel.setLastContacted(user.id, new Date()); } catch(_) {}
       } catch (e) {
         console.error('Error sending completion email', e);
       }
@@ -504,11 +508,11 @@ router.get('/students', async (_req, res) => {
 // Marketing email constants
 const marketingTypes = ['recruitment', 'retention', 'approval', 'events', 'information'];
 const marketingPrefaces = {
-  recruitment: 'Join the MD Technical School family!',
-  retention: 'We value your continued learning with MDTS.',
-  approval: 'Congratulations on your approval!',
-  events: 'Upcoming opportunities await you at MDTS.',
-  information: 'Here is an important update from MDTS.'
+  recruitment: '',
+  retention: '',
+  approval: '',
+  events: '',
+  information: ''
 };
 
 // Marketing email form
@@ -648,6 +652,7 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
       .replace(/{{message}}/g, bodyText)
       .replace(/{{year}}/g, new Date().getFullYear());
 
+    const now = new Date();
     for (const id of ids) {
       const [kind, actualId] = String(id).split('-');
       let recipient;
@@ -667,6 +672,12 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
         text: bodyText,
         attachments
       });
+      // Update LastContacted
+      if (kind === 'student') {
+        await userModel.setLastContacted(Number(actualId), now);
+      } else if (kind === 'pre') {
+        await preRegModel.setLastContacted(Number(actualId), now);
+      }
     }
 
     res.redirect('/admin/marketing?sent=1');
@@ -683,6 +694,37 @@ router.post('/marketing', mediaUpload.single('image'), async (req, res) => {
       sent: null,
       error: 'Failed to send email.'
     });
+  }
+});
+
+// Contact a single pre-registered user (AJAX from SweetAlert)
+router.post('/pre-registrations/:id/contact', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const preregs = await preRegModel.getAll();
+    const p = preregs.find(x => x.id === id);
+    if (!p || !p.email) return res.status(404).json({ error: 'Not found' });
+    const { subject, message } = req.body;
+    const tpl = marketingTemplates['recruitment'];
+    const subj = (subject && subject.trim()) || tpl.subject;
+    const html = tpl.html
+      .replace(/{{imageTag}}/g, '')
+      .replace(/{{subject}}/g, subj)
+      .replace(/{{message}}/g, message || '')
+      .replace(/{{year}}/g, new Date().getFullYear());
+    await transporter.sendMail({
+      from: 'noreply@mdts-apps.com',
+      to: p.email,
+      subject: subj,
+      html,
+      text: message || ''
+    });
+    const now = new Date();
+    await preRegModel.setLastContacted(id, now);
+    return res.json({ ok: true, lastContacted: now.toISOString() });
+  } catch (e) {
+    console.error('Contact prereg error', e);
+    return res.status(500).json({ error: 'Failed to send' });
   }
 });
 
@@ -766,6 +808,67 @@ router.get('/classes', async (_req, res) => {
   res.render('class_list', { classes, teacherMap });
 });
 
+// Edit class form
+router.get('/classes/:id/edit', async (req, res) => {
+  const id = Number(req.params.id);
+  const klass = await classModel.findClassById(id);
+  if (!klass) return res.status(404).send('Not found');
+  const teachers = await userModel.getByRole('teacher');
+  res.render('edit_class', { klass, teachers, error: null });
+});
+
+// Update class handler
+router.post('/classes/:id/edit', async (req, res) => {
+  const id = Number(req.params.id);
+  const klass = await classModel.findClassById(id);
+  if (!klass) return res.status(404).send('Not found');
+  try {
+    const schoolYear = (req.body.schoolYear || '').trim();
+    const cohort = (req.body.cohort || '').trim();
+    const name = (req.body.name || '').trim();
+    const shortName = (req.body.shortName || '').trim();
+    const description = (req.body.description || '').trim();
+    const teacherId = Number(req.body.teacherId || 0);
+    const weeks = Number(req.body.weeks || 0);
+    const startDate = (req.body.startDate || '').trim();
+    const endDate = (req.body.endDate || '').trim();
+
+    if (!schoolYear || !cohort || !name || !shortName || !teacherId || !startDate || !endDate) {
+      const teachers = await userModel.getByRole('teacher');
+      return res.status(400).render('edit_class', { klass: { ...klass, schoolYear, cohort, name, shortName, description, teacherId, weeks, startDate, endDate }, teachers, error: 'School Year, Cohort, Name, Short Name, Teacher and Dates are required.' });
+    }
+
+    // Build schedule from arrays (day[], start[], end[])
+    const days = Array.isArray(req.body.day) ? req.body.day : (req.body.day ? [req.body.day] : []);
+    const starts = Array.isArray(req.body.start) ? req.body.start : (req.body.start ? [req.body.start] : []);
+    const ends = Array.isArray(req.body.end) ? req.body.end : (req.body.end ? [req.body.end] : []);
+    const schedule = [];
+    for (let i = 0; i < Math.max(days.length, starts.length, ends.length); i++) {
+      const d = (days[i] || '').trim();
+      const st = (starts[i] || '').trim();
+      const en = (ends[i] || '').trim();
+      const h = req.body[`holiday${i}`] === 'on' || req.body[`holiday${i}`] === '1';
+      if (d && st && en) schedule.push({ day: d, start: st, end: en, holiday: h });
+    }
+
+    await classModel.updateClass(id, { schoolYear, cohort, name, shortName, description, teacherId, weeks, startDate, endDate, schedule });
+    return res.redirect(`/admin/classes/${id}`);
+  } catch (e) {
+    console.error(e);
+    const teachers = await userModel.getByRole('teacher');
+    return res.status(500).render('edit_class', { klass, teachers, error: 'Could not update class.' });
+  }
+});
+
+// Delete class
+router.post('/classes/:id/delete', async (req, res) => {
+  const id = Number(req.params.id);
+  const klass = await classModel.findClassById(id);
+  if (!klass) return res.status(404).send('Not found');
+  await classModel.deleteClass(id);
+  res.redirect('/admin/classes');
+});
+
 router.get('/chart/NewSignups', async (req, res) => {
       const users = await userModel.getAll();
   const classes = await classModel.getAllClasses();
@@ -813,12 +916,7 @@ const signupsLast365    = buildDailySeries(students, 365);  // optional
   const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
 
   // (optional) logging
-  console.log("course counts:", JSON.stringify(courseCounts));
-  console.log("student by state:", JSON.stringify(studentsByState));
-  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
-  console.log("signups totals:", JSON.stringify(signupsLast7Days));
-    console.log("signups totals:", JSON.stringify(signupsLast30Days));
-      console.log("signups totals:", JSON.stringify(signupsLast365));
+
 
 
 res.json(signupsLast7Days);
@@ -887,12 +985,7 @@ const signupsLast365    = buildDailySeries(students, 365);  // optional
   const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
 
   // (optional) logging
-  console.log("course counts:", JSON.stringify(courseCounts));
-  console.log("student by state:", JSON.stringify(studentsByState));
-  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
-  console.log("signups totals:", JSON.stringify(signupsLast7Days));
-    console.log("signups totals:", JSON.stringify(signupsLast30Days));
-      console.log("signups totals:", JSON.stringify(signupsLast365));
+
 
 
 res.json(courseCounts);
@@ -967,12 +1060,7 @@ const signupsLast365    = buildDailySeries(students, 365);  // optional
   const classSizes = classes.map(c => ({ name: c.name, size: (c.studentIds || []).length }));
 
   // (optional) logging
-  console.log("course counts:", JSON.stringify(courseCounts));
-  console.log("student by state:", JSON.stringify(studentsByState));
-  console.log("affiliate counts:", JSON.stringify(affiliateCounts));
-  console.log("signups totals:", JSON.stringify(signupsLast7Days));
-    console.log("signups totals:", JSON.stringify(signupsLast30Days));
-      console.log("signups totals:", JSON.stringify(signupsLast365));
+
 
 
 res.json(affiliateCounts);
@@ -1153,6 +1241,12 @@ router.post('/classes/:id/lectures', async (req, res) => {
   }
   res.redirect(`/admin/classes/${classId}#lectures`);
 });
+router.post('/classes/:id/lectures/:lectureId/delete', async (req, res) => {
+  const classId = Number(req.params.id);
+  const lectureId = Number(req.params.lectureId);
+  await classModel.removeLecture(classId, lectureId);
+  res.redirect(`/admin/classes/${classId}#lectures`);
+});
 
 router.post('/classes/:id/simulations', async (req, res) => {
   const classId = Number(req.params.id);
@@ -1162,6 +1256,12 @@ router.post('/classes/:id/simulations', async (req, res) => {
   }
   res.redirect(`/admin/classes/${classId}#simulations`);
 });
+router.post('/classes/:id/simulations/:simId/delete', async (req, res) => {
+  const classId = Number(req.params.id);
+  const simId = Number(req.params.simId);
+  await classModel.removeSimulation(classId, simId);
+  res.redirect(`/admin/classes/${classId}#simulations`);
+});
 
 router.post('/classes/:id/assignments', async (req, res) => {
   const classId = Number(req.params.id);
@@ -1169,6 +1269,12 @@ router.post('/classes/:id/assignments', async (req, res) => {
   if (title && url) {
     await classModel.addAssignment(classId, { title: title.trim(), url: url.trim() });
   }
+  res.redirect(`/admin/classes/${classId}#assignments`);
+});
+router.post('/classes/:id/assignments/:assignmentId/delete', async (req, res) => {
+  const classId = Number(req.params.id);
+  const assignmentId = Number(req.params.assignmentId);
+  await classModel.removeAssignment(classId, assignmentId);
   res.redirect(`/admin/classes/${classId}#assignments`);
 });
 
@@ -1250,6 +1356,12 @@ router.get('/reports/pending-students', async (_req, res) => {
   const pending = users.filter(u => u.role === 'student' && (u.status === 'pending' || !u.status));
   res.render('pending_students_report', { pending });
 });
+router.post('/classes/:id/tests/:testId/delete', async (req, res) => {
+  const classId = Number(req.params.id);
+  const testId = Number(req.params.testId);
+  await classModel.removeTest(classId, testId);
+  res.redirect(`/admin/classes/${classId}#tests`);
+});
 
 router.get('/reports/class/:id', async (req, res) => {
   const id = Number(req.params.id);
@@ -1268,6 +1380,14 @@ router.post('/classes/:id/add-student', async (req, res) => {
     return res.status(400).send('Student not approved');
   }
   await classModel.addStudent(id, studentId);
+  res.redirect(`/admin/classes/${id}`);
+});
+
+router.post('/classes/:id/remove-student', async (req, res) => {
+  const id = Number(req.params.id);
+  const studentId = Number(req.body.studentId);
+  if (!Number.isInteger(id) || !Number.isInteger(studentId)) return res.status(400).send('Bad request');
+  await classModel.removeStudent(id, studentId);
   res.redirect(`/admin/classes/${id}`);
 });
 

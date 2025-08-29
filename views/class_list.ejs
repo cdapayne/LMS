@@ -92,7 +92,7 @@
               <th style="min-width:220px;">Name</th>
               <th style="min-width:180px;">Teacher</th>
               <th style="min-width:110px;">Students</th>
-              <th style="min-width:120px;">Action</th>
+              <th style="min-width:200px;">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -105,7 +105,13 @@
                 <td><%= k.name %></td>
                 <td><%= teacherMap[k.teacherId] || 'Unknown' %></td>
                 <td><%= (k.studentIds||[]).length %></td>
-                <td><a class="btn btn-sm btn-outline-primary" href="/admin/classes/<%= k.id %>">Open</a></td>
+                <td>
+                  <a class="btn btn-sm btn-outline-primary me-1" href="/admin/classes/<%= k.id %>">Open</a>
+                  <a class="btn btn-sm btn-outline-secondary me-1" href="/admin/classes/<%= k.id %>/edit">Edit</a>
+                  <form method="post" action="/admin/classes/<%= k.id %>/delete" class="d-inline" onsubmit="return confirm('Delete class <%= k.name %>? This cannot be undone.');">
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </td>
               </tr>
             <% }) %>
           </tbody>

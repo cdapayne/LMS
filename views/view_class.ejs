@@ -140,6 +140,9 @@
 
       <% if (typeof studentView === 'undefined' || !studentView) { %>
       <div class="action-bar d-flex gap-2">
+        <a class="btn btn-outline-primary" href="/admin/classes/<%= klass.id %>/edit">
+          <i class="bi bi-pencil-square"></i> Edit
+        </a>
         <form method="post" action="/admin/classes/<%= klass.id %>/duplicate" class="mb-0">
           <button class="btn btn-outline-secondary">
             <i class="bi bi-files"></i> Duplicate
@@ -148,6 +151,11 @@
         <button class="btn btn-outline-primary" type="button" id="renameBtn">
           <i class="bi bi-pencil"></i> Rename
         </button>
+        <form method="post" action="/admin/classes/<%= klass.id %>/delete" class="mb-0" onsubmit="return confirm('Delete this class? This cannot be undone.');">
+          <button class="btn btn-outline-danger">
+            <i class="bi bi-trash"></i> Delete
+          </button>
+        </form>
       </div>
       <% } %>
     </div>
@@ -227,17 +235,21 @@
         <% } else { %>
           <ul class="list-plain">
             <% (klass.lectures || []).forEach(l => { %>
-                      <li class="mb-1 d-flex justify-content-between align-items-center">
+              <li class="mb-1 d-flex justify-content-between align-items-center">
                 <div>
-              <li class="mb-1">
-                <% if (l.isPowerPoint) { %>
-                  <a href="/student/powerpoint?url=<%= encodeURIComponent(l.url) %>&title=<%= encodeURIComponent(l.title) %>" target="_blank" rel="noopener"><%= l.title %> (PowerPoint)</a>
-                <% } else { %>
-                  <a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a>
-                <% } %>
-                 </div>
-                <% if (l.date) { %>
-                  <span class="badge rounded-pill bg-dark ms-2"><%= l.date %></span>
+                  <% if (l.isPowerPoint) { %>
+                    <a href="/student/powerpoint?url=<%= encodeURIComponent(l.url) %>&title=<%= encodeURIComponent(l.title) %>" target="_blank" rel="noopener"><%= l.title %> (PowerPoint)</a>
+                  <% } else { %>
+                    <a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a>
+                  <% } %>
+                  <% if (l.date) { %>
+                    <span class="badge rounded-pill bg-dark ms-2"><%= l.date %></span>
+                  <% } %>
+                </div>
+                <% if (typeof studentView === 'undefined' || !studentView) { %>
+                <form method="post" action="/admin/classes/<%= klass.id %>/lectures/<%= l.id %>/delete" onsubmit="return confirm('Delete this lecture?');" class="m-0">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
                 <% } %>
               </li>
             <% }) %>
@@ -268,7 +280,14 @@
         <% } else { %>
           <ul class="list-plain">
             <% (klass.simulations || []).forEach(l => { %>
-              <li class="mb-1"><a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a></li>
+              <li class="mb-1 d-flex justify-content-between align-items-center">
+                <a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.title %></a>
+                <% if (typeof studentView === 'undefined' || !studentView) { %>
+                <form method="post" action="/admin/classes/<%= klass.id %>/simulations/<%= l.id %>/delete" onsubmit="return confirm('Delete this simulation?');" class="m-0">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+                <% } %>
+              </li>
             <% }) %>
           </ul>
         <% } %>
@@ -297,7 +316,16 @@
         <% } else { %>
           <ul class="list-plain">
             <% (klass.assignments || []).forEach(a => { %>
-              <li class="mb-1"><a href="<%= a.url %>" target="_blank" rel="noopener"><%= a.title %></a> <span class="muted small"><%= a.date %></span></li>
+              <li class="mb-1 d-flex justify-content-between align-items-center">
+                <div>
+                  <a href="<%= a.url %>" target="_blank" rel="noopener"><%= a.title %></a> <span class="muted small"><%= a.date %></span>
+                </div>
+                <% if (typeof studentView === 'undefined' || !studentView) { %>
+                <form method="post" action="/admin/classes/<%= klass.id %>/assignments/<%= a.id %>/delete" onsubmit="return confirm('Delete this assignment?');" class="m-0">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+                <% } %>
+              </li>
             <% }) %>
           </ul>
         <% } %>
@@ -344,7 +372,15 @@
                     <a class="btn btn-sm btn-outline-primary" href="/student/classes/<%= klass.id %>/tests/<%= t.id %>/study">Study</a>
                   </div>                </li>
               <% } else { %>
-                <li class="mb-1"><%= t.title %> <a class="btn btn-sm btn-outline-primary ms-2" href="/admin/classes/<%= klass.id %>/tests/<%= t.id %>/preview">Preview</a></li>
+                <li class="mb-1 d-flex justify-content-between align-items-center">
+                  <div>
+                    <%= t.title %>
+                    <a class="btn btn-sm btn-outline-primary ms-2" href="/admin/classes/<%= klass.id %>/tests/<%= t.id %>/preview">Preview</a>
+                  </div>
+                  <form method="post" action="/admin/classes/<%= klass.id %>/tests/<%= t.id %>/delete" onsubmit="return confirm('Delete this test?');" class="m-0">
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </li>
               <% } %>
             <% }) %>
           </ul>
@@ -435,13 +471,21 @@
               </thead>
               <tbody>
                 <% roster.forEach(s => { %>
-                  <tr>
+                <tr>
                     <td><%= s.name %></td>
                     <td>@<%= s.username %></td>
                     <td>
-                      <a class="btn btn-sm btn-outline-secondary" href="/admin/students/<%= s.id %>">
-                        <i class="bi bi-box-arrow-up-right"></i> Open
-                      </a>
+                      <div class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-secondary" href="/admin/students/<%= s.id %>">
+                          <i class="bi bi-box-arrow-up-right"></i> Open
+                        </a>
+                        <form method="post" action="/admin/classes/<%= klass.id %>/remove-student" onsubmit="return confirm('Remove <%= s.name.replace(/'/g, "\'") %> from this class?');">
+                          <input type="hidden" name="studentId" value="<%= s.id %>">
+                          <button class="btn btn-sm btn-outline-danger" type="submit">
+                            <i class="bi bi-person-dash"></i> Remove
+                          </button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 <% }) %>
