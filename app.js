@@ -48,9 +48,9 @@ app.use('/docs', (req, res, next) => {
   }
   return express.static(docsPath)(req, res, next);
 });
+//sfw
 
-
-app.get('/', (req, res) => res.redirect('/dashboard'));
+app.get('/', (req, res) => res.redirect('/dashboard'));  
 
 app.get('/dashboard', (req, res) => {
   if (!req.session || !req.session.role) return res.redirect('/login');
